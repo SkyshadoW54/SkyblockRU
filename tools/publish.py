@@ -56,9 +56,32 @@ def mod_version() -> str:
     return found.group(1).strip() if found else ""
 
 
+def declared() -> set[str]:
+    """Словари, ОБЪЯВЛЕННЫЕ в index.json, — ровно то, что грузит мод.
+
+    ⚠️ Раньше выкладывалось всё, что лежит в папке (`PACKS.rglob`), и это
+    открыло дыру: 03.08 три словаря расширенного перевода убрали из
+    index.json и из jar — а облако продолжило их раздавать. Мод исправно
+    скачал их игроку в `config/skyblockru/packs`, и возможность включения
+    вернулась в обход решения.
+
+    **Облако обязано раздавать ровно то же, что лежит в jar.** Файл остался
+    в репозитории для будущей работы — это не повод везти его игрокам.
+    """
+    index = PACKS / "index.json"
+    if not index.is_file():
+        return set()
+    data = json.loads(index.read_text(encoding="utf-8"))
+    names = set(data.get("common") or [])
+    for files in (data.get("languages") or {}).values():
+        names.update(files)
+    return names
+
+
 def collect() -> tuple[list[dict], list[str]]:
     """Файлы к выкладке и список отказов с причиной."""
     out, refused = [], []
+    allowed = declared()
 
     def take(path: Path, kind: str, remote_dir: str) -> None:
         data = path.read_bytes()
@@ -79,6 +102,13 @@ def collect() -> tuple[list[dict], list[str]]:
                 # ⚠️ index.json НЕ выкладываем: он перечисляет ВСТРОЕННЫЕ словари
                 # и к пользовательской папке отношения не имеет — мод читает
                 # оттуда все файлы подряд.
+                return
+            # ⚠️ Не объявлен в index.json — значит его нет и в jar. Раздавать
+            # такое нельзя: игрок получил бы через обновление то, чего мы
+            # намеренно не кладём в мод. См. declared().
+            if allowed and path.name not in allowed:
+                refused.append(f"{path.name}: нет в index.json — в jar не едет, "
+                               f"в облако тоже не поедет")
                 return
             if not any(section in json_data for section in PACK_SECTIONS):
                 refused.append(f"{path.name}: нет секций {PACK_SECTIONS} — мод отбросит")
