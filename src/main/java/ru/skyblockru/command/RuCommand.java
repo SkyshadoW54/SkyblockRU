@@ -81,7 +81,23 @@ public final class RuCommand {
 							}
 							return 1;
 						}))
-						.then(literal("stats").executes(context -> stats(context.getSource())));
+						.then(literal("stats").executes(context -> stats(context.getSource())))
+						// ⚠️ Переключатели РАСШИРЕННОГО перевода (ванильные названия,
+						// зачарования SkyBlock, характеристики-жаргон). Игроку их больше
+						// не показываем — работа отложена целиком (решение 03.08),
+						// а словари убраны из index.json и в jar не едут. Здесь они
+						// остались, чтобы не писать всё заново, когда работа вернётся:
+						// впиши словарь обратно в index.json — и переключатель оживёт.
+						.then(literal("packs").executes(context -> packs(context.getSource())))
+						.then(literal("pack")
+								.then(net.fabricmc.fabric.api.client.command.v2.ClientCommands
+										.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word())
+										.then(literal("on").executes(context -> setPack(context.getSource(),
+												com.mojang.brigadier.arguments.StringArgumentType
+														.getString(context, "id"), true)))
+										.then(literal("off").executes(context -> setPack(context.getSource(),
+												com.mojang.brigadier.arguments.StringArgumentType
+														.getString(context, "id"), false)))));
 	}
 
 	/** Ветки для игрока: что включить, что выключить, есть ли обновление. */
@@ -99,19 +115,15 @@ public final class RuCommand {
 						// подтверждения — одна опечатка рядом с /skyblockru dump стоила бы
 						// всей работы. Нужно начать сбор заново — удалить файлы в
 						// config/skyblockru/dump/ руками, осознанно.
-						// Необязательные словари: посмотреть список и переключить.
-						// Без команды настройка была бы невидимой, а невидимая
-						// настройка всё равно что отсутствующая.
-						.then(literal("packs").executes(context -> packs(context.getSource())))
-						.then(literal("pack")
-								.then(net.fabricmc.fabric.api.client.command.v2.ClientCommands
-										.argument("id", com.mojang.brigadier.arguments.StringArgumentType.word())
-										.then(literal("on").executes(context -> setPack(context.getSource(),
-												com.mojang.brigadier.arguments.StringArgumentType
-														.getString(context, "id"), true)))
-										.then(literal("off").executes(context -> setPack(context.getSource(),
-												com.mojang.brigadier.arguments.StringArgumentType
-														.getString(context, "id"), false)))))
+						// ⚠️ Команд packs / pack <id> on|off здесь БОЛЬШЕ НЕТ (решение
+						// игрока 03.08). Ими включался РАСШИРЕННЫЙ перевод: ванильные
+						// названия предметов, названия зачарований SkyBlock и
+						// характеристики-жаргон. Работа отложена целиком, а не отменена:
+						// сами словари лежат в репозитории, но из index.json убраны
+						// и в jar не попадают, поэтому включать нечего.
+						// Команды переехали в ветку разработчика (devCommands) —
+						// удалённое пришлось бы писать заново, когда до этой работы
+						// дойдут руки.
 						// Отправка непереведённого: включена по умолчанию, и игрок
 						// должен иметь возможность её выключить одной командой —
 						// иначе настройка невидима, а невидимая всё равно что нет.

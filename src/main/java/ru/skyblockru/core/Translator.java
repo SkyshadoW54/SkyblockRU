@@ -467,9 +467,17 @@ public final class Translator {
 	 *       по-русски, ничего не меняется;</li>
 	 *   <li>единственный доступный язык — наш случай, словари только
 	 *       {@code ru_ru};</li>
-	 *   <li>если языков несколько и ни один не подошёл — первый по алфавиту,
-	 *       и об этом ГРОМКО в лог: молчаливый выбор за игрока хуже ошибки.</li>
+	 *   <li>язык по умолчанию из {@code index.json} ({@code defaultLanguage}) —
+	 *       осознанный выбор автора сборки, а не догадка.</li>
 	 * </ol>
+	 *
+	 * <p>⚠️ РАНЬШЕ ПОСЛЕДНИМ ПУНКТОМ БЫЛ «ПЕРВЫЙ ПО АЛФАВИТУ», и это ловушка
+	 * с отложенным сроком: пока язык один, работает пункт 3, и всё хорошо.
+	 * Стоит появиться второму — скажем, {@code de_de} — и русский игрок
+	 * с английским клиентом получил бы НЕМЕЦКИЙ экран, потому что «de» раньше
+	 * «ru». Сработало бы не в день правки, а в день, когда придёт первый
+	 * переводчик, — и виноватым выглядел бы он.
+	 * Теперь запасной язык назван явно в {@code index.json}.
 	 *
 	 * <p>⚠️ Цена отвязки — записи, которые берут текст У КЛИЕНТА через
 	 * {@code @ключ} (ванильные названия и зачарования). При английском клиенте
@@ -499,11 +507,33 @@ public final class Translator {
 		if (available.size() == 1) {
 			return available.get(0);
 		}
-		String pick = available.stream().sorted().findFirst().orElse(client);
+		// ⚠️ Языков несколько, а под клиент словарей нет. Алфавит тут не судья:
+		// он выдал бы игроку случайный чужой язык. Спрашиваем автора сборки.
+		String fallback = defaultLanguage();
+		String pick = available.contains(fallback) ? fallback : client;
 		SkyblockRuClient.LOG.warn("[SkyblockRU] no dictionaries for client language '{}',"
-				+ " falling back to '{}'. Set \"language\" in config to choose. Available: {}",
+				+ " using '{}'. Set \"language\" in config to choose. Available: {}",
 				client, pick, available);
 		return pick;
+	}
+
+	/**
+	 * Язык, на который мод переводит, когда язык клиента не подошёл.
+	 *
+	 * <p>Лежит в {@code index.json} полем {@code defaultLanguage}. Поля нет —
+	 * возвращаем пусто, и тогда игра остаётся английской: это честнее, чем
+	 * показать игроку язык, которого он не просил.
+	 */
+	public static String defaultLanguage() {
+		try (InputStream stream = Translator.class.getResourceAsStream(BUILTIN_DIR + "index.json")) {
+			if (stream == null) {
+				return "";
+			}
+			JsonObject json = GSON.fromJson(new InputStreamReader(stream, StandardCharsets.UTF_8), JsonObject.class);
+			return json.has("defaultLanguage") ? json.get("defaultLanguage").getAsString() : "";
+		} catch (IOException | RuntimeException exception) {
+			return "";
+		}
 	}
 
 	public static String languageCode() {

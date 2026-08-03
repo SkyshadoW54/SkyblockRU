@@ -73,6 +73,13 @@ dependencies {
 tasks.processResources {
     exclude("**/*.bak*", "**/*.orig*", "**/*.rej*", "**/*.tmp*", "**/*~", "**/*.old*", "**/*.save*")
 
+    // ⚠️ РАСШИРЕННЫЙ ПЕРЕВОД ОТЛОЖЕН (решение игрока 03.08) — эти словари
+    // в jar не едут. Они остаются в репозитории: инструменты читают файлы
+    // напрямую и считают их «переводить не надо», иначе те же 3417 записей
+    // ушли бы в платную очередь заново (записанная грабля про «Огранку V»).
+    // Вернуть работу = убрать отсюда И вписать имя обратно в packs/index.json.
+    exclude("**/80-vanilla-names.json", "**/77-sb-enchants.json", "**/78-sb-stats.json")
+
     val modVersion = version.toString()
     val buildTime = SimpleDateFormat("dd.MM.yyyy HH:mm").format(Date())
     inputs.property("version", modVersion)
