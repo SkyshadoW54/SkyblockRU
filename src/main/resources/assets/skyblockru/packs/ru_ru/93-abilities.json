@@ -1,0 +1,10 @@
+{
+ "id": "abilities",
+ "priority": 21,
+ "_comment": "Описания способностей и пассивок, В КУСКЕ КОТОРЫХ есть строка «Cooldown: {n}s». Такой кусок в корпус не берётся по построению (перенос размазал бы таблицу характеристик в прозу), поэтому купить абзац было нельзя, а запись в корпусе стёрла бы первая же пересборка. Ключи взяты из dump/paragraph-colors.json — это ровно то, что мод спрашивает у словаря. Правится РУКАМИ.",
+ "paragraphs": {
+  "∙ Ability: Castle of Stone  RIGHT CLICK Fortifies your defence, reducing the damage you take by {n}% for {n} seconds. Also aggros all enemies in a {n} block radius. Cooldown: {n}s": "§8∙ §6Способность: Castle of Stone  §eПКМ§7 Укрепляет твою защиту, снижая получаемый урон на §c{n}%§7 на §a{n}§7 с. Также стягивает на себя всех врагов в радиусе §a{n}§7 блоков. §8Перезарядка: §a{n} с",
+  "∙ Class Passive: Protective Barrier Grants {n}x  Defense. Upon falling below {n}% health, gain a {n}% health absorption shield. Cooldown: {n}s": "§8∙ §aПассивка класса: Protective Barrier§7 Даёт §a{n}x  Defense§7. Упав ниже §a{n}%§7 здоровья, получаешь щит поглощения на §e{n}%§7 здоровья. §8Перезарядка: §a{n} с",
+  "∙ Ability: Seismic Wave  RIGHT CLICK A Seismic Wave emerges from underneath you and travels in a straight line. Deals {n} +{n}% every +{n} Defense in damage to any enemy in its path. Acts as Superboom TNT! Cooldown: {n}s": "§8∙ §6Способность: Seismic Wave  §eПКМ§7 Сейсмическая волна вырывается из-под тебя и идёт по прямой. Наносит §c{n} +{n}%§7 за каждые §a+{n} Defense§7 урона любому врагу на её пути. §8Работает как Superboom TNT! §8Перезарядка: §a{n} с"
+ }
+}

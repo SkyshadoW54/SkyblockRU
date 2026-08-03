@@ -1,0 +1,447 @@
+{
+ "id": "enchants",
+ "priority": 35,
+ "_comment": "Ванильные зачарования Minecraft. В переводе стоит не текст, а КЛЮЧ (@enchantment.minecraft.*) — мод спрашивает название у самой игры, поэтому оно совпадает с ванильным переводом и меняется вместе с языком клиента. СГЕНЕРИРОВАНО tools/gen_vanilla_enchants.py — правь генератор, а не этот файл. Кастомные зачарования Hypixel сюда не входят: у них ванильного перевода нет.",
+ "regex": [
+  {
+   "p": "^Projectile\\ Protection ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.projectile_protection $1",
+   "_key": "enchantment.minecraft.projectile_protection"
+  },
+  {
+   "p": "^Projectile\\ Protection$",
+   "r": "@enchantment.minecraft.projectile_protection",
+   "_key": "enchantment.minecraft.projectile_protection"
+  },
+  {
+   "p": "^Bane\\ of\\ Arthropods ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.bane_of_arthropods $1",
+   "_key": "enchantment.minecraft.bane_of_arthropods"
+  },
+  {
+   "p": "^Bane\\ of\\ Arthropods$",
+   "r": "@enchantment.minecraft.bane_of_arthropods",
+   "_key": "enchantment.minecraft.bane_of_arthropods"
+  },
+  {
+   "p": "^Curse\\ of\\ Vanishing ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.vanishing_curse $1",
+   "_key": "enchantment.minecraft.vanishing_curse"
+  },
+  {
+   "p": "^Curse\\ of\\ Vanishing$",
+   "r": "@enchantment.minecraft.vanishing_curse",
+   "_key": "enchantment.minecraft.vanishing_curse"
+  },
+  {
+   "p": "^Curse\\ of\\ Binding ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.binding_curse $1",
+   "_key": "enchantment.minecraft.binding_curse"
+  },
+  {
+   "p": "^Curse\\ of\\ Binding$",
+   "r": "@enchantment.minecraft.binding_curse",
+   "_key": "enchantment.minecraft.binding_curse"
+  },
+  {
+   "p": "^Blast\\ Protection ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.blast_protection $1",
+   "_key": "enchantment.minecraft.blast_protection"
+  },
+  {
+   "p": "^Blast\\ Protection$",
+   "r": "@enchantment.minecraft.blast_protection",
+   "_key": "enchantment.minecraft.blast_protection"
+  },
+  {
+   "p": "^Feather\\ Falling ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.feather_falling $1",
+   "_key": "enchantment.minecraft.feather_falling"
+  },
+  {
+   "p": "^Feather\\ Falling$",
+   "r": "@enchantment.minecraft.feather_falling",
+   "_key": "enchantment.minecraft.feather_falling"
+  },
+  {
+   "p": "^Fire\\ Protection ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.fire_protection $1",
+   "_key": "enchantment.minecraft.fire_protection"
+  },
+  {
+   "p": "^Fire\\ Protection$",
+   "r": "@enchantment.minecraft.fire_protection",
+   "_key": "enchantment.minecraft.fire_protection"
+  },
+  {
+   "p": "^Luck\\ of\\ the\\ Sea ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.luck_of_the_sea $1",
+   "_key": "enchantment.minecraft.luck_of_the_sea"
+  },
+  {
+   "p": "^Luck\\ of\\ the\\ Sea$",
+   "r": "@enchantment.minecraft.luck_of_the_sea",
+   "_key": "enchantment.minecraft.luck_of_the_sea"
+  },
+  {
+   "p": "^Aqua\\ Affinity ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.aqua_affinity $1",
+   "_key": "enchantment.minecraft.aqua_affinity"
+  },
+  {
+   "p": "^Aqua\\ Affinity$",
+   "r": "@enchantment.minecraft.aqua_affinity",
+   "_key": "enchantment.minecraft.aqua_affinity"
+  },
+  {
+   "p": "^Depth\\ Strider ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.depth_strider $1",
+   "_key": "enchantment.minecraft.depth_strider"
+  },
+  {
+   "p": "^Depth\\ Strider$",
+   "r": "@enchantment.minecraft.depth_strider",
+   "_key": "enchantment.minecraft.depth_strider"
+  },
+  {
+   "p": "^Sweeping\\ Edge ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.sweeping $1",
+   "_key": "enchantment.minecraft.sweeping"
+  },
+  {
+   "p": "^Sweeping\\ Edge$",
+   "r": "@enchantment.minecraft.sweeping",
+   "_key": "enchantment.minecraft.sweeping"
+  },
+  {
+   "p": "^Sweeping\\ Edge ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.sweeping_edge $1",
+   "_key": "enchantment.minecraft.sweeping_edge"
+  },
+  {
+   "p": "^Sweeping\\ Edge$",
+   "r": "@enchantment.minecraft.sweeping_edge",
+   "_key": "enchantment.minecraft.sweeping_edge"
+  },
+  {
+   "p": "^Frost\\ Walker ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.frost_walker $1",
+   "_key": "enchantment.minecraft.frost_walker"
+  },
+  {
+   "p": "^Frost\\ Walker$",
+   "r": "@enchantment.minecraft.frost_walker",
+   "_key": "enchantment.minecraft.frost_walker"
+  },
+  {
+   "p": "^Quick\\ Charge ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.quick_charge $1",
+   "_key": "enchantment.minecraft.quick_charge"
+  },
+  {
+   "p": "^Quick\\ Charge$",
+   "r": "@enchantment.minecraft.quick_charge",
+   "_key": "enchantment.minecraft.quick_charge"
+  },
+  {
+   "p": "^Fire\\ Aspect ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.fire_aspect $1",
+   "_key": "enchantment.minecraft.fire_aspect"
+  },
+  {
+   "p": "^Fire\\ Aspect$",
+   "r": "@enchantment.minecraft.fire_aspect",
+   "_key": "enchantment.minecraft.fire_aspect"
+  },
+  {
+   "p": "^Respiration ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.respiration $1",
+   "_key": "enchantment.minecraft.respiration"
+  },
+  {
+   "p": "^Respiration$",
+   "r": "@enchantment.minecraft.respiration",
+   "_key": "enchantment.minecraft.respiration"
+  },
+  {
+   "p": "^Swift\\ Sneak ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.swift_sneak $1",
+   "_key": "enchantment.minecraft.swift_sneak"
+  },
+  {
+   "p": "^Swift\\ Sneak$",
+   "r": "@enchantment.minecraft.swift_sneak",
+   "_key": "enchantment.minecraft.swift_sneak"
+  },
+  {
+   "p": "^Channeling ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.channeling $1",
+   "_key": "enchantment.minecraft.channeling"
+  },
+  {
+   "p": "^Channeling$",
+   "r": "@enchantment.minecraft.channeling",
+   "_key": "enchantment.minecraft.channeling"
+  },
+  {
+   "p": "^Efficiency ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.efficiency $1",
+   "_key": "enchantment.minecraft.efficiency"
+  },
+  {
+   "p": "^Efficiency$",
+   "r": "@enchantment.minecraft.efficiency",
+   "_key": "enchantment.minecraft.efficiency"
+  },
+  {
+   "p": "^Protection ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.protection $1",
+   "_key": "enchantment.minecraft.protection"
+  },
+  {
+   "p": "^Protection$",
+   "r": "@enchantment.minecraft.protection",
+   "_key": "enchantment.minecraft.protection"
+  },
+  {
+   "p": "^Silk\\ Touch ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.silk_touch $1",
+   "_key": "enchantment.minecraft.silk_touch"
+  },
+  {
+   "p": "^Silk\\ Touch$",
+   "r": "@enchantment.minecraft.silk_touch",
+   "_key": "enchantment.minecraft.silk_touch"
+  },
+  {
+   "p": "^Soul\\ Speed ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.soul_speed $1",
+   "_key": "enchantment.minecraft.soul_speed"
+  },
+  {
+   "p": "^Soul\\ Speed$",
+   "r": "@enchantment.minecraft.soul_speed",
+   "_key": "enchantment.minecraft.soul_speed"
+  },
+  {
+   "p": "^Unbreaking ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.unbreaking $1",
+   "_key": "enchantment.minecraft.unbreaking"
+  },
+  {
+   "p": "^Unbreaking$",
+   "r": "@enchantment.minecraft.unbreaking",
+   "_key": "enchantment.minecraft.unbreaking"
+  },
+  {
+   "p": "^Wind\\ Burst ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.wind_burst $1",
+   "_key": "enchantment.minecraft.wind_burst"
+  },
+  {
+   "p": "^Wind\\ Burst$",
+   "r": "@enchantment.minecraft.wind_burst",
+   "_key": "enchantment.minecraft.wind_burst"
+  },
+  {
+   "p": "^Knockback ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.knockback $1",
+   "_key": "enchantment.minecraft.knockback"
+  },
+  {
+   "p": "^Knockback$",
+   "r": "@enchantment.minecraft.knockback",
+   "_key": "enchantment.minecraft.knockback"
+  },
+  {
+   "p": "^Multishot ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.multishot $1",
+   "_key": "enchantment.minecraft.multishot"
+  },
+  {
+   "p": "^Multishot$",
+   "r": "@enchantment.minecraft.multishot",
+   "_key": "enchantment.minecraft.multishot"
+  },
+  {
+   "p": "^Sharpness ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.sharpness $1",
+   "_key": "enchantment.minecraft.sharpness"
+  },
+  {
+   "p": "^Sharpness$",
+   "r": "@enchantment.minecraft.sharpness",
+   "_key": "enchantment.minecraft.sharpness"
+  },
+  {
+   "p": "^Impaling ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.impaling $1",
+   "_key": "enchantment.minecraft.impaling"
+  },
+  {
+   "p": "^Impaling$",
+   "r": "@enchantment.minecraft.impaling",
+   "_key": "enchantment.minecraft.impaling"
+  },
+  {
+   "p": "^Infinity ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.infinity $1",
+   "_key": "enchantment.minecraft.infinity"
+  },
+  {
+   "p": "^Infinity$",
+   "r": "@enchantment.minecraft.infinity",
+   "_key": "enchantment.minecraft.infinity"
+  },
+  {
+   "p": "^Piercing ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.piercing $1",
+   "_key": "enchantment.minecraft.piercing"
+  },
+  {
+   "p": "^Piercing$",
+   "r": "@enchantment.minecraft.piercing",
+   "_key": "enchantment.minecraft.piercing"
+  },
+  {
+   "p": "^Density ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.density $1",
+   "_key": "enchantment.minecraft.density"
+  },
+  {
+   "p": "^Density$",
+   "r": "@enchantment.minecraft.density",
+   "_key": "enchantment.minecraft.density"
+  },
+  {
+   "p": "^Fortune ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.fortune $1",
+   "_key": "enchantment.minecraft.fortune"
+  },
+  {
+   "p": "^Fortune$",
+   "r": "@enchantment.minecraft.fortune",
+   "_key": "enchantment.minecraft.fortune"
+  },
+  {
+   "p": "^Looting ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.looting $1",
+   "_key": "enchantment.minecraft.looting"
+  },
+  {
+   "p": "^Looting$",
+   "r": "@enchantment.minecraft.looting",
+   "_key": "enchantment.minecraft.looting"
+  },
+  {
+   "p": "^Loyalty ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.loyalty $1",
+   "_key": "enchantment.minecraft.loyalty"
+  },
+  {
+   "p": "^Loyalty$",
+   "r": "@enchantment.minecraft.loyalty",
+   "_key": "enchantment.minecraft.loyalty"
+  },
+  {
+   "p": "^Mending ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.mending $1",
+   "_key": "enchantment.minecraft.mending"
+  },
+  {
+   "p": "^Mending$",
+   "r": "@enchantment.minecraft.mending",
+   "_key": "enchantment.minecraft.mending"
+  },
+  {
+   "p": "^Riptide ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.riptide $1",
+   "_key": "enchantment.minecraft.riptide"
+  },
+  {
+   "p": "^Riptide$",
+   "r": "@enchantment.minecraft.riptide",
+   "_key": "enchantment.minecraft.riptide"
+  },
+  {
+   "p": "^Breach ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.breach $1",
+   "_key": "enchantment.minecraft.breach"
+  },
+  {
+   "p": "^Breach$",
+   "r": "@enchantment.minecraft.breach",
+   "_key": "enchantment.minecraft.breach"
+  },
+  {
+   "p": "^Thorns ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.thorns $1",
+   "_key": "enchantment.minecraft.thorns"
+  },
+  {
+   "p": "^Thorns$",
+   "r": "@enchantment.minecraft.thorns",
+   "_key": "enchantment.minecraft.thorns"
+  },
+  {
+   "p": "^Flame ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.flame $1",
+   "_key": "enchantment.minecraft.flame"
+  },
+  {
+   "p": "^Flame$",
+   "r": "@enchantment.minecraft.flame",
+   "_key": "enchantment.minecraft.flame"
+  },
+  {
+   "p": "^Lunge ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.lunge $1",
+   "_key": "enchantment.minecraft.lunge"
+  },
+  {
+   "p": "^Lunge$",
+   "r": "@enchantment.minecraft.lunge",
+   "_key": "enchantment.minecraft.lunge"
+  },
+  {
+   "p": "^Power ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.power $1",
+   "_key": "enchantment.minecraft.power"
+  },
+  {
+   "p": "^Power$",
+   "r": "@enchantment.minecraft.power",
+   "_key": "enchantment.minecraft.power"
+  },
+  {
+   "p": "^Punch ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.punch $1",
+   "_key": "enchantment.minecraft.punch"
+  },
+  {
+   "p": "^Punch$",
+   "r": "@enchantment.minecraft.punch",
+   "_key": "enchantment.minecraft.punch"
+  },
+  {
+   "p": "^Smite ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.smite $1",
+   "_key": "enchantment.minecraft.smite"
+  },
+  {
+   "p": "^Smite$",
+   "r": "@enchantment.minecraft.smite",
+   "_key": "enchantment.minecraft.smite"
+  },
+  {
+   "p": "^Lure ([IVXLC]+)$",
+   "r": "@enchantment.minecraft.lure $1",
+   "_key": "enchantment.minecraft.lure"
+  },
+  {
+   "p": "^Lure$",
+   "r": "@enchantment.minecraft.lure",
+   "_key": "enchantment.minecraft.lure"
+  }
+ ]
+}

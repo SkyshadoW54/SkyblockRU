@@ -1,0 +1,496 @@
+{
+ "id": "chat_rules",
+ "priority": 20,
+ "_comment": "Правила для сообщений чата. Шаблоны из SkyHanni-REPO (MIT), переводы наши. Файл собирается автоматически из data/work/chat_rules.json — правь рабочий файл, а не этот.",
+ "_source": "https://github.com/hannibal002/SkyHanni-REPO (MIT)",
+ "regex": [
+  {
+   "_": "Печенье Big Yum: характеристика в захвате, её переводит словарь (tg). Одно правило закрывает все характеристики сразу — раньше на каждую заводили точную запись, и половина оставалась английской.",
+   "p": "^Big Yum! You refresh \\+([\\d,.]+)(.+?) for ([\\d,]+) hours!$",
+   "r": "Ням-ням! Ты обновил +$1$2 на $3 ч.!",
+   "tg": true
+  },
+  {
+   "p": "^Yum! You gain \\+([\\d,.]+)(.+?) for ([\\d,]+) hours!$",
+   "r": "Ням! Ты получаешь +$1$2 на $3 ч.!",
+   "tg": true
+  },
+  {
+   "p": "^☃ ([A-Za-z0-9_]{3,16}) dismounted the Snow Cannon!$",
+   "r": "§b☃ §7$1 слез со Snow Cannon!"
+  },
+  {
+   "_": "Кто-то сел или слез со Snow Cannon. Своё действие («You mounted») переведено отдельной записью, а чужое приходит с ником.",
+   "p": "^☃ ([A-Za-z0-9_]{3,16}) mounted a Snow Cannon!$",
+   "r": "§b☃ §7$1 сел на Snow Cannon!"
+  },
+  {
+   "_": "«You have sent a trade request to X.» Ник не переводим и не склоняем: падеж берёт слово «игроку».",
+   "p": "^You have sent a trade request to ([A-Za-z0-9_]{3,16})\\.$",
+   "r": "§7Ты отправил запрос на обмен игроку §a$1§7."
+  },
+  {
+   "_": "Сообщение о смерти в чате. Ник и имя моба не переводим: по имени моба игрок ищет, где тот водится.",
+   "p": "^☠ ([A-Za-z0-9_]{3,16}) was killed by (.+)\\.$",
+   "r": "§c☠ §7$1 погиб от §c$2§7."
+  },
+  {
+   "_": "Заголовок меню профиля: «puvvv's Profile». Ник не переводим, притяжательность передаёт падеж — «Профиль puvvv».",
+   "p": "^([A-Za-z0-9_]{3,16})'s Profile$",
+   "r": "Профиль $1"
+  },
+  {
+   "p": "You found a Cake Soul!",
+   "r": "Ты нашёл Cake Soul!",
+   "_sample": "You found a Cake Soul!",
+   "_key": "achievements.cake-soul"
+  },
+  {
+   "p": "You laid an egg!",
+   "r": "Ты снёс яйцо!",
+   "_sample": "You laid an egg!",
+   "_key": "achievements.laid-egg"
+  },
+  {
+   "p": "You've reached the daily limit of coins you may earn from NPC shops\\.",
+   "r": "Ты достиг дневного предела монет с продажи торговцам.",
+   "_sample": "You've reached the daily limit of coins you may earn from NPC shops.",
+   "_key": "achievements.npc-sell-limit"
+  },
+  {
+   "p": "Find a way to reach the top of the stomach!",
+   "r": "Найди способ добраться до верха желудка!",
+   "_sample": "Find a way to reach the top of the stomach!",
+   "_key": "achievements.pearls.allcollected"
+  },
+  {
+   "p": "Your Matriarch Cubs attribute has granted you 1 additional Heavy Pearl!",
+   "r": "Атрибут Matriarch Cubs дал тебе ещё одну Heavy Pearl!",
+   "_sample": "Your Matriarch Cubs attribute has granted you 1 additional Heavy Pearl!",
+   "_key": "achievements.pearls.bonus"
+  },
+  {
+   "p": "A Vanquisher is spawning nearby!",
+   "r": "Рядом появляется Vanquisher!",
+   "_sample": "A Vanquisher is spawning nearby!",
+   "_key": "achievements.vanquisher"
+  },
+  {
+   "p": "Vincent accepts your rose and is delighted to visit your Garden soon(.)",
+   "r": "Vincent принял твою розу и скоро с радостью навестит твой Garden$1",
+   "_sample": "Vincent accepts your rose and is delighted to visit your Garden soon{1}",
+   "_key": "achievements.vincent"
+  },
+  {
+   "p": "Accessory Bag((?: \\(\\d+\\/\\d+\\))?)",
+   "r": "Сумка аксессуаров$1",
+   "_sample": "Accessory Bag{1}",
+   "_key": "api.accessory.bag.inventory.name"
+  },
+  {
+   "p": "Max Skill level reached!",
+   "r": "Достигнут максимальный уровень навыка!",
+   "_sample": "Max Skill level reached!",
+   "_key": "api.skilldisplay.skill.menu.maxreached"
+  },
+  {
+   "p": "Ashfang Follower's Cryogenic Blast hit you for (.*) damage!",
+   "r": "§cCryogenic Blast от Ashfang Follower нанёс тебе $1 урона!",
+   "_sample": "Ashfang Follower's Cryogenic Blast hit you for {1} damage!",
+   "_key": "ashfang.freeze.cryogenic"
+  },
+  {
+   "p": "Order options",
+   "r": "Параметры заказа",
+   "_sample": "Order options",
+   "_key": "bazaar.cancelledorder.inventorytitle"
+  },
+  {
+   "p": "Contribution Rewards(.*)",
+   "r": "Награды за вклад$1",
+   "_sample": "Contribution Rewards{1}",
+   "_key": "bingo.card.tips.new.reward.contribution"
+  },
+  {
+   "p": "( *)✦ CRYSTAL FOUND \\((.)/5\\)",
+   "r": "$1§r§5§l✦ КРИСТАЛЛ НАЙДЕН §r§7($2§r§7/5§r§7)",
+   "_sample": "{1}✦ CRYSTAL FOUND ({2}/5)",
+   "_key": "bingo.steps.crystal.found"
+  },
+  {
+   "p": "Calendar and Events",
+   "r": "Календарь и события",
+   "_sample": "Calendar and Events",
+   "_key": "calendarapi.gui"
+  },
+  {
+   "p": "Select an option:([\\s\\S]*)",
+   "r": "Выбери вариант:$1",
+   "tg": true,
+   "_": "tg переводит саму реплику выбора. Без него подпись была русской, а вариант ответа английским — «Выбери вариант: [Yeah. Why is that?]». Реплик много, каждая уникальна: движок берёт их из точного словаря, а непереведённые Translator.translateGroup записывает в очередь (иначе они невидимы — строка-то считается переведённой).",
+   "_sample": "Select an option:{1}",
+   "_key": "carnival.select.option.chat-nocolor"
+  },
+  {
+   "p": "You claimed Carnival Ticket x25!",
+   "r": "§aТы получил §r§aCarnival Ticket §r§8x25§r§a!",
+   "_sample": "You claimed Carnival Ticket x25!",
+   "_key": "carnival.tickets.claimed"
+  },
+  {
+   "p": "Hoppity's Hunt has begun! Help Hoppity find his Chocolate Rabbit Eggs across SkyBlock each day during the Spring!",
+   "r": "§dHoppity's Hunt §r§eначалась! Помоги §r§aHoppity §r§eнайти §r§6Chocolate Rabbit Eggs §r§eпо всему SkyBlock каждый день §r§aвесной§r§e!",
+   "_sample": "Hoppity's Hunt has begun! Help Hoppity find his Chocolate Rabbit Eggs across SkyBlock each day during the Spring!",
+   "_key": "chat-filter.event.hoppity-begin"
+  },
+  {
+   "p": "HOPPITY'S HUNT A (.*) has appeared!",
+   "r": "§d§lHOPPITY'S HUNT §r§dПоявился $1§r§d!",
+   "_sample": "HOPPITY'S HUNT A {1} has appeared!",
+   "_key": "chat-filter.event.hoppity-egg-appear"
+  },
+  {
+   "p": "((?:)*)You cannot damage a tree while it is regenerating!",
+   "r": "$1Нельзя рубить дерево, пока оно восстанавливается!",
+   "_sample": "{1}You cannot damage a tree while it is regenerating!",
+   "_key": "chat-filter.foraging.unmineable-tree.0"
+  },
+  {
+   "p": "((?:)*)The toughness of this tree is way too high!",
+   "r": "$1Это дерево слишком прочное!",
+   "_sample": "{1}The toughness of this tree is way too high!",
+   "_key": "chat-filter.foraging.unmineable-tree.1"
+  },
+  {
+   "p": "((?:)*)Mochibear ate too much and passed out! You caught it!",
+   "r": "$1Mochibear объелся и вырубился! Ты его поймал!",
+   "_sample": "{1}Mochibear ate too much and passed out! You caught it!",
+   "_key": "chat-filter.hunting.redundant-comments.0"
+  },
+  {
+   "p": "((?:)*)You caught yourself an invisibug! The shard was sent to your Hunting Box!",
+   "r": "$1Ты поймал invisibug! Осколок отправлен в Hunting Box!",
+   "_sample": "{1}You caught yourself an invisibug! The shard was sent to your Hunting Box!",
+   "_key": "chat-filter.hunting.redundant-comments.1"
+  },
+  {
+   "p": "((?:)*)The Frog is exhausted\\.\\.\\.",
+   "r": "$1Лягушка выбилась из сил...",
+   "_sample": "{1}The Frog is exhausted...",
+   "_key": "chat-filter.hunting.redundant-comments.2"
+  },
+  {
+   "p": "☄ (.*) placed an Arachne's Calling!(.*)",
+   "r": "§4☄ §r$1 §r§eиспользовал §r§9Arachne's Calling§r§e!$2",
+   "_sample": "☄ {1} placed an Arachne's Calling!{2}",
+   "_key": "chat.arachne.calling"
+  },
+  {
+   "p": "☄ (.*) placed an Arachne Crystal! Something is awakening!",
+   "r": "§4☄ §r$1 §r§eустановил Arachne Crystal! Что-то пробуждается!",
+   "_sample": "☄ {1} placed an Arachne Crystal! Something is awakening!",
+   "_key": "chat.arachne.crystal"
+  },
+  {
+   "p": "(.*)Your Damage: ([0-9,]+) \\(Position #([0-9,]+)\\)",
+   "r": "$1§r§eТвой урон: §r§a$2 §r§7(место #$3)",
+   "_sample": "{1}Your Damage: {2} (Position #{3})",
+   "_key": "chat.arachne.damage"
+  },
+  {
+   "p": "(.*)ARACHNE DOWN!",
+   "r": "$1§r§6§lARACHNE ПОВЕРЖЕНА!",
+   "_sample": "{1}ARACHNE DOWN!",
+   "_key": "chat.arachne.dead",
+   "_warn": "широкий шаблон — проверить глазами, может поймать лишнее"
+  },
+  {
+   "p": "Arachne((?:'s (?:Keeper|Brood))?) used Venom Shot on you hitting you for ([\\d.,]+) damage and infecting you with venom\\.",
+   "r": "§dArachne$1 применила §r§2Venom Shot §r§dпо тебе, нанеся §r§c$2 урона §r§dи отравив ядом.",
+   "_sample": "Arachne{1} used Venom Shot on you hitting you for {2} damage and infecting you with venom.",
+   "_key": "chat.arachne.venom"
+  },
+  {
+   "p": "A FIRE SALE A((?:\\n|.)*)",
+   "r": "§6§k§lA§r §c§lРАСПРОДАЖА §r§6§k§lA$1",
+   "_sample": "A FIRE SALE A{1}",
+   "_key": "chat.firesale",
+   "_warn": "широкий шаблон — проверить глазами, может поймать лишнее"
+  },
+  {
+   "p": "( {2})FARMING CONTEST REWARDS CLAIMED",
+   "r": "$1НАГРАДЫ ЗА FARMING CONTEST ПОЛУЧЕНЫ",
+   "_sample": "{1}FARMING CONTEST REWARDS CLAIMED",
+   "_key": "chat.jacobcompact.opening.colorless"
+  },
+  {
+   "p": "Overall Progress: ([\\d.]+)%((?: \\(MAX!\\))?)",
+   "r": "§7Общий прогресс: §b$1%$2",
+   "_sample": "Overall Progress: {1}%{2}",
+   "_key": "combat.bestiary.data.overallprogress"
+  },
+  {
+   "p": "Progress to Tier ([\\dIVXC]+): ([\\d.]+)%",
+   "r": "§7Прогресс до ступени $1: §b$2%",
+   "_sample": "Progress to Tier {1}: {2}%",
+   "_key": "combat.bestiary.data.tierprogress"
+  },
+  {
+   "p": "☬ The Dragon Egg has spawned!",
+   "r": "§5☬ §r§dПоявилось Dragon Egg!",
+   "_sample": "☬ The Dragon Egg has spawned!",
+   "_key": "combat.boss.dragon.1.chat.egg.spawn"
+  },
+  {
+   "p": "You recovered a Summoning Eye!",
+   "r": "§5Ты получил Summoning Eye!",
+   "_sample": "You recovered a Summoning Eye!",
+   "_key": "combat.boss.dragon.1.chat.eye.removed.you"
+  },
+  {
+   "p": "( +)ENDSTONE PROTECTOR DOWN!",
+   "r": "§f$1§r§6§lENDSTONE PROTECTOR ПОВЕРЖЕН!",
+   "_sample": "{1}ENDSTONE PROTECTOR DOWN!",
+   "_key": "combat.boss.protector.1.chat.end.boss"
+  },
+  {
+   "p": "A Vanquisher is spawning nearby!",
+   "r": "Рядом появляется Vanquisher!",
+   "_sample": "A Vanquisher is spawning nearby!",
+   "_key": "combat.crimsonisle.vanquisherapi.spawnpattern"
+  },
+  {
+   "p": "The ghost's death materialized 1,000,000 coins from the mists!",
+   "r": "Смерть призрака материализовала 1,000,000 монет из тумана!",
+   "_sample": "The ghost's death materialized 1,000,000 coins from the mists!",
+   "_key": "combat.ghosttracker.bagofcash.colorless"
+  },
+  {
+   "p": "Already opened!",
+   "r": "§aУже открыт!",
+   "_sample": "Already opened!",
+   "_key": "combat.instance-chest-profit.alreadyopened"
+  },
+  {
+   "p": "Requires a Dungeon Chest Key",
+   "r": "§eНужен Dungeon Chest Key",
+   "_sample": "Requires a Dungeon Chest Key",
+   "_key": "combat.instance-chest-profit.requiresadungeonchestkey"
+  },
+  {
+   "p": "^☄ ([a-z0-9_]{2,22}) placed an arachne crystal! something is awakening!$",
+   "r": "☄ $1 установил arachne crystal! что-то пробуждается!",
+   "_sample": "☄ {1} placed an arachne crystal! something is awakening!",
+   "_key": "combat.mobs.spawntime.arachne.crystal"
+  },
+  {
+   "p": "^☄ ([a-z0-9_]{2,22}) placed an arachne's calling! something is awakening! \\(4/4\\)$",
+   "r": "☄ $1 использовал arachne's calling! что-то пробуждается! (4/4)",
+   "_sample": "☄ {1} placed an arachne's calling! something is awakening! (4/4)",
+   "_key": "combat.mobs.spawntime.arachne.fragment"
+  },
+  {
+   "p": "You left the area and failed your rescue mission\\.",
+   "r": "§cТы покинул зону и провалил спасательную миссию.",
+   "_sample": "You left the area and failed your rescue mission.",
+   "_key": "crimson.rescue.cancel.run-away"
+  },
+  {
+   "p": "You took too long and the agents found someone else\\.",
+   "r": "§cТы слишком долго возился, и агенты нашли другого.",
+   "_sample": "You took too long and the agents found someone else.",
+   "_key": "crimson.rescue.cancel.timeout"
+  },
+  {
+   "p": "The guards captured you and threw you out(.)",
+   "r": "§cОхрана поймала тебя и вышвырнула$1",
+   "_sample": "The guards captured you and threw you out{1}",
+   "_key": "crimson.rescue.caught"
+  },
+  {
+   "p": "You consumed a Booster Cookie!(.*)",
+   "r": "§eТы съел §6Booster Cookie§e!$1",
+   "_sample": "You consumed a Booster Cookie!{1}",
+   "_key": "data.bits.chat.boostercookieate"
+  },
+  {
+   "p": "Museum Rewards",
+   "r": "Награды музея",
+   "_sample": "Museum Rewards",
+   "_key": "data.bits.gui.museumrewardstack"
+  },
+  {
+   "p": " Status: Not active!",
+   "r": "§7Статус: §cне активно!",
+   "_sample": "Status: Not active!",
+   "_key": "data.bits.gui.sbmenunocookieactive"
+  },
+  {
+   "p": "Historic Members",
+   "r": "Бывшие участники",
+   "_sample": "Historic Members",
+   "_key": "data.hiddenmembers.inventory.historic"
+  },
+  {
+   "p": "((?:)*)Visit Maxwell in the Hub to learn",
+   "r": "$1Загляни к Maxwell в Hub, чтобы изучить",
+   "_sample": "{1}Visit Maxwell in the Hub to learn",
+   "_key": "data.maxwell.gui.noselectedpower"
+  },
+  {
+   "p": "Power is selected!",
+   "r": "§aСила выбрана!",
+   "_sample": "Power is selected!",
+   "_key": "data.maxwell.gui.selectedpower"
+  },
+  {
+   "p": "((?:\\(\\d/\\d\\) )?)Accessory Bag Thaumaturgy",
+   "r": "$1Тауматургия сумки аксессуаров",
+   "_sample": "{1}Accessory Bag Thaumaturgy",
+   "_key": "data.maxwell.gui.thaumaturgy"
+  },
+  {
+   "p": "Accessory Bag",
+   "r": "§$1Сумка аксессуаров",
+   "_sample": "Accessory Bag",
+   "_key": "data.maxwell.stack.accessorybag"
+  },
+  {
+   "p": "Your Tuning Points were auto-assigned as convenience!",
+   "r": "§aТвои §r§eTuning Points §r§aраспределены автоматически!",
+   "_sample": "Your Tuning Points were auto-assigned as convenience!",
+   "_key": "data.maxwell.tuningpoints.chat.autoassigned"
+  },
+  {
+   "p": "Your Pickobulus didn't destroy any blocks!",
+   "r": "§7Твой §r§aPickobulus §r§7не разрушил ни одного блока!",
+   "_sample": "Your Pickobulus didn't destroy any blocks!",
+   "_key": "data.miningapi.pickobulus.fail"
+  },
+  {
+   "p": "You used your Pickobulus Pickaxe Ability!",
+   "r": "§aТы применил способность кирки §r§6Pickobulus§r§a!",
+   "_sample": "You used your Pickobulus Pickaxe Ability!",
+   "_key": "data.miningapi.pickobulus.use"
+  },
+  {
+   "p": "Party Members \\((\\d+)\\)",
+   "r": "§6Участники группы ($1)",
+   "_sample": "Party Members ({1})",
+   "_key": "data.party.members.start"
+  },
+  {
+   "p": "(.*) has disbanded the party!",
+   "r": "$1 §eраспустил группу!",
+   "_sample": "{1} has disbanded the party!",
+   "_key": "data.party.others.disband"
+  },
+  {
+   "p": "You have been kicked from the party by (.*) ",
+   "r": "§eТебя выгнал из группы $1 §e",
+   "_sample": "You have been kicked from the party by {1}",
+   "_key": "data.party.you.kicked"
+  },
+  {
+   "p": "Your favorite arrow has been reset!",
+   "r": "§cЛюбимая стрела сброшена!",
+   "_sample": "Your favorite arrow has been reset!",
+   "_key": "data.quiver.chat.arrowreset"
+  },
+  {
+   "p": "The Core entrance is opening!",
+   "r": "§aВход в Core открывается!",
+   "_sample": "The Core entrance is opening!",
+   "_key": "dungeon.boss.message.f7.goldor.5"
+  },
+  {
+   "p": "The BLOOD DOOR has been opened!",
+   "r": "§cОткрыта §r§c§lBLOOD DOOR§r§c!",
+   "_sample": "The BLOOD DOOR has been opened!",
+   "_key": "dungeon.copilot.blood.door"
+  },
+  {
+   "p": "(.*) has started the dungeon countdown(.) The dungeon will begin in 1 minute(.)",
+   "r": "$1 запустил отсчёт$2 Подземелье начнётся через минуту$3",
+   "_sample": "{1} has started the dungeon countdown{2} The dungeon will begin in 1 minute{3}",
+   "_key": "dungeon.copilot.countdown"
+  },
+  {
+   "p": "(.*) opened a WITHER door!",
+   "r": "$1 открыл §r§8§lWITHER §r§aдверь!",
+   "_sample": "{1} opened a WITHER door!",
+   "_key": "dungeon.copilot.wither.door"
+  },
+  {
+   "p": "No more chests to open!",
+   "r": "Больше сундуков нет!",
+   "_sample": "No more chests to open!",
+   "_key": "dungeon.croesus.chest.state.keyused.colorless"
+  },
+  {
+   "p": "No chests opened yet!",
+   "r": "Ни одного сундука ещё не открыто!",
+   "_sample": "No chests opened yet!",
+   "_key": "dungeon.croesus.chest.state.unopened.colorless"
+  },
+  {
+   "p": "You already rerolled a chest!",
+   "r": "Ты уже перебрасывал сундук!",
+   "_sample": "You already rerolled a chest!",
+   "_key": "dungeon.croesus.kismet.used.colorless"
+  },
+  {
+   "p": " ☠ (.+)((?:(?:crush|di(?:sconnect)?|kill|suffocat)ed|fell|burnt))(.+)became a ghost\\.",
+   "r": "☠ $1$2$3стал призраком.",
+   "_sample": "☠ {1}{2}{3}became a ghost.",
+   "_key": "dungeon.deathcounter.death.message"
+  },
+  {
+   "p": "View and select a dungeon class\\.",
+   "r": "Посмотреть и выбрать класс",
+   "_sample": "View and select a dungeon class.",
+   "_key": "dungeon.finder.new.detect.dungeon.class"
+  },
+  {
+   "p": "No Buffs active\\. Find them by exploring the Dungeon!",
+   "r": "Нет активных усилений. Ищи их, исследуя подземелье!",
+   "_sample": "No Buffs active. Find them by exploring the Dungeon!",
+   "_key": "dungeon.noblessings.colorless"
+  },
+  {
+   "p": "There are no missing secrets near you!",
+   "r": "Рядом не осталось секретов!",
+   "_sample": "There are no missing secrets near you!",
+   "_key": "dungeon.secrettracker.no.missing.colorless"
+  },
+  {
+   "p": "You hear the sound of something opening\\.\\.\\.",
+   "r": "§cСлышно, как что-то открывается...",
+   "_sample": "You hear the sound of something opening...",
+   "_key": "dungeons.highlightclickedblock.lever"
+  },
+  {
+   "p": "That chest is locked!",
+   "r": "§cСундук заперт!",
+   "_sample": "That chest is locked!",
+   "_key": "dungeons.highlightclickedblock.locked"
+  },
+  {
+   "p": "Remember the pattern!",
+   "r": "§aЗапомни расположение!",
+   "_sample": "Remember the pattern!",
+   "_key": "enchanting.experiments.addons.read-phase-item"
+  },
+  {
+   "p": "You claimed the (\\S+) rewards!",
+   "r": "Ты забрал награды: $1!",
+   "_sample": "You claimed the {1} rewards!",
+   "_key": "enchanting.experiments.claim"
+  },
+  {
+   "_": "Перенос между площадками на острове. Названия площадок игрок задаёт сам (Aqua, Blue, Orphan's Spott) — это его имена, не переводим. Комбинаторика: площадок много, пар между ними ещё больше, и покупать их поштучно бессмысленно.",
+   "p": "^Warped from the (.+) Teleport Pad to the (.+) Teleport Pad!$",
+   "r": "Перенос с площадки $1 на площадку $2!"
+  }
+ ]
+}

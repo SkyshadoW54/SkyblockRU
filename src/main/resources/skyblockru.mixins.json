@@ -1,0 +1,25 @@
+{
+	"required": true,
+	"minVersion": "0.8",
+	"package": "ru.skyblockru.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"plugin": "ru.skyblockru.mixin.MixinGate",
+	"client": [
+		"BossEventMixin",
+		"ContainerSweepMixin",
+		"EntityMixin",
+		"GuiMixin",
+		"HudMixin",
+		"ItemStackMixin",
+		"ObjectiveMixin",
+		"PlayerInfoMixin",
+		"PlayerScoreEntryMixin",
+		"PlayerTabOverlayMixin",
+		"PlayerTeamMixin",
+		"ScreenMixin",
+		"TooltipSideMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

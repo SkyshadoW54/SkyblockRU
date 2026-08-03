@@ -1,0 +1,141 @@
+{
+ "id": "sidebar",
+ "priority": 28,
+ "_comment": "Боковая панель: дата, время, кошелёк, задание. Строки приходят по одной, поэтому переводим каждую отдельно. Названия локаций оставляем английскими — по ним ищут места в гайдах.",
+ "exact": {
+  "Purse: {n}": "Кошелёк: §6{n}",
+  "Piggy: {n}": "Копилка: §6{n}",
+  "Objective": "Задание",
+  "Objectives": "Задания",
+  "Slayer Quest": "Задание истребителя",
+  "Combat XP": "Опыт боя",
+  "Time Left": "Осталось времени",
+  "Server closing soon!": "Сервер скоро закроется",
+  "Bits: {n}": "Bits: §b{n}",
+  "Purse:": "Кошелёк:",
+  "Piggy:": "Копилка:",
+  "Talk to": "Поговори с",
+  "Talk to the": "Поговори с",
+  "Visit": "Посети",
+  "Early Spring {n}st": "Ранняя весна, {n}",
+  "Early Spring {n}nd": "Ранняя весна, {n}",
+  "Early Spring {n}rd": "Ранняя весна, {n}",
+  "Early Spring {n}th": "Ранняя весна, {n}",
+  "Spring {n}st": "Весна, {n}",
+  "Spring {n}nd": "Весна, {n}",
+  "Spring {n}rd": "Весна, {n}",
+  "Spring {n}th": "Весна, {n}",
+  "Late Spring {n}st": "Поздняя весна, {n}",
+  "Late Spring {n}nd": "Поздняя весна, {n}",
+  "Late Spring {n}rd": "Поздняя весна, {n}",
+  "Late Spring {n}th": "Поздняя весна, {n}",
+  "Early Summer {n}st": "Раннее лето, {n}",
+  "Early Summer {n}nd": "Раннее лето, {n}",
+  "Early Summer {n}rd": "Раннее лето, {n}",
+  "Early Summer {n}th": "Раннее лето, {n}",
+  "Summer {n}st": "Лето, {n}",
+  "Summer {n}nd": "Лето, {n}",
+  "Summer {n}rd": "Лето, {n}",
+  "Summer {n}th": "Лето, {n}",
+  "Late Summer {n}st": "Позднее лето, {n}",
+  "Late Summer {n}nd": "Позднее лето, {n}",
+  "Late Summer {n}rd": "Позднее лето, {n}",
+  "Late Summer {n}th": "Позднее лето, {n}",
+  "Early Autumn {n}st": "Ранняя осень, {n}",
+  "Early Autumn {n}nd": "Ранняя осень, {n}",
+  "Early Autumn {n}rd": "Ранняя осень, {n}",
+  "Early Autumn {n}th": "Ранняя осень, {n}",
+  "Autumn {n}st": "Осень, {n}",
+  "Autumn {n}nd": "Осень, {n}",
+  "Autumn {n}rd": "Осень, {n}",
+  "Autumn {n}th": "Осень, {n}",
+  "Late Autumn {n}st": "Поздняя осень, {n}",
+  "Late Autumn {n}nd": "Поздняя осень, {n}",
+  "Late Autumn {n}rd": "Поздняя осень, {n}",
+  "Late Autumn {n}th": "Поздняя осень, {n}",
+  "Early Winter {n}st": "Ранняя зима, {n}",
+  "Early Winter {n}nd": "Ранняя зима, {n}",
+  "Early Winter {n}rd": "Ранняя зима, {n}",
+  "Early Winter {n}th": "Ранняя зима, {n}",
+  "Winter {n}st": "Зима, {n}",
+  "Winter {n}nd": "Зима, {n}",
+  "Winter {n}rd": "Зима, {n}",
+  "Winter {n}th": "Зима, {n}",
+  "Late Winter {n}st": "Поздняя зима, {n}",
+  "Late Winter {n}nd": "Поздняя зима, {n}",
+  "Late Winter {n}rd": "Поздняя зима, {n}",
+  "Late Winter {n}th": "Поздняя зима, {n}",
+  "{n}:{n}am ☀": "{n}:{n} ☀",
+  "{n}:{n}am": "{n}:{n}",
+  "{n}:{n}pm ☀": "{n}:{n} ☀",
+  "{n}:{n}pm": "{n}:{n}",
+  "{n}:{n}am ☽": "{n}:{n} ☽",
+  "{n}:{n}pm ☽": "{n}:{n} ☽"
+ },
+ "regex": [
+  {
+   "_": "Дата: сезон и число. Порядковый суффикс st/nd/rd/th в русском не нужен.",
+   "p": "^Early Spring (\\d+)(?:st|nd|rd|th)$",
+   "r": "Ранняя весна, $1"
+  },
+  {
+   "p": "^Spring (\\d+)(?:st|nd|rd|th)$",
+   "r": "Весна, $1"
+  },
+  {
+   "p": "^Late Spring (\\d+)(?:st|nd|rd|th)$",
+   "r": "Поздняя весна, $1"
+  },
+  {
+   "p": "^Early Summer (\\d+)(?:st|nd|rd|th)$",
+   "r": "Раннее лето, $1"
+  },
+  {
+   "p": "^Summer (\\d+)(?:st|nd|rd|th)$",
+   "r": "Лето, $1"
+  },
+  {
+   "p": "^Late Summer (\\d+)(?:st|nd|rd|th)$",
+   "r": "Позднее лето, $1"
+  },
+  {
+   "p": "^Early Autumn (\\d+)(?:st|nd|rd|th)$",
+   "r": "Ранняя осень, $1"
+  },
+  {
+   "p": "^Autumn (\\d+)(?:st|nd|rd|th)$",
+   "r": "Осень, $1"
+  },
+  {
+   "p": "^Late Autumn (\\d+)(?:st|nd|rd|th)$",
+   "r": "Поздняя осень, $1"
+  },
+  {
+   "p": "^Early Winter (\\d+)(?:st|nd|rd|th)$",
+   "r": "Ранняя зима, $1"
+  },
+  {
+   "p": "^Winter (\\d+)(?:st|nd|rd|th)$",
+   "r": "Зима, $1"
+  },
+  {
+   "p": "^Late Winter (\\d+)(?:st|nd|rd|th)$",
+   "r": "Поздняя зима, $1"
+  },
+  {
+   "_": "Задание целиком: «Objective: Talk to Susan». tg=true — иначе подпись переведётся, а само задание останется английским (так и было в босс-баре).",
+   "p": "^Objective: (.+)$",
+   "r": "Задание: $1",
+   "tg": true
+  },
+  {
+   "_": "Задание «поговорить с кем-то». Имя NPC оставляем английским — по нему ищут в гайдах. Хвост из строчных слов НЕ захватываем: «Talk to David to view your progress!» — это уже фраза целиком, её переводим отдельно, а не этим правилом.",
+   "p": "^Talk to (?:the )?([A-Z][A-Za-z']*(?: [A-Z][A-Za-z']*)?)$",
+   "r": "Поговори с $1"
+  },
+  {
+   "p": "^Visit (?:the )?([A-Z][A-Za-z']*(?: [A-Z][A-Za-z']*)?)$",
+   "r": "Посети $1"
+  }
+ ]
+}

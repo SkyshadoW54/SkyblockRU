@@ -1,0 +1,193 @@
+# -*- coding: utf-8 -*-
+"""
+Выложить словари и справку в облако — то, что мод скачает игрокам.
+
+    python tools/publish.py --dry     показать, что изменилось, ничего не слать
+    python tools/publish.py           залить изменившееся и обновить манифест
+
+⚠️ ЛЬЁМ ТОЛЬКО ИЗМЕНИВШЕЕСЯ. Сравниваем sha256 локального файла с тем, что
+записан в выложенном манифесте: словари меняются по одному, а гонять все
+шесть мегабайт каждый раз незачем.
+
+⚠️ ПРОВЕРКИ МОДА ПОВТОРЯЕМ ЗДЕСЬ ЖЕ. `UpdateService` молча отбрасывает файл,
+если имя не подходит, размер больше предела или в json нет знакомой секции.
+Узнать об этом из игры нельзя — ошибка уходит в лог, а игрок видит бодрое
+«переводы обновлены». Поэтому не пускаем такой файл в облако вовсе.
+
+⚠️ Ключи берутся из окружения (`YC_S3_KEY_ID`, `YC_S3_SECRET`) и никогда
+не печатаются.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import s3  # noqa: E402
+
+PACKS = ROOT / "src" / "main" / "resources" / "assets" / "skyblockru" / "packs"
+WIKI = ROOT / "src" / "main" / "resources" / "assets" / "skyblockru" / "wiki"
+GRADLE = ROOT / "gradle.properties"
+
+MANIFEST_KEY = "manifest.json"
+SAFE_NAME = re.compile(r"[A-Za-z0-9._-]{1,64}\.json")
+
+# ⚠️ Держим в согласии с UpdateService: там же предел и там же список секций.
+# Разойдутся — облако примет файл, который игра отбросит, и это будет тихо.
+MAX_BYTES = 16 * 1024 * 1024
+PACK_SECTIONS = ("exact", "regex", "glossary", "paragraphs", "byItem")
+
+
+def sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def mod_version() -> str:
+    """Версия мода — из gradle.properties, копии не держим."""
+    if not GRADLE.exists():
+        return ""
+    found = re.search(r"^mod_version\s*=\s*(.+)$", GRADLE.read_text(encoding="utf-8"), re.M)
+    return found.group(1).strip() if found else ""
+
+
+def collect() -> tuple[list[dict], list[str]]:
+    """Файлы к выкладке и список отказов с причиной."""
+    out, refused = [], []
+
+    def take(path: Path, kind: str, remote_dir: str) -> None:
+        data = path.read_bytes()
+        text = data.decode("utf-8")
+        if not SAFE_NAME.fullmatch(path.name):
+            refused.append(f"{path.name}: имя не подходит под правило мода")
+            return
+        if len(text) > MAX_BYTES:
+            refused.append(f"{path.name}: больше {MAX_BYTES // 1024 // 1024} МБ — мод отбросит")
+            return
+        try:
+            json_data = json.loads(text)
+        except json.JSONDecodeError as error:
+            refused.append(f"{path.name}: не разбирается как json ({error})")
+            return
+        if kind == "pack":
+            if path.name == "index.json":
+                # ⚠️ index.json НЕ выкладываем: он перечисляет ВСТРОЕННЫЕ словари
+                # и к пользовательской папке отношения не имеет — мод читает
+                # оттуда все файлы подряд.
+                return
+            if not any(section in json_data for section in PACK_SECTIONS):
+                refused.append(f"{path.name}: нет секций {PACK_SECTIONS} — мод отбросит")
+                return
+        elif not (isinstance(json_data.get("terms"), dict)):
+            refused.append(f"{path.name}: нет секции terms — мод отбросит справку")
+            return
+        out.append({
+            "kind": kind,
+            "path": path,
+            "file": path.name,
+            "key": f"{remote_dir}/{path.name}",
+            "sha256": sha256(data),
+            "size": len(data),
+        })
+
+    for path in sorted(PACKS.rglob("*.json")):
+        take(path, "pack", "packs")
+    if WIKI.exists():
+        for path in sorted(WIKI.rglob("*.json")):
+            take(path, "wiki", "wiki")
+    return out, refused
+
+
+def remote_manifest() -> dict:
+    """Что сейчас выложено. Пустой словарь, если манифеста ещё нет."""
+    import requests
+    try:
+        answer = requests.get(s3.public_url(MANIFEST_KEY), timeout=30)
+    except requests.RequestException:
+        return {}
+    if answer.status_code != 200:
+        return {}
+    try:
+        return answer.json()
+    except ValueError:
+        return {}
+
+
+def published_hashes(manifest: dict) -> dict[str, str]:
+    out = {}
+    for section in ("packs", "wiki"):
+        for entry in manifest.get(section) or []:
+            if entry.get("file") and entry.get("sha256"):
+                out[entry["file"]] = entry["sha256"]
+    return out
+
+
+def main() -> int:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    parser = argparse.ArgumentParser(description="Выложить словари в облако")
+    parser.add_argument("--dry", action="store_true", help="показать, ничего не слать")
+    parser.add_argument("--all", action="store_true", help="залить всё заново")
+    parser.add_argument("--note", default="", help="строка, которую мод покажет игроку")
+    args = parser.parse_args()
+
+    files, refused = collect()
+    if refused:
+        print("=== НЕ ВЫКЛАДЫВАЮ (мод бы их отбросил) ===")
+        for line in refused:
+            print("   ", line)
+        print()
+
+    was = published_hashes(remote_manifest())
+    fresh = [f for f in files if args.all or was.get(f["file"]) != f["sha256"]]
+
+    total = sum(f["size"] for f in files)
+    print(f"словарей и справки: {len(files)}, всего {total / 1024 / 1024:.1f} МБ")
+    print(f"изменилось с прошлой выкладки: {len(fresh)}")
+    for entry in fresh[:20]:
+        print(f"   {entry['file']:28} {entry['size'] / 1024:6.0f} КБ")
+    if len(fresh) > 20:
+        print(f"   ... ещё {len(fresh) - 20}")
+
+    if args.dry:
+        print("\nсухой прогон: ничего не отправлено")
+        return 0
+    if not fresh:
+        print("\nвсё уже выложено — манифест не трогаю")
+        return 0
+
+    for entry in fresh:
+        s3.put(entry["key"], entry["path"].read_bytes())
+        print(f"   залито: {entry['file']}")
+
+    manifest = {
+        "packs": [
+            {"file": e["file"], "url": s3.public_url(e["key"]), "sha256": e["sha256"]}
+            for e in files if e["kind"] == "pack"
+        ],
+        "wiki": [
+            {"file": e["file"], "url": s3.public_url(e["key"]), "sha256": e["sha256"]}
+            for e in files if e["kind"] == "wiki"
+        ],
+    }
+    version = mod_version()
+    if version:
+        # Про новую версию мода мод только СООБЩАЕТ — jar по сети не качается.
+        manifest["mod"] = {"version": version}
+    if args.note:
+        manifest["note"] = args.note
+
+    body = json.dumps(manifest, ensure_ascii=False, indent=1).encode("utf-8")
+    s3.put(MANIFEST_KEY, body)
+    print(f"\nманифест обновлён: {s3.public_url(MANIFEST_KEY)}")
+    print(f"  словарей в нём: {len(manifest['packs'])}, справки: {len(manifest['wiki'])}")
+    print("\nэтот адрес и нужно прописать в RuConfig.DEFAULT_UPDATE_URL")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,14 @@
+{
+ "id": "collections",
+ "priority": 11,
+ "_comment": "Уровни коллекций одним правилом. Priority 11 — ЗАПАСНЫЙ путь: ниже всех прочих правил (у правил выигрывает больший priority), чтобы точные записи и частные правила срабатывали раньше. Собирается tools/fetch_collections.py — правь СКРИПТ, а не этот файл.",
+ "regex": [
+  {
+   "_": "Уровень коллекции: «Bone V», «Coal VII». Имена ПЕРЕЧИСЛЕНЫ по списку сервера (resources/skyblock/collections), а не пойманы по форме: шаблон «имя + римский уровень» портит имена предметов («Sheep Minion I» -> «Sheep миньон I»), это проверено на дампе. Замена не меняет строку — с tg переводится только имя, и только если словарь его знает. Выключен vanilla_names — остаётся «Coal VII», как и решено; включат — станет «Уголь VII».",
+   "p": "^(Prismarine\\ Crystals|Living\\ Metal\\ Heart|Half\\-Eaten\\ Carrot|Prismarine\\ Shard|Wilted\\ Berberis|Glowstone\\ Dust|Caducous\\ Stem|Nether\\ Quartz|Redstone\\ Dust|Tropical\\ Fish|Agaricus\\ Cap|Chili\\ Pepper|Dark\\ Oak\\ Log|Lapis\\ Lazuli|Mangrove\\ Log|Raw\\ Porkchop|Rotten\\ Flesh|Cobblestone|Cocoa\\ Beans|Ender\\ Pearl|Magma\\ Cream|Melon\\ Slice|Nether\\ Wart|Raw\\ Chicken|Tender\\ Wood|Acacia\\ Log|Ghast\\ Tear|Gold\\ Ingot|Hard\\ Stone|Iron\\ Ingot|Jungle\\ Log|Moonflower|Netherrack|Pufferfish|Raw\\ Mutton|Raw\\ Rabbit|Raw\\ Salmon|Sea\\ Lumies|Spider\\ Eye|Spruce\\ Log|Sugar\\ Cane|Birch\\ Log|Blaze\\ Rod|Clay\\ Ball|End\\ Stone|Gunpowder|Lushlilac|Magmafish|Slimeball|Sunflower|Wild\\ Rose|Gemstone|Hemovibe|Lily\\ Pad|Mushroom|Mycelium|Obsidian|Red\\ Sand|Tungsten|Diamond|Emerald|Feather|Fig\\ Log|Glacite|Ink\\ Sac|Leather|Mithril|Oak\\ Log|Pumpkin|Raw\\ Cod|Sulphur|Vinesap|Cactus|Carrot|Gravel|Potato|Sponge|String|Timite|Lotus|Seeds|Umber|Wheat|Bone|Coal|Sand|Ice) ([IVXLC]{1,7})$",
+   "r": "$1 $2",
+   "tg": true,
+   "toggle": true
+  }
+ ]
+}

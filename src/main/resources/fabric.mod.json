@@ -1,0 +1,32 @@
+{
+	"schemaVersion": 1,
+	"id": "skyblockru",
+	"version": "${version}",
+	"name": "SkyblockRU",
+	"description": "Русификатор Hypixel SkyBlock: переводит чат, описания предметов, меню, боковую панель и подсказки. Клиентский мод: в игру не вмешивается, преимуществ не даёт, названия предметов оставляет английскими — по ним ищут на аукционе. Непереведённые строки игрового интерфейса отправляются разработчику, чтобы пополнять перевод; ники, чат игроков и любые данные об игроке не отправляются никогда. Отключается командой /skyblockru telemetry off.",
+	"authors": [
+		"skysh"
+	],
+	"license": "MIT",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"ru.skyblockru.SkyblockRuClient"
+		]
+	},
+	"mixins": [
+		{
+			"config": "skyblockru.mixins.json",
+			"environment": "client"
+		}
+	],
+	"custom": {
+		"skyblockru:built": "${build_time}"
+	},
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "${minecraft_range}",
+		"java": ">=${java_version}",
+		"fabric-api": "*"
+	}
+}

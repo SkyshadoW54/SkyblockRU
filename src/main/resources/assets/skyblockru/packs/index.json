@@ -1,0 +1,37 @@
+{
+ "_comment": "Список встроенных словарей: содержимое jar перечислить нельзя, поэтому имена файлов лежат здесь. Добавил файл — впиши его сюда И положи в правильную папку, иначе он молча не загрузится. Раскладка: common/ — словари, работающие на ЛЮБОМ языке (в них @ключи, а не текст); <язык>/ — собственно перевод. Язык берётся из настроек клиента. Словарь может объявить себя необязательным полем \"default\": false — тогда он лежит здесь, но не грузится, пока игрок не включит его через /skyblockru pack <id> on. Так вкусовые решения не зашиты в мод намертво.",
+ "common": [
+  "70-enchants.json",
+  "80-vanilla-names.json"
+ ],
+ "languages": {
+  "ru_ru": [
+   "00-glossary.json",
+   "10-stats.json",
+   "11-stat-forms.json",
+   "12-stat-bar.json",
+   "20-ui.json",
+   "25-sidebar.json",
+   "26-time.json",
+   "27-holograms.json",
+   "30-chat.json",
+   "40-lore.json",
+   "41-headers.json",
+   "45-materials.json",
+   "46-mob-categories.json",
+   "47-collections.json",
+   "50-rarity.json",
+   "60-chat-rules.json",
+   "62-npc-dialogues.json",
+   "76-enchant-names.json",
+   "77-sb-enchants.json",
+   "78-sb-stats.json",
+   "90-from-game.json",
+   "93-abilities.json",
+   "94-menus.json",
+   "95-tooltips.json",
+   "96-paragraphs.json",
+   "97-enchant-sections.json"
+  ]
+ }
+}

@@ -1,0 +1,862 @@
+{
+ "id": "enchant_names",
+ "priority": 14,
+ "_comment": "Подписи характеристик и ВАНИЛЬНЫЕ зачарования (их перевод берётся у самой игры @ключом). Выключать нельзя: без подписей подсказка станет наполовину английской. Собирается скриптом tools/gen_enchants.py — правь заготовку data/work/enchants.json.",
+ "only": [
+  "item_lore",
+  "screen"
+ ],
+ "regex": [
+  {
+   "p": "^Maximum\\ Burrow\\ Chain\\ Length:(\\s*)$",
+   "r": "Макс. длина цепочки норок:$1"
+  },
+  {
+   "p": "^Maximum\\ Charge\\ Capacity:(\\s*)$",
+   "r": "Максимальная ёмкость заряда:$1"
+  },
+  {
+   "p": "^Scavenger\\ Coins\\ Gained:(\\s*)$",
+   "r": "Монет от Собирателя:$1"
+  },
+  {
+   "p": "^Garden\\ Visitors\\ Served:(\\s*)$",
+   "r": "Обслужено Garden Visitors:$1"
+  },
+  {
+   "p": "^Unique\\ Visitors\\ Served:(\\s*)$",
+   "r": "Обслужено уникальных посетителей:$1"
+  },
+  {
+   "p": "^Projectile\\ Protection ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.projectile_protection $1$2"
+  },
+  {
+   "p": "^Time\\ Between\\ Actions:(\\s*)$",
+   "r": "Время между действиями:$1"
+  },
+  {
+   "p": "^Blaze\\ Rod\\ Collection:(\\s*)$",
+   "r": "Коллекция Blaze Rod:$1"
+  },
+  {
+   "p": "^Resources\\ Generated:(\\s*)$",
+   "r": "Создано ресурсов:$1"
+  },
+  {
+   "p": "^Pressure\\ Resistance:(\\s*)$",
+   "r": "Сопротивление давлению:$1"
+  },
+  {
+   "p": "^Melon\\ Slice\\ Fortune:(\\s*)$",
+   "r": "Удача на ломтики дыни:$1"
+  },
+  {
+   "p": "^Total\\ Contributions:(\\s*)$",
+   "r": "Всего вкладов:$1"
+  },
+  {
+   "p": "^Bane\\ of\\ Arthropods ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.bane_of_arthropods $1$2"
+  },
+  {
+   "p": "^Double\\ Hook\\ Chance:(\\s*)$",
+   "r": "Шанс двойной поклёвки:$1"
+  },
+  {
+   "p": "^Moonflower\\ Fortune:(\\s*)$",
+   "r": "Удача на лунный цветок:$1"
+  },
+  {
+   "p": "^Selected\\ Material:(\\s*)$",
+   "r": "Выбранный материал:$1"
+  },
+  {
+   "p": "^Wild\\ Rose\\ Fortune:(\\s*)$",
+   "r": "Удача на дикую розу:$1"
+  },
+  {
+   "p": "^Speed\\ multiplier:(\\s*)$",
+   "r": "Ускорение:$1"
+  },
+  {
+   "p": "^Specialty\\ amount:(\\s*)$",
+   "r": "Особых предметов:$1"
+  },
+  {
+   "p": "^Maximum\\ Contacts:(\\s*)$",
+   "r": "Максимум контактов:$1"
+  },
+  {
+   "p": "^Effective\\ Radius:(\\s*)$",
+   "r": "Радиус действия:$1"
+  },
+  {
+   "p": "^Maximum\\ Capacity:(\\s*)$",
+   "r": "Макс. вместимость:$1"
+  },
+  {
+   "p": "^Feather\\ Falling ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.feather_falling $1$2"
+  },
+  {
+   "p": "^Luck\\ of\\ the\\ Sea ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.luck_of_the_sea $1$2"
+  },
+  {
+   "p": "^Cold\\ Resistance:(\\s*)$",
+   "r": "Сопротивление холоду:$1"
+  },
+  {
+   "p": "^Accessory\\ Power:(\\s*)$",
+   "r": "Сила аксессуаров:$1"
+  },
+  {
+   "p": "^Current\\ Hotspot:(\\s*)$",
+   "r": "Текущий Hotspot:$1"
+  },
+  {
+   "p": "^Selected\\ Radius:(\\s*)$",
+   "r": "Выбранный радиус:$1"
+  },
+  {
+   "p": "^Selected\\ Emblem:(\\s*)$",
+   "r": "Выбранная эмблема:$1"
+  },
+  {
+   "p": "^Selected\\ Nozzle:(\\s*)$",
+   "r": "Выбранное сопло:$1"
+  },
+  {
+   "p": "^Current\\ Bonuses:(\\s*)$",
+   "r": "Текущие бонусы:$1"
+  },
+  {
+   "p": "^Treasure\\ Chance:(\\s*)$",
+   "r": "Шанс сокровищ:$1"
+  },
+  {
+   "p": "^Offers\\ Accepted:(\\s*)$",
+   "r": "Принятые предложения:$1"
+  },
+  {
+   "p": "^Ability\\ Damage:(\\s*)$",
+   "r": "Урон способностей:$1"
+  },
+  {
+   "p": "^Full\\ Set\\ Bonus:(\\s*)$",
+   "r": "Бонус полного набора:$1"
+  },
+  {
+   "p": "^Upgrade\\ Module:(\\s*)$",
+   "r": "Модуль улучшения:$1"
+  },
+  {
+   "p": "^Oldest\\ Profile:(\\s*)$",
+   "r": "Старейший профиль:$1"
+  },
+  {
+   "p": "^Bonus\\ Strength:(\\s*)$",
+   "r": "Доп. сила:$1"
+  },
+  {
+   "p": "^Zombies\\ Killed:(\\s*)$",
+   "r": "Убито зомби:$1"
+  },
+  {
+   "p": "^Coins\\ Consumed:(\\s*)$",
+   "r": "Потрачено монет:$1"
+  },
+  {
+   "p": "^Spirit\\ Ability:(\\s*)$",
+   "r": "Способность духа:$1"
+  },
+  {
+   "p": "^Aqua\\ Affinity ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.aqua_affinity $1$2"
+  },
+  {
+   "p": "^Depth\\ Strider ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.depth_strider $1$2"
+  },
+  {
+   "p": "^Fishing\\ Speed:(\\s*)$",
+   "r": "Fishing Speed $1 $1 $1 $1 $1 $1 $1 $1:$1"
+  },
+  {
+   "p": "^Applicable\\ on:(\\s*)$",
+   "r": "Применяется к:$1"
+  },
+  {
+   "p": "^Trophy\\ Chance:(\\s*)$",
+   "r": "Шанс трофея:$1"
+  },
+  {
+   "p": "^Vitality\\ Cost:(\\s*)$",
+   "r": "Стоимость живучести:$1"
+  },
+  {
+   "p": "^Current\\ Bonus:(\\s*)$",
+   "r": "Текущий бонус:$1"
+  },
+  {
+   "p": "^Shot\\ Cooldown:(\\s*)$",
+   "r": "Перезарядка выстрела:$1"
+  },
+  {
+   "p": "^Soulflow\\ Cost:(\\s*)$",
+   "r": "Стоимость Soulflow:$1"
+  },
+  {
+   "p": "^Maximum\\ Discs:(\\s*)$",
+   "r": "Максимум дисков:$1"
+  },
+  {
+   "p": "^Purchased\\ for:(\\s*)$",
+   "r": "Куплено за:$1"
+  },
+  {
+   "p": "^Pet\\ Exp\\ Boost:(\\s*)$",
+   "r": "Бонус опыта питомца:$1"
+  },
+  {
+   "p": "^Storage\\ space:(\\s*)$",
+   "r": "Место в хранилище:$1"
+  },
+  {
+   "p": "^Demons\\ damage:(\\s*)$",
+   "r": "Урон демонов:$1"
+  },
+  {
+   "p": "^Demons\\ health:(\\s*)$",
+   "r": "Здоровье демонов:$1"
+  },
+  {
+   "p": "^Blocks\\ Broken:(\\s*)$",
+   "r": "Сломано блоков:$1"
+  },
+  {
+   "p": "^Fishing\\ Skill:(\\s*)$",
+   "r": "Навык рыбалки:$1"
+  },
+  {
+   "p": "^Rabbits\\ Found:(\\s*)$",
+   "r": "Найденные кролики:$1"
+  },
+  {
+   "p": "^Attack\\ Speed:(\\s*)$",
+   "r": "Скорость атаки $1 $1 $1:$1"
+  },
+  {
+   "p": "^True\\ Defense:(\\s*)$",
+   "r": "Истинная защита:$1"
+  },
+  {
+   "p": "^Health\\ Regen:(\\s*)$",
+   "r": "Восстановление здоровья:$1"
+  },
+  {
+   "p": "^Intelligence:(\\s*)$",
+   "r": "Интеллект:$1"
+  },
+  {
+   "p": "^Requirements:(\\s*)$",
+   "r": "Требования:$1"
+  },
+  {
+   "p": "^Tiered\\ Bonus:(\\s*)$",
+   "r": "Ступенчатый бонус:$1"
+  },
+  {
+   "p": "^Next\\ Upgrade:(\\s*)$",
+   "r": "Следующее улучшение:$1"
+  },
+  {
+   "p": "^Drill\\ Engine:(\\s*)$",
+   "r": "Двигатель дрели:$1"
+  },
+  {
+   "p": "^Purchased\\ by:(\\s*)$",
+   "r": "Куплено игроком:$1"
+  },
+  {
+   "p": "^Global\\ sales:(\\s*)$",
+   "r": "Всего продаж:$1"
+  },
+  {
+   "p": "^Internalized:(\\s*)$",
+   "r": "Усвоено:$1"
+  },
+  {
+   "p": "^Instructions:(\\s*)$",
+   "r": "Инструкции:$1"
+  },
+  {
+   "p": "^Fire\\ Aspect ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.fire_aspect $1$2"
+  },
+  {
+   "p": "^Crit\\ Chance:(\\s*)$",
+   "r": "Шанс крита:$1"
+  },
+  {
+   "p": "^Crit\\ Damage:(\\s*)$",
+   "r": "Урон крита:$1"
+  },
+  {
+   "p": "^Piece\\ Bonus:(\\s*)$",
+   "r": "Бонус за предмет:$1"
+  },
+  {
+   "p": "^Max\\ Storage:(\\s*)$",
+   "r": "Макс. хранение:$1"
+  },
+  {
+   "p": "^Drop\\ Chance:(\\s*)$",
+   "r": "Шанс выпадения:$1"
+  },
+  {
+   "p": "^Extra\\ Bonus:(\\s*)$",
+   "r": "Доп. бонус:$1"
+  },
+  {
+   "p": "^Health\\ Cost:(\\s*)$",
+   "r": "Стоимость здоровья:$1"
+  },
+  {
+   "p": "^Yogs\\ Killed:(\\s*)$",
+   "r": "Убито Yogs:$1"
+  },
+  {
+   "p": "^Next\\ Reward:(\\s*)$",
+   "r": "Следующая награда:$1"
+  },
+  {
+   "p": "^On\\ teleport:(\\s*)$",
+   "r": "При телепортации:$1"
+  },
+  {
+   "p": "^Spirit\\ Item:(\\s*)$",
+   "r": "Предмет духа:$1"
+  },
+  {
+   "p": "^Hunting\\ Box:(\\s*)$",
+   "r": "Охотничий ящик:$1"
+  },
+  {
+   "p": "^Requirement:(\\s*)$",
+   "r": "Требование:$1"
+  },
+  {
+   "p": "^Swing\\ Range:(\\s*)$",
+   "r": "Радиус удара:$1"
+  },
+  {
+   "p": "^Efficiency ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.efficiency $1$2"
+  },
+  {
+   "p": "^Protection ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.protection $1$2"
+  },
+  {
+   "p": "^Silk\\ Touch ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.silk_touch $1$2"
+  },
+  {
+   "p": "^Collection:(\\s*)$",
+   "r": "коллекция:$1"
+  },
+  {
+   "p": "^Gear\\ Score:(\\s*)$",
+   "r": "Оценка снаряжения:$1"
+  },
+  {
+   "p": "^Applied\\ To:(\\s*)$",
+   "r": "Применено к:$1"
+  },
+  {
+   "p": "^Apply\\ Cost:(\\s*)$",
+   "r": "Стоимость применения:$1"
+  },
+  {
+   "p": "^Vacuum\\ Bag:(\\s*)$",
+   "r": "Вакуумная сумка:$1"
+  },
+  {
+   "p": "^Flare\\ Buff:(\\s*)$",
+   "r": "Бонус Flare:$1"
+  },
+  {
+   "p": "^Your\\ kills:(\\s*)$",
+   "r": "Твои убийства:$1"
+  },
+  {
+   "p": "^Mana\\ Regen:(\\s*)$",
+   "r": "Восстановление маны:$1"
+  },
+  {
+   "p": "^Your\\ Bonus:(\\s*)$",
+   "r": "Твой бонус:$1"
+  },
+  {
+   "p": "^Knockback ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.knockback $1$2"
+  },
+  {
+   "p": "^Sharpness ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.sharpness $1$2"
+  },
+  {
+   "p": "^Mana\\ Cost:(\\s*)$",
+   "r": "Стоимость маны:$1"
+  },
+  {
+   "p": "^Completed:(\\s*)$",
+   "r": "Завершено:$1"
+  },
+  {
+   "p": "^Combat\\ XP:(\\s*)$",
+   "r": "Опыт боя:$1"
+  },
+  {
+   "p": "^Gemstones:(\\s*)$",
+   "r": "Самоцветы:$1"
+  },
+  {
+   "p": "^Mob\\ Types:(\\s*)$",
+   "r": "Типы мобов:$1"
+  },
+  {
+   "p": "^Held\\ Item:(\\s*)$",
+   "r": "Предмет в руке:$1"
+  },
+  {
+   "p": "^Conflicts:(\\s*)$",
+   "r": "Конфликтует с:$1"
+  },
+  {
+   "p": "^Specialty:(\\s*)$",
+   "r": "Особые предметы:$1"
+  },
+  {
+   "p": "^Earned\\ by:(\\s*)$",
+   "r": "Получено за:$1"
+  },
+  {
+   "p": "^Fuel\\ Tank:(\\s*)$",
+   "r": "Топливный бак:$1"
+  },
+  {
+   "p": "^Each\\ tier:(\\s*)$",
+   "r": "Каждая ступень:$1"
+  },
+  {
+   "p": "^You\\ found:(\\s*)$",
+   "r": "Ты нашёл:$1"
+  },
+  {
+   "p": "^Snowballs:(\\s*)$",
+   "r": "Снежки:$1"
+  },
+  {
+   "p": "^Max\\ Souls:(\\s*)$",
+   "r": "Макс. душ:$1"
+  },
+  {
+   "p": "^Fame\\ Rank:(\\s*)$",
+   "r": "Ранг славы:$1"
+  },
+  {
+   "p": "^Zoologist ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "Зоолог $1$2"
+  },
+  {
+   "p": "^Spelunker ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "Спелеолог $1$2"
+  },
+  {
+   "p": "^Impaling ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.impaling $1$2"
+  },
+  {
+   "p": "^Piercing ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.piercing $1$2"
+  },
+  {
+   "p": "^Foraging:(\\s*)$",
+   "r": "Лесозаготовка:$1"
+  },
+  {
+   "p": "^Vitality:(\\s*)$",
+   "r": "Vitality $1 $1 $1 $1 $1 $1 $1 $1:$1"
+  },
+  {
+   "p": "^Strength:(\\s*)$",
+   "r": "Сила:$1"
+  },
+  {
+   "p": "^Cooldown:(\\s*)$",
+   "r": "Перезарядка:$1"
+  },
+  {
+   "p": "^Progress:(\\s*)$",
+   "r": "Прогресс:$1"
+  },
+  {
+   "p": "^Unlocked:(\\s*)$",
+   "r": "Открыто:$1"
+  },
+  {
+   "p": "^Capacity:(\\s*)$",
+   "r": "Вместимость:$1"
+  },
+  {
+   "p": "^Teleport:(\\s*)$",
+   "r": "Телепорт:$1"
+  },
+  {
+   "p": "^Duration:(\\s*)$",
+   "r": "Длительность:$1"
+  },
+  {
+   "p": "^Mob\\ Type:(\\s*)$",
+   "r": "Тип моба:$1"
+  },
+  {
+   "p": "^Orb\\ Buff:(\\s*)$",
+   "r": "Бонус сферы:$1"
+  },
+  {
+   "p": "^Shortbow:(\\s*)$",
+   "r": "Короткий лук:$1"
+  },
+  {
+   "p": "^Attracts:(\\s*)$",
+   "r": "Привлекает:$1"
+  },
+  {
+   "p": "^Obtained:(\\s*)$",
+   "r": "Получено:$1"
+  },
+  {
+   "p": "^Examples:(\\s*)$",
+   "r": "Примеры:$1"
+  },
+  {
+   "p": "^Includes:(\\s*)$",
+   "r": "Включает:$1"
+  },
+  {
+   "p": "^Bonus\\ HP:(\\s*)$",
+   "r": "Доп. HP:$1"
+  },
+  {
+   "p": "^Selected:(\\s*)$",
+   "r": "Выбрано:$1"
+  },
+  {
+   "p": "^Position:(\\s*)$",
+   "r": "Позиция:$1"
+  },
+  {
+   "p": "^You\\ have:(\\s*)$",
+   "r": "У тебя есть:$1"
+  },
+  {
+   "p": "^Boosters:(\\s*)$",
+   "r": "Бустеры:$1"
+  },
+  {
+   "p": "^Playtime:(\\s*)$",
+   "r": "Время в игре:$1"
+  },
+  {
+   "p": "^Conjurer ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "Заклинатель $1$2"
+  },
+  {
+   "p": "^Farmhand ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "Работник фермы $1$2"
+  },
+  {
+   "p": "^Charming ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "Очарование $1$2"
+  },
+  {
+   "p": "^Fortune ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.fortune $1$2"
+  },
+  {
+   "p": "^Looting ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.looting $1$2"
+  },
+  {
+   "p": "^Mending ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.mending $1$2"
+  },
+  {
+   "p": "^Mending:(\\s*)$",
+   "r": "Лечение:$1"
+  },
+  {
+   "p": "^Farming:(\\s*)$",
+   "r": "Фермерство:$1"
+  },
+  {
+   "p": "^Fishing:(\\s*)$",
+   "r": "Рыбалка:$1"
+  },
+  {
+   "p": "^Defense:(\\s*)$",
+   "r": "Защита:$1"
+  },
+  {
+   "p": "^Profile:(\\s*)$",
+   "r": "профиль:$1"
+  },
+  {
+   "p": "^Rewards:(\\s*)$",
+   "r": "Награды:$1"
+  },
+  {
+   "p": "^Ability:(\\s*)$",
+   "r": "Способность:$1"
+  },
+  {
+   "p": "^Players:(\\s*)$",
+   "r": "Игроки:$1"
+  },
+  {
+   "p": "^Berserk:(\\s*)$",
+   "r": "Берсерк:$1"
+  },
+  {
+   "p": "^Enabled:(\\s*)$",
+   "r": "Включено:$1"
+  },
+  {
+   "p": "^Passive:(\\s*)$",
+   "r": "Пассивно:$1"
+  },
+  {
+   "p": "^Charges:(\\s*)$",
+   "r": "Заряды:$1"
+  },
+  {
+   "p": "^Attuned:(\\s*)$",
+   "r": "Настроено:$1"
+  },
+  {
+   "p": "^Ends\\ in:(\\s*)$",
+   "r": "Закончится через:$1"
+  },
+  {
+   "p": "^Default:(\\s*)$",
+   "r": "По умолчанию:$1"
+  },
+  {
+   "p": "^Counter:(\\s*)$",
+   "r": "Счётчик:$1"
+  },
+  {
+   "p": "^Secured:(\\s*)$",
+   "r": "Закреплено:$1"
+  },
+  {
+   "p": "^Edition:(\\s*)$",
+   "r": "Издание:$1"
+  },
+  {
+   "p": "^Warrior ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "Воин $1$2"
+  },
+  {
+   "p": "^Thorns ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.thorns $1$2"
+  },
+  {
+   "p": "^Mining:(\\s*)$",
+   "r": "Добыча:$1"
+  },
+  {
+   "p": "^Health:(\\s*)$",
+   "r": "Здоровье:$1"
+  },
+  {
+   "p": "^Damage:(\\s*)$",
+   "r": "Урон:$1"
+  },
+  {
+   "p": "^Island:(\\s*)$",
+   "r": "остров:$1"
+  },
+  {
+   "p": "^Seller:(\\s*)$",
+   "r": "Продавец:$1"
+  },
+  {
+   "p": "^Source:(\\s*)$",
+   "r": "Источник:$1"
+  },
+  {
+   "p": "^Healer:(\\s*)$",
+   "r": "Лекарь:$1"
+  },
+  {
+   "p": "^Archer:(\\s*)$",
+   "r": "Лучник:$1"
+  },
+  {
+   "p": "^Hearts:(\\s*)$",
+   "r": "Сердца:$1"
+  },
+  {
+   "p": "^Player:(\\s*)$",
+   "r": "Игрок:$1"
+  },
+  {
+   "p": "^Effect:(\\s*)$",
+   "r": "Эффект:$1"
+  },
+  {
+   "p": "^Server:(\\s*)$",
+   "r": "Сервер:$1"
+  },
+  {
+   "p": "^Charge:(\\s*)$",
+   "r": "Заряд:$1"
+  },
+  {
+   "p": "^Hunter:(\\s*)$",
+   "r": "Охотник:$1"
+  },
+  {
+   "p": "^Shards:(\\s*)$",
+   "r": "Осколки:$1"
+  },
+  {
+   "p": "^Brewer ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "Зельевар $1$2"
+  },
+  {
+   "p": "^Logger ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "Лесоруб $1$2"
+  },
+  {
+   "p": "^Flame ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.flame $1$2"
+  },
+  {
+   "p": "^Power ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.power $1$2"
+  },
+  {
+   "p": "^Punch ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.punch $1$2"
+  },
+  {
+   "p": "^Smite ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.smite $1$2"
+  },
+  {
+   "p": "^Speed:(\\s*)$",
+   "r": "Скорость:$1"
+  },
+  {
+   "p": "^Coins:(\\s*)$",
+   "r": "монет:$1"
+  },
+  {
+   "p": "^Total:(\\s*)$",
+   "r": "Всего:$1"
+  },
+  {
+   "p": "^Price:(\\s*)$",
+   "r": "Цена:$1"
+  },
+  {
+   "p": "^Items:(\\s*)$",
+   "r": "Предметы:$1"
+  },
+  {
+   "p": "^Bonus:(\\s*)$",
+   "r": "Бонус:$1"
+  },
+  {
+   "p": "^Water:(\\s*)$",
+   "r": "Вода:$1"
+  },
+  {
+   "p": "^Kills:(\\s*)$",
+   "r": "Убийства:$1"
+  },
+  {
+   "p": "^Score:(\\s*)$",
+   "r": "Счёт:$1"
+  },
+  {
+   "p": "^Lure ([IVXLC]{1,6})(,?\\s*)$",
+   "r": "@enchantment.minecraft.lure $1$2"
+  },
+  {
+   "p": "^Bits:(\\s*)$",
+   "r": "биты:$1"
+  },
+  {
+   "p": "^Cost:(\\s*)$",
+   "r": "Стоимость:$1"
+  },
+  {
+   "p": "^Tier:(\\s*)$",
+   "r": "Ступень:$1"
+  },
+  {
+   "p": "^Mage:(\\s*)$",
+   "r": "Маг:$1"
+  },
+  {
+   "p": "^Tank:(\\s*)$",
+   "r": "Танк:$1"
+  },
+  {
+   "p": "^Fuel:(\\s*)$",
+   "r": "Топливо:$1"
+  },
+  {
+   "p": "^From:(\\s*)$",
+   "r": "От:$1"
+  },
+  {
+   "p": "^Note:(\\s*)$",
+   "r": "Примечание:$1"
+  },
+  {
+   "p": "^Date:(\\s*)$",
+   "r": "Дата:$1"
+  }
+ ],
+ "glossary": {
+  "Projectile Protection": "@enchantment.minecraft.projectile_protection",
+  "Bane of Arthropods": "@enchantment.minecraft.bane_of_arthropods",
+  "Feather Falling": "@enchantment.minecraft.feather_falling",
+  "Luck of the Sea": "@enchantment.minecraft.luck_of_the_sea",
+  "Aqua Affinity": "@enchantment.minecraft.aqua_affinity",
+  "Depth Strider": "@enchantment.minecraft.depth_strider",
+  "Fire Aspect": "@enchantment.minecraft.fire_aspect",
+  "Efficiency": "@enchantment.minecraft.efficiency",
+  "Protection": "@enchantment.minecraft.protection",
+  "Silk Touch": "@enchantment.minecraft.silk_touch",
+  "Knockback": "@enchantment.minecraft.knockback",
+  "Sharpness": "@enchantment.minecraft.sharpness",
+  "Impaling": "@enchantment.minecraft.impaling",
+  "Piercing": "@enchantment.minecraft.piercing",
+  "Looting": "@enchantment.minecraft.looting",
+  "Mending": "@enchantment.minecraft.mending",
+  "Thorns": "@enchantment.minecraft.thorns",
+  "Flame": "@enchantment.minecraft.flame",
+  "Punch": "@enchantment.minecraft.punch",
+  "Smite": "@enchantment.minecraft.smite",
+  "Lure": "@enchantment.minecraft.lure"
+ }
+}
