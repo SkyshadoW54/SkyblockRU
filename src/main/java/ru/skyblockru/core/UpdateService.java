@@ -23,8 +23,10 @@ import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -117,6 +119,118 @@ public final class UpdateService {
 	}
 
 	/**
+	 * Список файлов, которые скачали МЫ. Лежит рядом со словарями, но вне
+	 * папки {@code packs} — иначе {@link Translator} попытался бы прочитать
+	 * его как пакет.
+	 */
+	private static Path ledger() {
+		return SkyblockRuClient.configDir().resolve("downloaded-packs.txt");
+	}
+
+	/**
+	 * Что мы скачивали раньше: строки вида {@code packs/40-lore.json}.
+	 *
+	 * <p>⚠️ БЕЗ ЭТОГО СПИСКА УДАЛЯТЬ НЕЛЬЗЯ. В той же папке лежат словари,
+	 * которые игрок положил САМ, — они в манифесте не значатся по построению.
+	 * Снести «всё, чего нет в манифесте» значит уничтожить его работу.
+	 * Поэтому трогаем ровно то, что принесли сами.
+	 */
+	private static Set<String> ledgerRead() {
+		try {
+			Path file = ledger();
+			if (!Files.isRegularFile(file)) {
+				return new LinkedHashSet<>();
+			}
+			return new LinkedHashSet<>(Files.readAllLines(file, StandardCharsets.UTF_8)
+					.stream().map(String::trim).filter(s -> !s.isEmpty()).toList());
+		} catch (IOException | RuntimeException exception) {
+			return new LinkedHashSet<>();
+		}
+	}
+
+	private static void ledgerWrite(Set<String> names) {
+		try {
+			Files.writeString(ledger(), String.join("\n", names), StandardCharsets.UTF_8);
+		} catch (IOException exception) {
+			Diagnostics.error("update ledger", exception);
+		}
+	}
+
+	/**
+	 * Убрать то, что мы скачали раньше, а в манифесте этого больше нет.
+	 *
+	 * <p>Зачем: пока удаления не было, ОШИБОЧНО выложенный словарь нельзя было
+	 * отозвать вовсе. Убираешь его из манифеста — у скачавших он остаётся
+	 * лежать и применяться, потому что мод читает папку целиком. Единственным
+	 * способом отзыва была подмена содержимого на правильное.
+	 *
+	 * @return имена удалённых файлов
+	 */
+	private static List<String> dropOrphans(Path packs, Path wikiDir,
+	                                        Set<String> keepPacks, Set<String> keepWiki) {
+		Set<String> mine = ledgerRead();
+		if (mine.isEmpty()) {
+			return List.of();
+		}
+		List<String> removed = new ArrayList<>();
+		Set<String> left = new LinkedHashSet<>(mine);
+		for (String record : orphansOf(mine, keepPacks, keepWiki)) {
+			boolean wiki = record.startsWith("wiki/");
+			String name = record.substring(record.indexOf('/') + 1);
+			Path dir = wiki ? wikiDir : packs;
+			Path target = dir.resolve(name);
+			if (!target.toAbsolutePath().normalize()
+					.startsWith(dir.toAbsolutePath().normalize())) {
+				continue;
+			}
+			try {
+				if (Files.deleteIfExists(target)) {
+					removed.add(name);
+				}
+				left.remove(record);
+			} catch (IOException exception) {
+				Diagnostics.error("update cleanup", exception);
+			}
+		}
+		if (!removed.isEmpty()) {
+			ledgerWrite(left);
+		}
+		return removed;
+	}
+
+	/**
+	 * Какие из НАШИХ файлов манифест больше не объявляет.
+	 *
+	 * <p>Вынесено отдельно и без работы с диском НАРОЧНО: это код, который
+	 * УДАЛЯЕТ файлы у игрока, и ошибка тут стирает чужую работу. Чистую
+	 * функцию можно прогнать настоящей Java без игры — что и сделано.
+	 *
+	 * <p>⚠️ Записи без префикса (`packs/`, `wiki/`) пропускаем: их писала
+	 * какая-то другая версия мода, и куда они указывают — неизвестно.
+	 * ⚠️ Имя проверяем тем же правилом, что и при скачивании: список лежит
+	 * на диске игрока, а мы по нему удаляем.
+	 */
+	static List<String> orphansOf(Set<String> mine, Set<String> keepPacks, Set<String> keepWiki) {
+		List<String> out = new ArrayList<>();
+		for (String record : mine) {
+			boolean wiki = record.startsWith("wiki/");
+			boolean pack = record.startsWith("packs/");
+			if (!wiki && !pack) {
+				continue;
+			}
+			String name = record.substring(record.indexOf('/') + 1);
+			if (!SAFE_NAME.matcher(name).matches()) {
+				continue;
+			}
+			if ((wiki ? keepWiki : keepPacks).contains(name)) {
+				continue;
+			}
+			out.add(record);
+		}
+		return out;
+	}
+
+	/**
 	 * Ключ сообщения под число словарей: «1 словарь», «2 словаря», «5 словарей».
 	 *
 	 * <p>⚠️ Было одно сообщение на все числа — и в чате выходило
@@ -128,14 +242,24 @@ public final class UpdateService {
 	 * а не склейкой строк: каждый язык объявляет свои формы в своём файле.
 	 */
 	static String doneKey(int count) {
+		return plural("skyblockru.update.done", count);
+	}
+
+	/** То же для сообщения об отозванных словарях. */
+	static String goneKey(int count) {
+		return plural("skyblockru.update.gone", count);
+	}
+
+	/** Форма числительного: одна на все сообщения, чтобы правило жило в одном месте. */
+	private static String plural(String base, int count) {
 		int tail = count % 100;
 		if (tail >= 11 && tail <= 14) {
-			return "skyblockru.update.done.many";
+			return base + ".many";
 		}
 		return switch (count % 10) {
-			case 1 -> "skyblockru.update.done.one";
-			case 2, 3, 4 -> "skyblockru.update.done.few";
-			default -> "skyblockru.update.done.many";
+			case 1 -> base + ".one";
+			case 2, 3, 4 -> base + ".few";
+			default -> base + ".many";
 		};
 	}
 
@@ -187,6 +311,11 @@ public final class UpdateService {
 		Files.createDirectories(packs);
 
 		List<String> updated = new ArrayList<>();
+		// что манифест объявляет сейчас — по этому решаем, чему больше не место
+		Set<String> keepPacks = new LinkedHashSet<>();
+		Set<String> keepWiki = new LinkedHashSet<>();
+		Set<String> mine = ledgerRead();
+
 		JsonArray list = manifest.getAsJsonArray("packs");
 		if (list != null) {
 			for (JsonElement element : list) {
@@ -211,6 +340,7 @@ public final class UpdateService {
 				if (!target.toAbsolutePath().normalize().startsWith(packs.toAbsolutePath().normalize())) {
 					continue;
 				}
+				keepPacks.add(name);
 				if (alreadyHave(target, hash, name, false)) {
 					continue; // уже свежий — на диске или внутри jar
 				}
@@ -231,6 +361,8 @@ public final class UpdateService {
 				Files.writeString(temp, content, StandardCharsets.UTF_8);
 				Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
 				updated.add(name);
+				// помечаем как СВОЙ: только такие мы вправе удалить потом
+				mine.add("packs/" + name);
 			}
 		}
 
@@ -262,6 +394,7 @@ public final class UpdateService {
 						.startsWith(wikiDir.toAbsolutePath().normalize())) {
 					continue;
 				}
+				keepWiki.add(name);
 				if (alreadyHave(target, hash, name, true)) {
 					continue;
 				}
@@ -280,10 +413,26 @@ public final class UpdateService {
 				Files.writeString(temp, content, StandardCharsets.UTF_8);
 				Files.move(temp, target, StandardCopyOption.REPLACE_EXISTING);
 				updated.add(name);
+				mine.add("wiki/" + name);
 			}
 		}
 
-		if (!updated.isEmpty()) {
+		if (!mine.isEmpty()) {
+			ledgerWrite(mine);
+		}
+
+		// ⚠️ Отзыв словаря. Раньше его не было вовсе: убранный из манифеста файл
+		// оставался у игрока и продолжал применяться, потому что мод читает папку
+		// целиком. Ошибку можно было только ПЕРЕКРЫТЬ новым содержимым.
+		// Удаляем строго своё — см. dropOrphans.
+		List<String> removed = dropOrphans(packs,
+				SkyblockRuClient.configDir().resolve("wiki"), keepPacks, keepWiki);
+		if (!removed.isEmpty()) {
+			chat(ChatFormatting.GRAY,
+					Component.translatable(goneKey(removed.size()), removed.size()));
+		}
+
+		if (!updated.isEmpty() || !removed.isEmpty()) {
 			// Перечитывать словари ОБЯЗАТЕЛЬНО в игровом потоке: качаем мы в фоновом,
 			// а перевод читает те же таблицы на каждом кадре отрисовки. Перезапись
 			// на ходу из другого потока — это мусор в чтении или зависание.
@@ -293,8 +442,10 @@ public final class UpdateService {
 			} else {
 				Translator.reload(packs);
 			}
-			chat(ChatFormatting.GREEN,
-					Component.translatable(doneKey(updated.size()), updated.size()));
+			if (!updated.isEmpty()) {
+				chat(ChatFormatting.GREEN,
+						Component.translatable(doneKey(updated.size()), updated.size()));
+			}
 			String note = string(manifest, "note");
 			if (note != null && !note.isBlank()) {
 				chat(ChatFormatting.GRAY, Component.translatable("skyblockru.update.note", note));
