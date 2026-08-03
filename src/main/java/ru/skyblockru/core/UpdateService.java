@@ -117,6 +117,29 @@ public final class UpdateService {
 	}
 
 	/**
+	 * Ключ сообщения под число словарей: «1 словарь», «2 словаря», «5 словарей».
+	 *
+	 * <p>⚠️ Было одно сообщение на все числа — и в чате выходило
+	 * «Переводы обновлены (1 файлов)». Русское числительное требует трёх форм,
+	 * и подставить их одной строкой нельзя: правило зависит от ДВУХ последних
+	 * цифр, а не от последней. 11–14 всегда «словарей», хотя кончаются на 1–4.
+	 *
+	 * <p>Английскому хватило бы двух форм, поэтому выбор делаем ключом,
+	 * а не склейкой строк: каждый язык объявляет свои формы в своём файле.
+	 */
+	static String doneKey(int count) {
+		int tail = count % 100;
+		if (tail >= 11 && tail <= 14) {
+			return "skyblockru.update.done.many";
+		}
+		return switch (count % 10) {
+			case 1 -> "skyblockru.update.done.one";
+			case 2, 3, 4 -> "skyblockru.update.done.few";
+			default -> "skyblockru.update.done.many";
+		};
+	}
+
+	/**
 	 * Проверить и скачать обновления словарей.
 	 *
 	 * @param loud true — писать в чат и когда обновлений нет (для ручной команды)
@@ -270,7 +293,8 @@ public final class UpdateService {
 			} else {
 				Translator.reload(packs);
 			}
-			chat(ChatFormatting.GREEN, Component.translatable("skyblockru.update.done", updated.size()));
+			chat(ChatFormatting.GREEN,
+					Component.translatable(doneKey(updated.size()), updated.size()));
 			String note = string(manifest, "note");
 			if (note != null && !note.isBlank()) {
 				chat(ChatFormatting.GRAY, Component.translatable("skyblockru.update.note", note));
