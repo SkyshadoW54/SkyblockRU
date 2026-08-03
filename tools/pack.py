@@ -389,9 +389,47 @@ def verify(zip_path: pathlib.Path, games: list) -> bool:
                 bad.append("%s объявляет %s — не подходит для %s"
                            % (name.split("/")[-1], spec, ", ".join(miss)))
 
+        for name in jars:
+            if "skyblockru" in name:
+                bad.extend(junk_in_jar(zf.read(name), name.split("/")[-1]))
+
     for line in bad:
         print("       !! %s" % line)
     return not bad
+
+
+# то, чему в нашем jar место есть; всё прочее — посторонний груз
+ALLOWED = ("assets/", "ru/", "META-INF/")
+ALLOWED_FILES = ("fabric.mod.json", "skyblockru.mixins.json",
+                 "skyblockru-refmap.json")
+
+
+def junk_in_jar(raw: bytes, label: str) -> list:
+    """Посторонние файлы внутри нашего jar.
+
+    ⚠️ Такой проверки не было, и однажды к игрокам уехали 470 КБ копий:
+    `11-stat-forms.json.bak-trophy`, `40-lore.json.bak-gain` и родня. Запрет
+    по имени `*.bak` их не поймал — после `.bak` шёл суффикс, каждый раз
+    новый. Нашёл это не сторож, а вопрос игрока «что в моде лишнего».
+    Поэтому проверяем не список запретов, а СПИСОК РАЗРЕШЁННОГО: чего
+    в перечне нет — то и есть посторонний груз, как бы оно ни называлось.
+    """
+    out = []
+    with zipfile.ZipFile(io.BytesIO(raw)) as jar:
+        for name in jar.namelist():
+            if name.endswith("/"):
+                continue
+            if name.startswith(ALLOWED) or name in ALLOWED_FILES:
+                continue
+            out.append("%s: посторонний файл %s" % (label, name))
+        # копии рядом со словарями: имя каждый раз новое, ловим по признаку
+        for name in jar.namelist():
+            low = name.lower()
+            if any(mark in low for mark in (".bak", ".orig", ".rej", ".tmp",
+                                            ".old", ".save", "~")):
+                out.append("%s: копия перед правкой уехала в jar — %s"
+                           % (label, name))
+    return out[:10]
 
 
 # ------------------------------------------------------------------ ход
