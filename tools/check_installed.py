@@ -1,5 +1,5 @@
 """
-Доехала ли правка до игры: jar в инстансе против собранного.
+Доехала ли правка до игры: jar в инстансах против собранных.
 
 Зачем. 30.07 на этом потерян вечер. Игрок раз за разом говорил «перевода нет»,
 я искал причину в коде, находил и чинил — а jar в инстансе оставался старым:
@@ -11,9 +11,18 @@ BUILD SUCCESSFUL, мод в игре работал, а СЛОВАРИ в jar б
 кладёт ресурсы заново, тогда как классы взял из кэша. То есть проверка
 «словарь на месте» подтверждала ложное.
 
-Сошлось только на сравнении БАЙТОВ скомпилированного класса в двух местах.
-Этот инструмент делает ровно это, чтобы вопрос «а правка вообще в игре?»
-закрывался одной командой, а не вечером поисков.
+⚠️ 03.08 СТОРОЖ СОВРАЛ САМ, и дважды в одном ответе:
+
+  * он сравнивал ЧЕТЫРЕ выбранных класса из сорока шести. Правка была
+    в `Translator` — его в списке не было, и сторож бодро напечатал
+    «правки доехали», когда в инстансах лежал jar двухчасовой давности;
+  * он смотрел ОДИН инстанс (26.2), а их четыре — 1.21.11, 26.1.1, 26.1.2
+    и 26.2, и в каждом свой jar.
+
+Мораль та же, что записана про привратника миксинов: **сторож отвечает
+на СВОЙ вопрос**. «Четыре класса совпали» и «правка доехала» — разные
+утверждения, и первое выглядит как второе. Теперь сравниваются ВСЕ классы
+мода во ВСЕХ инстансах, где он стоит.
 
 Запуск:  python tools/check_installed.py
 """
@@ -25,59 +34,56 @@ import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-# ⚠️ Со Stonecutter сборок несколько — по одной на версию игры, каждая в своей
-# папке versions/<версия>/build/libs. Старый путь build/libs остаётся от
-# прежних сборок и молча показывал бы вчерашний jar как «собранный».
-TARGET = "26.2"
+INSTANCES = Path("C:/MultiMC/instances")
+CLASS_PREFIX = "ru/skyblockru/"
 
 
 def newest_jar(folder: Path) -> Path | None:
     """
     Самый свежий jar мода в папке.
 
-    ⚠️ ВЕРСИЮ В ИМЯ ФАЙЛА НЕ ЗАШИВАТЬ — этот сторож на том и умер молча.
-    Пути были прописаны как `skyblockru-0.1.0+26.2.jar`, и первый же
-    `version.py --bump` сделал 0.2.0: сторож перестал находить оба jar
-    и на каждый запуск отвечал «нет собранного jar, сперва install.cmd».
-    В круге сборки это значит, что САМАЯ ДОРОГАЯ беда проекта (запущенная
-    игра держит файл, copy проваливается молча) больше не проверялась вовсе.
-
-    ⚠️ Ровно эта грабля уже записана про `build_all.py` — и повторилась,
-    потому что чинили ТО МЕСТО, а не признак. Версию спрашиваем у файловой
-    системы, как это делает `version.py`.
+    ⚠️ Версию НЕ зашиваем в имя: после первого же `--bump` сторож отвечал бы
+    «нет собранного jar», то есть молча перестал бы стеречь. Уже было.
     """
-    if not folder.exists():
+    if not folder.is_dir():
         return None
-    jars = sorted(folder.glob("skyblockru-*.jar"), key=lambda p: p.stat().st_mtime)
-    return jars[-1] if jars else None
+    jars = [p for p in folder.glob("skyblockru-*.jar")
+            if not p.name.endswith(("-sources.jar", "-dev.jar"))]
+    return max(jars, key=lambda p: p.stat().st_mtime) if jars else None
 
 
-BUILT = newest_jar(ROOT / "versions" / TARGET / "build" / "libs")
-INSTALLED = newest_jar(Path(f"C:/MultiMC/instances/{TARGET}/.minecraft/mods"))
+def classes(path: Path) -> dict[str, int]:
+    """
+    Имя класса -> CRC содержимого.
 
-# Классы, по которым судим: если они совпали, совпало и остальное.
-# Берём именно КЛАССЫ, а не словари: ресурсы Loom обновляет и тогда, когда
-# компиляцию взял из кэша, — на этом и обожглись.
-WATCH = [
-    "ru/skyblockru/core/ColorLayout.class",
-    "ru/skyblockru/core/Paragraphs.class",
-    "ru/skyblockru/core/Wiki.class",
-    "ru/skyblockru/core/UnknownStrings.class",
-]
-
-
-def entries(path: Path) -> dict[str, int]:
-    """Имя -> размер для наблюдаемых классов."""
+    ⚠️ Берём ВСЕ классы мода, а не выбранные: правка может лечь в любой,
+    и список «наблюдаемых» устаревает молча — ровно на этом сторож и соврал.
+    ⚠️ CRC, а не размер: два разных класса одной длины сравнялись бы.
+    ⚠️ Классы, а не словари: Loom кладёт ресурсы заново даже тогда, когда
+    компиляцию взял из кэша, — на этом обожглись в первый раз.
+    """
     out: dict[str, int] = {}
     try:
         with zipfile.ZipFile(path) as jar:
-            names = set(jar.namelist())
-            for name in WATCH:
-                if name in names:
-                    out[name] = jar.getinfo(name).file_size
+            for info in jar.infolist():
+                if info.filename.startswith(CLASS_PREFIX) and info.filename.endswith(".class"):
+                    out[info.filename] = info.CRC
     except (OSError, zipfile.BadZipFile) as error:
         print(f"не прочитал {path.name}: {error}")
     return out
+
+
+def built_jars() -> dict[str, Path]:
+    """Собранные jar по ИМЕНИ файла: versions/<версия>/build/libs."""
+    found: dict[str, Path] = {}
+    versions = ROOT / "versions"
+    if not versions.is_dir():
+        return found
+    for folder in sorted(versions.iterdir()):
+        jar = newest_jar(folder / "build" / "libs")
+        if jar is not None:
+            found[jar.name] = jar
+    return found
 
 
 def game_running() -> bool:
@@ -93,39 +99,68 @@ def game_running() -> bool:
 
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    if BUILT is None:
-        print(f"нет собранного jar в versions/{TARGET}/build/libs")
-        print("Сперва: install.cmd")
-        return 1
-    if INSTALLED is None:
-        print(f"в инстансе {TARGET} jar мода нет")
-        return 1
-
-    built, installed = entries(BUILT), entries(INSTALLED)
+    built = built_jars()
     if not built:
-        print("в собранном jar нет наблюдаемых классов — сборка неполная?")
+        print("нет собранных jar в versions/*/build/libs")
+        print("Сперва: gradlew build")
         return 1
 
-    stale = [name for name, size in built.items() if installed.get(name) != size]
-    print(f"собран:    {BUILT.stat().st_size} б, {BUILT.stat().st_mtime_ns // 10**9}")
-    print(f"в инстансе:{INSTALLED.stat().st_size} б")
-    print()
-    for name in WATCH:
-        mark = "!!" if name in stale else "ok"
-        print(f"  [{mark}] {name.split('/')[-1]:24} "
-              f"собран {built.get(name, '-')}, в игре {installed.get(name, '-')}")
+    if not INSTANCES.is_dir():
+        print(f"нет папки инстансов {INSTANCES}")
+        return 1
 
-    if not stale:
-        print("\njar в инстансе совпадает с собранным — правки доехали")
+    checked, stale_total, missing = 0, 0, []
+    print("=== ЧТО СТОИТ У ИГРОКА ===")
+    for instance in sorted(INSTANCES.iterdir()):
+        mods = instance / ".minecraft" / "mods"
+        installed = newest_jar(mods)
+        if installed is None:
+            continue
+        checked += 1
+        source = built.get(installed.name)
+        if source is None:
+            missing.append((instance.name, installed.name))
+            print(f"  {instance.name:<10} {installed.name:<30} ?? такой сборки нет")
+            continue
+
+        want, have = classes(source), classes(installed)
+        if not want:
+            print(f"  {instance.name:<10} в собранном jar нет классов — сборка неполная?")
+            stale_total += 1
+            continue
+
+        stale = [name for name, crc in want.items() if have.get(name) != crc]
+        gone = [name for name in want if name not in have]
+        if stale:
+            stale_total += 1
+            print(f"  {instance.name:<10} {installed.name:<30} "
+                  f"!! СТАРЫЙ: расходится классов {len(stale)} из {len(want)}"
+                  + (f", отсутствует {len(gone)}" if gone else ""))
+            for name in stale[:4]:
+                print(f"                 {name.split('/')[-1]}")
+            if len(stale) > 4:
+                print(f"                 ... ещё {len(stale) - 4}")
+        else:
+            print(f"  {instance.name:<10} {installed.name:<30} "
+                  f"ок: все {len(want)} классов совпали")
+
+    print()
+    if checked == 0:
+        print("мод не стоит ни в одном инстансе")
+        return 1
+    if missing:
+        print("⚠️ jar есть, а сборки под него нет — версия убрана из settings.gradle.kts?")
+    if stale_total == 0:
+        print(f"СЛОМАНО: 0 — во всех {checked} инстансах лежит собранное")
         return 0
 
-    print(f"\n=== СЛОМАНО: в игре СТАРЫЙ jar ({len(stale)} классов расходятся) ===")
-    print("  Правки собраны, но до инстанса не доехали.")
+    print(f"=== СЛОМАНО: в {stale_total} инстансах СТАРЫЙ jar ===")
+    print("  Правки собраны, но до игры не доехали.")
     if game_running():
         print("  ⚠️ Minecraft ЗАПУЩЕН — он держит файл, и copy проваливается молча.")
-        print("     Закрыть игру ПОЛНОСТЬЮ (не выход на сервер), затем install.cmd")
+        print("     Закрыть игру ПОЛНОСТЬЮ (не выход на сервер), затем: python tools/build_all.py")
     else:
-        print("  Игра не запущена — просто прогнать install.cmd заново.")
+        print("  Игра не запущена — прогнать: python tools/build_all.py")
     return 1
 
 
