@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPOutputStream;
 
 /**
@@ -68,6 +69,29 @@ public final class Telemetry {
 	private static volatile boolean running;
 	private static volatile long lastSend;
 	private static Set<String> sent;
+
+	/**
+	 * Приветствие уже ждёт своей очереди — второй раз не планируем.
+	 *
+	 * <p>Отметка в конфиге ставится ТОЛЬКО когда сообщение действительно уходит
+	 * в чат (см. {@link #tellOnce}), поэтому одного её наличия мало: событие
+	 * JOIN приходит и при переходе между серверами сети Hypixel, и без замка
+	 * рядом ждали бы несколько потоков, каждый со своим сообщением.
+	 */
+	private static final AtomicBoolean noticeScheduled = new AtomicBoolean();
+
+	/**
+	 * Шаг ожидания SkyBlock и сколько раз пробовать.
+	 *
+	 * <p>Первая пауза нужна сама по себе: сразу после входа чат забит
+	 * приветствиями сервера, и одинокая строка утонет в них незамеченной —
+	 * формально сказали, фактически нет. Дальше тем же шагом ждём, пока
+	 * человек доберётся до острова: пять минут покрывают лобби, выбор режима
+	 * и прогрузку, а если он в этот вечер вообще не пойдёт в SkyBlock —
+	 * приветствие достанется следующему заходу.
+	 */
+	private static final long WAIT_STEP_MS = 8_000;
+	private static final int WAIT_TRIES = 40;
 
 	private Telemetry() {
 	}
@@ -252,34 +276,65 @@ public final class Telemetry {
 		if (!needBeta && !needTelemetry) {
 			return;
 		}
-		// Отметку ставим СРАЗУ, до показа: если игра закроется в эти секунды,
-		// лучше не показать сообщение, чем показать его дважды.
-		config.betaNotified = true;
-		if (needTelemetry) {
-			config.telemetryNotified = true;
+		// ⚠️ Один поток на запуск игры. Событие JOIN приходит и при переходе
+		// между серверами сети Hypixel, а отметка теперь ставится ПОЗЖЕ —
+		// без этого замка несколько ожидающих потоков показали бы сообщение
+		// по разу каждый.
+		if (!noticeScheduled.compareAndSet(false, true)) {
+			return;
 		}
-		config.save();
 		String policy = config.policyUrl;
 
 		// ⚠️ С задержкой. Сразу после входа чат забит приветствиями сервера,
 		// и одинокая строка про телеметрию утонет в них незамеченной —
 		// то есть формально мы сказали, а фактически нет.
 		Thread.ofVirtual().name("skyblockru-telemetry-notice").start(() -> {
-			try {
-				Thread.sleep(8_000);
-			} catch (InterruptedException interrupted) {
-				Thread.currentThread().interrupt();
-				return;
+			// ⚠️ ЖДЁМ SkyBlock, а не спрашиваем однажды.
+			//
+			// Событие JOIN приходит при подключении к СЕТИ Hypixel, а человек
+			// попадает оттуда в лобби и только потом на остров. Одной проверки
+			// через восемь секунд не хватало: к этому моменту он обычно ещё
+			// выбирает режим, а второго JOIN может и не быть.
+			Minecraft client = null;
+			for (int attempt = 0; attempt < WAIT_TRIES; attempt++) {
+				try {
+					Thread.sleep(WAIT_STEP_MS);
+				} catch (InterruptedException interrupted) {
+					Thread.currentThread().interrupt();
+					noticeScheduled.set(false);
+					return;
+				}
+				Minecraft now = Minecraft.getInstance();
+				if (now == null) {
+					noticeScheduled.set(false);
+					return;
+				}
+				// Говорим только в SkyBlock — там же, где и собираем. В лобби
+				// сообщение про перевод SkyBlock игроку ни к чему.
+				if (Hypixel.isSkyBlock()) {
+					client = now;
+					break;
+				}
 			}
-			Minecraft client = Minecraft.getInstance();
 			if (client == null) {
+				noticeScheduled.set(false);   // не дождались — попробуем в следующий заход
 				return;
 			}
-			// ⚠️ Говорим только в SkyBlock — там же, где и собираем. В лобби
-			// сообщение про перевод SkyBlock игроку ни к чему.
-			if (!Hypixel.isSkyBlock()) {
-				return;
+			// ⚠️ ОТМЕТКУ СТАВИМ ЗДЕСЬ, а не при подключении к серверу.
+			//
+			// Раньше она записывалась в самом начале tellOnce, до задержки —
+			// «лучше не показать, чем показать дважды». Но отсчёт идёт от входа
+			// НА СЕРВЕР, а не в SkyBlock, и за восемь секунд человек обычно ещё
+			// в лобби: выбор режима и прогрузка острова дольше. Флаг при этом
+			// уже лежал на диске, а показывается сообщение ОДИН раз за всё
+			// время — то есть про неполноту перевода игрок не узнавал никогда.
+			// Поймано на живом конфиге: betaNotified=true при том, что SkyBlock
+			// стоял на техработах и игрок туда не заходил вовсе.
+			config.betaNotified = true;
+			if (needTelemetry) {
+				config.telemetryNotified = true;
 			}
+			config.save();
 			client.execute(() -> {
 				// ⚠️ ЦВЕТ НЕ ТЕМНЕЕ СЕРОГО. DARK_GRAY на светлом фоне чата
 				// Hypixel почти не читается — проверено скриншотом игрока:
