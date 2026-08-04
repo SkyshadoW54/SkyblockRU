@@ -88,7 +88,7 @@
   "also work when you are": "также работают, даже когда ты",
   "Gives +{n}% pet exp for Mining.": "Даёт +{n}% опыта питомца за Добычу.",
   "Gives +{n}% pet exp for Farming.": "Даёт +{n}% опыта питомца за Фермерство.",
-  "Gives +{n}% pet exp for Foraging.": "Даёт +{n}% опыта питомца за Лесозаготовку.",
+  "Gives +{n}% pet exp for Foraging.": "Даёт +{n}% опыта питомца за рубку леса.",
   "Gives +{n}% pet exp for Combat.": "Даёт +{n}% опыта питомца за Бой.",
   "Gives +{n}% pet exp for all skills.": "Даёт +{n}% опыта питомца за все навыки.",
   "Gives +{n}% pet exp for Fishing.": "Даёт +{n}% опыта питомца за Рыбалку.",
@@ -695,7 +695,7 @@
   },
   {
    "p": "^❣ Requires Foraging Skill ([\\d,]+)\\.$",
-   "r": "§4❣ §cНужен §aнавык Лесозаготовка $1§c."
+   "r": "§4❣ §cНужен §aнавык Лесоруб $1§c."
   },
   {
    "p": "^❣ Requires Mining Skill ([\\d,]+)\\.$",
