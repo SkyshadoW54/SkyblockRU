@@ -4139,18 +4139,7 @@
   "{n}th May {n}": "{n} мая {n}",
   "{n}th New Year Celebration": "{n}-е празднование Нового года",
   "{n}th Spooky Festival": "{n}-й Spooky Festival",
-  "{n}x Carrot VI [FULL]": "{n}x Carrot VI [ПОЛОН]",
-  "{n}x Coal VIII [ACTIVE]": "{n}x Coal VIII [АКТИВЕН]",
-  "{n}x Coal VIII [FULL]": "{n}x Coal VIII [ЗАПОЛНЕН]",
-  "{n}x Cobblestone VIII [FULL]": "{n}x Cobblestone VIII [ПОЛОН]",
   "{n}x Dandelion for {n} coins": "{n}x Dandelion за {n} монет",
-  "{n}x Gold VII [ACTIVE]": "{n}x Gold VII [АКТИВЕН]",
-  "{n}x Iron VIII [ACTIVE]": "{n}x Iron VIII [АКТИВЕН]",
-  "{n}x Oak VIII [ACTIVE]": "{n}x Oak VIII [АКТИВЕН]",
-  "{n}x Oak VIII [FULL]": "{n}x Oak VIII [ПОЛОН]",
-  "{n}x Potato VI [FULL]": "{n}x Potato VI [ПОЛОН]",
-  "{n}x Redstone VIII [ACTIVE]": "{n}x Redstone VIII [АКТИВЕН]",
-  "{n}x Wheat VII [FULL]": "{n}x Wheat VII [ПОЛОН]",
   "{n}x default island": "{n}x обычный остров",
   "{n}➜{n}% longer duration.": "{n}➜{n}% дольше действие.",
   "{s} Aatrox: Maddox is brain. Me slay. If you vote me, you slay too!": "{s} Aatrox: Maddox — мозг. Я — убивать. Голосуй за меня, ты тоже убивать!",
@@ -4682,11 +4671,5 @@
   " Skeletal,  Aquatic": " Костяной,  Водный",
   " Undead and  Skeletal mobs by": " Undead и  Skeletal мобам на",
   " Woodland,  Aquatic": " Лесной,  Водный"
- },
- "allowIdentity": [
-  "A to Z",
-  "Z to A",
-  "▶ A to Z",
-  "▶ Mythological"
- ]
+ }
 }
