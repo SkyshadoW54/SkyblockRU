@@ -34,6 +34,29 @@ WORK = ROOT / "data" / "work"
 # слово, похожее на ник: латиница с цифрой или подчёркиванием
 NICK = re.compile(r"\b(?=[A-Za-z0-9_]{3,16}\b)(?=[A-Za-z0-9_]*[0-9_])[A-Za-z_][A-Za-z0-9_]*\b")
 
+# ⚠️ ПРИЗНАК «ПО ВИДУ НИКА» СЛЕП К ИМЕНАМ ИЗ ОДНИХ БУКВ.
+#
+# NICK требует цифру или подчёркивание, иначе он записывал бы в ники обычные
+# слова. Но у половины игроков ник — просто слово: Kgriseup, zuhnia,
+# sentiences, nograssbro. Они прошли сторожа и уехали в раздачу: 56 записей
+# в 90-from-game.json, а сторож при этом печатал «чисто».
+#
+# Ловим по СТРУКТУРЕ СТРОКИ: там, где Hypixel ставит ник, стоит ник — каким бы
+# он ни был. Тот же приём, что в TelemetryFilter (реплика игрока = метка уровня
+# в начале) и в report.OWNER (владелец из притяжательной формы).
+#
+# Группа 2 — сам ник; чинится он ОБОБЩЕНИЕМ в «{s}», а не удалением записи:
+# «RARE REWARD! {s} found …» полезен всем и никого не называет.
+STRUCTURAL = [
+    re.compile(r"^(RARE REWARD! )(\S+)( found )"),
+    re.compile(r"^(RNG DROP! )(\S+)( just found )"),
+    re.compile(r"^(☠ )(\S+)( (?:was |fell |drowned|died|burned|starved|suffocated))"),
+    re.compile(r"^()(\S+)('s Profile$)"),
+    re.compile(r"^(LOOT SHARE You received loot for assisting )(\S+?)(!?$)"),
+    re.compile(r"^()(\S+)( invited .* to visit )"),
+    re.compile(r"^(Player: )(\S+)($)"),
+]
+
 # служебные слова, которые под признак попадают, но ником не являются
 NOT_NICK = {
     "item_lore", "item_name", "name_tag", "action_bar", "boss_bar",
@@ -43,6 +66,10 @@ NOT_NICK = {
     # дисков («C418 - cat»). Под признак «буквы с цифрой» попадает, ником
     # не является, и удалять такие записи нельзя.
     "c418",
+    # ⚠️ «☠ You died.» — это САМ ИГРОК, а не ник: Hypixel пишет так о твоей
+    # смерти, о чужой пишет «☠ <ник> died». Структурный признак их не
+    # различает, поэтому слово названо явно.
+    "you", "your",
 }
 
 # ⚠️ КОЛИЧЕСТВО, А НЕ НИК: «Dark Oak Log x512», «Gave you: … x32».
@@ -56,17 +83,64 @@ FROM_GAME = {"90-from-game.json", "96-paragraphs.json", "95-tooltips.json"}
 
 
 def known_names() -> set[str]:
-    """Имена NPC и локаций — их трогать нельзя."""
+    """Имена NPC и локаций — их трогать нельзя.
+
+    ⚠️ ГРУППУ «highlight» СЮДА БРАТЬ НЕЛЬЗЯ, и это стоило сторожу зрения.
+    Она собрана из слов, которые Hypixel подсветил в чате, — а в строках
+    «RARE REWARD! Kgriseup found …» подсвечен НИК ИГРОКА. Ники попадали
+    в защищённые имена, сторож считал их законными и печатал «чисто»,
+    пока в словаре лежали Kgriseup, SocksAreGreat, Astrobit.
+    Структурный признак сильнее: «highlight» говорит лишь «слово выделено»,
+    а структура — «на этом месте стоит ник».
+    """
     sys.path.insert(0, str(ROOT / "tools"))
     try:
         import protected
-        return {n.lower() for n in protected.collect()}
+        groups = protected.collect_groups()
     except Exception:
         return set()
+    out: set[str] = set()
+    for group, items in groups.items():
+        if group == "highlight":
+            continue
+        out |= {str(n).lower() for n in items}
+    return out
+
+
+def structural_nick(text: str) -> str | None:
+    """Ник, найденный ПО СТРУКТУРЕ строки, а не по написанию.
+
+    Возвращает само имя — его место в строке задано форматом Hypixel,
+    поэтому признак не зависит от того, есть ли в нике цифры.
+    """
+    for rule in STRUCTURAL:
+        match = rule.match(text)
+        if match:
+            name = match.group(2)
+            # «{s}» уже обобщён — это не ник, а дырка.
+            if name and "{s}" not in name:
+                return name
+    return None
+
+
+def generalized(text: str) -> str:
+    """Строка с ником, заменённым на дырку «{s}»."""
+    for rule in STRUCTURAL:
+        match = rule.match(text)
+        if match and "{s}" not in match.group(2):
+            start, end = match.span(2)
+            return text[:start] + "{s}" + text[end:]
+    return text
 
 
 def nicks_in(text: str, known: set[str]) -> set[str]:
     out = set()
+    # Структурный признак идёт ПЕРВЫМ: он видит то, чего не видит написание.
+    structural = structural_nick(text)
+    if structural:
+        low = structural.lower()
+        if low not in known and low not in NOT_NICK:
+            out.add(structural)
     for word in NICK.findall(text):
         low = word.lower()
         if low in known or low in NOT_NICK:
@@ -118,6 +192,46 @@ def drop_from(path: Path, keys: set[str], sections: tuple[str, ...]) -> int:
     return removed
 
 
+def generalize_in(path: Path, sections: tuple[str, ...], known: set[str]) -> tuple[int, int]:
+    """Ник -> «{s}» там, где он найден ПО СТРУКТУРЕ. Возвращает (обобщено, слито).
+
+    ⚠️ Обобщение лучше удаления: «RARE REWARD! {s} found …» полезен ВСЕМ
+    игрокам и никого не называет, а удалённая запись — просто потерянный
+    перевод, который завтра купят заново.
+
+    ⚠️ Ник меняем И В ПЕРЕВОДЕ: движок подставляет «{s}» по порядку, и если
+    дырка есть в ключе, а в переводе стоит чужое имя — на экране будет чужой
+    ник вместо своего.
+    """
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return 0, 0
+    changed = merged = 0
+    for section in sections:
+        block = data.get(section)
+        if not isinstance(block, dict):
+            continue
+        for key in list(block):
+            nick = structural_nick(key)
+            if not nick or nick.lower() in known or nick.lower() in NOT_NICK:
+                continue
+            fresh = generalized(key)
+            if fresh == key:
+                continue
+            value = block.pop(key)
+            if isinstance(value, str) and nick in value:
+                value = value.replace(nick, "{s}")
+            if fresh in block:
+                merged += 1          # такой шаблон уже есть — лишняя копия
+            else:
+                changed += 1
+            block[fresh] = value
+    if changed or merged:
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+    return changed, merged
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     fix = "--fix" in sys.argv
@@ -154,10 +268,36 @@ def main() -> int:
         print("\nпоказ — ничего не изменено (--fix уберёт)")
         return 1
 
-    print("\n=== УБИРАЮ ===")
-    for path in sorted(PACKS.rglob("*.json")):
-        if path.name not in FROM_GAME:
-            continue
+    # ⚠️ СПЕРВА ОБОБЩАЕМ, ПОТОМ УДАЛЯЕМ. Порядок важен: обобщённая запись
+    # («RARE REWARD! {s} found …») перестаёт содержать ник и в список
+    # на удаление уже не попадает — то есть перевод сохраняется.
+    print("\n=== ОБОБЩАЮ (ник -> {s}) ===")
+    targets = [p for p in sorted(PACKS.rglob("*.json")) if p.name in FROM_GAME]
+    for path in targets:
+        did, dup = generalize_in(path, ("exact", "paragraphs", "glossary"), known)
+        if did or dup:
+            print("  %-28s +%d обобщено%s"
+                  % (path.name, did, (", %d слито с готовым" % dup) if dup else ""))
+    for name, sections in (("from_game.json", ("exact",)),
+                           ("queue_archive.json", ("ru",)),
+                           ("queue_pick.json", ("exact",))):
+        path = WORK / name
+        if path.is_file():
+            did, dup = generalize_in(path, sections, known)
+            if did or dup:
+                print("  %-28s +%d обобщено  (источник)" % (name, did))
+
+    # Что осталось после обобщения — ник не на своём месте, такое удаляем.
+    total_keys = set()
+    for path in targets:
+        for _section, key, _hits in scan_pack(path, known):
+            total_keys.add(key)
+    if not total_keys:
+        print("\nвсё обобщено — удалять нечего")
+        return 0
+
+    print("\n=== УБИРАЮ ОСТАТОК ===")
+    for path in targets:
         gone = drop_from(path, total_keys, ("exact", "paragraphs", "glossary"))
         if gone:
             print("  %-28s -%d" % (path.name, gone))
