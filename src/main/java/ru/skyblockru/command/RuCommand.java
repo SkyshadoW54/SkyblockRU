@@ -267,6 +267,13 @@ public final class RuCommand {
 				Component.translatable("skyblockru.stats.title", SkyblockRuClient.modVersion()));
 		reply(source, ChatFormatting.GRAY,
 				Component.translatable("skyblockru.stats.built", SkyblockRuClient.buildTime()));
+		// ⚠️ Про неполноту говорим ПЕРВЫМ делом и всегда. Игрок, поставивший
+		// русификатор, ждёт русского везде — и, встретив английское описание,
+		// считает мод сломанным. Дешевле сказать честно, чем разбирать жалобы.
+		reply(source, ChatFormatting.YELLOW,
+				Component.translatable("skyblockru.stats.beta"));
+		reply(source, ChatFormatting.GRAY,
+				Component.translatable("skyblockru.stats.beta.why"));
 		reply(source, ChatFormatting.GRAY, Component.translatable("skyblockru.stats.state",
 				Component.translatable(RuConfig.get().enabled
 						? "skyblockru.word.on" : "skyblockru.word.off"),

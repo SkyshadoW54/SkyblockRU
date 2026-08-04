@@ -196,6 +196,12 @@ public final class RuConfig {
 	public boolean telemetry = true;
 
 	/** Показывали ли игроку, что мод отправляет. Один раз за всё время. */
+	/**
+	 * Сказали ли игроку, что перевод НЕПОЛНЫЙ. Отдельно от телеметрии:
+	 * её можно выключить, а знать о неполноте нужно в любом случае.
+	 */
+	public boolean betaNotified = false;
+
 	public boolean telemetryNotified = false;
 
 	/** Куда слать. Пусто — берётся зашитый адрес. */

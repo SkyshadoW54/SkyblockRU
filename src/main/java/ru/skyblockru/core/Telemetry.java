@@ -234,7 +234,12 @@ public final class Telemetry {
 	}
 
 	/**
-	 * Один раз рассказать игроку, что мод отправляет. Молча собирать нельзя.
+	 * Один раз поздороваться: сказать про БЕТУ и про то, что мод отправляет.
+	 *
+	 * <p>⚠️ Про бету говорим ВСЕГДА и отдельным флагом, а не вместе
+	 * с телеметрией: телеметрию игрок вправе выключить, а знать о неполноте
+	 * перевода он должен в любом случае. Иначе человек, поставивший
+	 * русификатор, встретит английское описание и решит, что мод сломан.
 	 *
 	 * <p>⚠️ Показываем ОДИН раз за всё время, а не при каждом запуске: отметка
 	 * лежит в конфиге. Сообщение, которое видишь каждый вечер, перестают читать
@@ -242,12 +247,17 @@ public final class Telemetry {
 	 */
 	public static void tellOnce() {
 		RuConfig config = RuConfig.get();
-		if (config.telemetryNotified || !config.telemetry) {
+		boolean needBeta = !config.betaNotified;
+		boolean needTelemetry = config.telemetry && !config.telemetryNotified;
+		if (!needBeta && !needTelemetry) {
 			return;
 		}
 		// Отметку ставим СРАЗУ, до показа: если игра закроется в эти секунды,
 		// лучше не показать сообщение, чем показать его дважды.
-		config.telemetryNotified = true;
+		config.betaNotified = true;
+		if (needTelemetry) {
+			config.telemetryNotified = true;
+		}
 		config.save();
 		String policy = config.policyUrl;
 
@@ -275,6 +285,15 @@ public final class Telemetry {
 				// Hypixel почти не читается — проверено скриншотом игрока:
 				// две строки из четырёх сливались с фоном. Подсказка,
 				// которую не прочли, всё равно что не показана.
+				// ⚠️ Про бету — ПЕРВЫМ и всегда: это то, из-за чего мод сочтут
+				// сломанным, если промолчать.
+				if (needBeta) {
+					say(ChatFormatting.GOLD, Component.translatable("skyblockru.beta.notice"));
+					say(ChatFormatting.GRAY, Component.translatable("skyblockru.beta.why"));
+				}
+				if (!needTelemetry) {
+					return;
+				}
 				say(ChatFormatting.YELLOW, Component.translatable("skyblockru.telemetry.notice"));
 				say(ChatFormatting.GRAY, Component.translatable("skyblockru.telemetry.what"));
 				say(ChatFormatting.GRAY, Component.translatable("skyblockru.telemetry.off"));
