@@ -241,7 +241,26 @@ public final class Translator {
 		// Справка по терминам живёт рядом со словарями и подчиняется тому же
 		// языку: нет файла под язык игрока — просто не будет подсказок.
 		Wiki.load(language);
+		// ⚠️ СЛОВАРЬ ИЗ ОБЛАКА ЗАМЕНЯЕТ ВСТРОЕННЫЙ, а не грузится рядом с ним.
+		//
+		// Пока он грузился рядом, облако умело только ДОПОЛНЯТЬ: записи exact
+		// оно перекрывает по ключу, а вот удалить запись или заменить ПРАВИЛО
+		// не могло. Правила перебираются до первого совпадения, и встроенное,
+		// добавленное раньше, выигрывало у свежего — правка уезжала в облако
+		// и молча не действовала. Замена снимает оба ограничения разом:
+		// файл приходит целиком, значит в нём и удаления, и новые правила.
+		//
+		// ⚠️ Заменяем ТОЛЬКО то, что скачали сами (журнал downloaded-packs.txt).
+		// Словарь, положенный игроком руками, встроенный не трогает — его
+		// записи по-прежнему лишь перекрывают наши, как было всегда.
+		Set<String> fromCloud = UpdateService.downloadedPackFiles();
 		for (String name : builtinPackNames(language)) {
+			String fileName = name.substring(name.lastIndexOf('/') + 1);
+			if (fromCloud.contains(fileName)) {
+				SkyblockRuClient.LOG.info(
+						"[SkyblockRU] {} taken from cloud, builtin copy skipped", fileName);
+				continue;
+			}
 			try (InputStream stream = Translator.class.getResourceAsStream(BUILTIN_DIR + name)) {
 				if (stream == null) {
 					problems.add("builtin pack not found: " + name);
