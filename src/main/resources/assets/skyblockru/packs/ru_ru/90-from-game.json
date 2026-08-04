@@ -4642,10 +4642,10 @@
   "[NPC] Guildford: Well done, {s}!": "§e[NPC] Guildford§f: Отлично сработано, §7{s}§f!",
   "[NPC] Rosetta: Hey {s}!!!": "§e[NPC] Rosetta§f: Привет, §7{s}§f!!!",
   "[NPC] Tia the Fairy: Welcome to the Fairy Pond, {s}! I am Tia.": "§e[NPC] Tia the Fairy§f: Добро пожаловать в Fairy Pond, §7{s}§f! Я Tia.",
-  "[NPC] Torrhus Canyon: The second island of Galatea - Torrhus Canyon, is here!": "§e[NPC] Torrhus Canyon§f: Второй остров Galatea — Torrhus Canyon — открыт!",
-  "[NPC] Torrhus Canyon: I saw it on the horizon this morning and made my way over.": "§e[NPC] Torrhus Canyon§f: Утром я заметил его на горизонте и отправился туда.",
-  "[NPC] Torrhus Canyon: Between Miria’s Contests, the Critter Safari, Torrhus Sea Creatures, and the new Collections, there's so much to do!": "§e[NPC] Torrhus Canyon§f: Miria’s Contests, Critter Safari, Torrhus Sea Creatures и новые коллекции — дел невпроворот!",
-  "[NPC] Torrhus Canyon: If you want to check it out for yourself, you can access it from the Launch Pad over in the Moonglade Marsh.": "§e[NPC] Torrhus Canyon§f: Хочешь взглянуть сам — попасть туда можно с Launch Pad в Moonglade Marsh.",
-  "[NPC] Torrhus Canyon: Happy hunting!": "§e[NPC] Torrhus Canyon§f: Удачной охоты!"
+  "[NPC] Torrhus Canyon: The second island of Galatea - Torrhus Canyon, is here!": "§e[NPC] §6Torrhus Canyon§f: Второй остров §2Galatea §f— §6Torrhus Canyon§f — открыт!",
+  "[NPC] Torrhus Canyon: I saw it on the horizon this morning and made my way over.": "§e[NPC] §6Torrhus Canyon§f: Утром я заметил его на горизонте и отправился туда.",
+  "[NPC] Torrhus Canyon: Between Miria’s Contests, the Critter Safari, Torrhus Sea Creatures, and the new Collections, there's so much to do!": "§e[NPC] §6Torrhus Canyon§f: §bMiria’s Contests§f, §2Critter Safari§f, §6Torrhus Sea Creatures§f и новые §aколлекции§f — дел невпроворот!",
+  "[NPC] Torrhus Canyon: If you want to check it out for yourself, you can access it from the Launch Pad over in the Moonglade Marsh.": "§e[NPC] §6Torrhus Canyon§f: Хочешь взглянуть сам — попасть туда можно с §aLaunch Pad §fв §2Moonglade Marsh§f.",
+  "[NPC] Torrhus Canyon: Happy hunting!": "§e[NPC] §6Torrhus Canyon§f: Удачной охоты!"
  }
 }
