@@ -6,8 +6,10 @@ import com.google.gson.JsonObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -100,6 +102,31 @@ public final class TranslationPack {
 	public boolean allowIdentity;
 
 	/**
+	 * То же самое, но ПОШТУЧНО: ключи, которым тождественность разрешена.
+	 *
+	 * <p>У {@code 41-headers} тождественны ВСЕ записи по построению, и там
+	 * уместно {@code "allowIdentity": true} на весь файл. А в обычном словаре
+	 * таких записей единицы: у {@code 90-from-game} их 4 из тысяч. Пометив
+	 * там весь файл, мы ослепили бы сторожа на всех остальных записях — то есть
+	 * променяли бы вечно красное на вечно зелёное, а это ровно та же беда
+	 * с другой стороны.
+	 *
+	 * <p>Пример — фильтр сортировки «▶ A to Z \ Z to A \ Lowest Rarity».
+	 * Названия мы не переводим (решение игрока: список упорядочен по именам
+	 * предметов, а их не переводим), но записи нужны:
+	 * {@link Paragraphs#listed} обходит ВСЕ строки куска и спрашивает
+	 * {@code Translator.lookup} у каждой. Пустой ответ хотя бы у одной значит
+	 * «построчно закрыто не всё» — и мод разрежет абзац, подменив собой
+	 * построчный путь, который здесь точнее.
+	 */
+	public final Set<String> identityKeys = new HashSet<>();
+
+	/** Разрешена ли тождественность этой записи: весь файл или именно этот ключ. */
+	public boolean identityOk(String key) {
+		return allowIdentity || identityKeys.contains(key);
+	}
+
+	/**
 	 * Переводы, привязанные к конкретному предмету: имя предмета -> (строка -> перевод).
 	 *
 	 * <p>Обычный словарь переводит строку одинаково везде, и это иногда врёт:
@@ -132,8 +159,21 @@ public final class TranslationPack {
 			String about = asString(json.get("about"));
 			pack.about = about == null ? "" : about;
 		}
-		if (json.has("allowIdentity") && json.get("allowIdentity").isJsonPrimitive()) {
-			pack.allowIdentity = json.get("allowIdentity").getAsBoolean();
+		// ⚠️ Поле принимает ДВА вида: true на весь файл либо СПИСОК ключей.
+		// Список нужен обычным словарям, где тождественных записей единицы:
+		// пометка на весь файл сделала бы сторожа слепым на тысячи соседних.
+		if (json.has("allowIdentity")) {
+			JsonElement flag = json.get("allowIdentity");
+			if (flag.isJsonPrimitive()) {
+				pack.allowIdentity = flag.getAsBoolean();
+			} else if (flag.isJsonArray()) {
+				for (JsonElement item : flag.getAsJsonArray()) {
+					String key = asString(item);
+					if (key != null) {
+						pack.identityKeys.add(key);
+					}
+				}
+			}
 		}
 
 		if (json.has("only") && json.get("only").isJsonArray()) {

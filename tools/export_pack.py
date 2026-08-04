@@ -54,6 +54,16 @@ def main() -> int:
         out["exact"] = exact
     if rules:
         out["regex"] = rules
+    # ⚠️ Пометка «тождественность тут ОСОЗНАННА» едет из рабочего файла.
+    #
+    # Запись «A to Z» -> «A to Z» выглядит мусором, но держит построчный путь:
+    # Paragraphs.listed спрашивает lookup у КАЖДОЙ строки куска, и пустой ответ
+    # заставляет мод разрезать абзац вместо точного построчного перевода.
+    # Без переноса пометка стиралась бы при каждой пересборке, и сторож
+    # снова горел бы на решении игрока (tools/fix_identity.py).
+    identity = [k for k in (pack.get("_identity") or []) if k in exact]
+    if identity:
+        out["allowIdentity"] = sorted(identity)
     target.write_text(json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
 
     index = json.loads(INDEX.read_text(encoding="utf-8"))

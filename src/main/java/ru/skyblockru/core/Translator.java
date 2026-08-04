@@ -282,7 +282,7 @@ public final class Translator {
 			for (Map.Entry<String, String> entry : pack.exact.entrySet()) {
 				String key = entry.getKey();
 				String value = entry.getValue();
-				checkEntry(pack.id, key, value, origin, problems, pack.allowIdentity);
+				checkEntry(pack.id, key, value, origin, problems, pack.identityOk(key));
 
 				if (key.contains("{s}")) {
 					// Записи с ником игрока превращаем в регулярку прямо при
