@@ -123,6 +123,9 @@ public final class UpdateService {
 	 * папки {@code packs} — иначе {@link Translator} попытался бы прочитать
 	 * его как пакет.
 	 */
+	/** Префикс записи журнала для словаря: {@code packs/25-sidebar.json}. */
+	private static final String PACKS_PREFIX = "packs/";
+
 	private static Path ledger() {
 		return SkyblockRuClient.configDir().resolve("downloaded-packs.txt");
 	}
@@ -146,6 +149,29 @@ public final class UpdateService {
 		} catch (IOException | RuntimeException exception) {
 			return new LinkedHashSet<>();
 		}
+	}
+
+	/**
+	 * Имена словарей, которые мы скачали из облака: {@code 25-sidebar.json}.
+	 *
+	 * <p>Нужны {@link Translator}: скачанный словарь ЗАМЕНЯЕТ встроенный
+	 * с тем же именем, а не грузится рядом. Иначе облако может лишь дополнять:
+	 * записи {@code exact} оно перекроет по ключу, а вот УДАЛИТЬ запись или
+	 * заменить ПРАВИЛО — нет. Правила перебираются до первого совпадения,
+	 * и встроенное, добавленное раньше, выигрывает у свежего.
+	 *
+	 * <p>⚠️ Берём ровно то, что принесли САМИ. Словарь, положенный игроком
+	 * руками, встроенный не заменяет: он в этом списке не значится, и его
+	 * записи по-прежнему лишь перекрывают наши — как было всегда.
+	 */
+	static Set<String> downloadedPackFiles() {
+		Set<String> out = new LinkedHashSet<>();
+		for (String record : ledgerRead()) {
+			if (record.startsWith(PACKS_PREFIX)) {
+				out.add(record.substring(PACKS_PREFIX.length()));
+			}
+		}
+		return out;
 	}
 
 	private static void ledgerWrite(Set<String> names) {
