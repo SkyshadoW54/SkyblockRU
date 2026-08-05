@@ -1,9 +1,12 @@
 package ru.skyblockru.core;
 
+import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.enchantment.Enchantment;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -84,19 +87,45 @@ public final class Items {
 	 * уровни навыков, истребители, эссенции. Признак по форме их не отличает.
 	 */
 	public static Set<String> enchantsOf(ItemStack stack) {
-		CompoundTag tag = nbt(stack);
-		if (tag == null) {
-			return null;
-		}
-		CompoundTag list = nested(tag, "enchantments");
-		if (list.isEmpty()) {
-			list = nested(nested(tag, "ExtraAttributes"), "enchantments");
-		}
 		Set<String> out = new HashSet<>();
-		for (String key : keys(list)) {
-			out.add(Paragraphs.bareName(key));
+		CompoundTag tag = nbt(stack);
+		if (tag != null) {
+			CompoundTag list = nested(tag, "enchantments");
+			if (list.isEmpty()) {
+				list = nested(nested(tag, "ExtraAttributes"), "enchantments");
+			}
+			for (String key : keys(list)) {
+				out.add(Paragraphs.bareName(key));
+			}
 		}
-		return out;
+		// ⚠️ ВАНИЛЬНЫЕ ЗАЧАРОВАНИЯ ЛЕЖАТ ОТДЕЛЬНО, и без них список НЕПОЛОН.
+		//
+		// Hypixel держит свои в custom_data, а Efficiency, Sharpness, Protection —
+		// это ваниль Minecraft, и она в своём компоненте. Список выходил неполным,
+		// а работает он ЗАПРЕТОМ: раз он не пуст, всё, чего в нём нет, заголовком
+		// не считается. На топоре игрока «Efficiency V» из-за этого не признавался
+		// заголовком, секция не вырезалась — и купленный перевод (он лежит
+		// в 96-paragraphs.json) не спрашивался ни разу.
+		//
+		// ⚠️ Это ТРЕТИЙ раз, когда фильтр по данным сервера отсекает СВОЁ: сперва
+		// ультимативные с префиксом «ultimate_», потом справка по Alt, теперь
+		// ванильные. Признак один — «сервер про это знает», и знать надо оба
+		// источника, а не тот, что вспомнили первым.
+		// ⚠️ Имя берём getRegisteredName(), а не через ResourceKey: у ключа метод
+		// зовётся по-разному в разных версиях («identifier()» в 26.2 против
+		// «location()» ниже), и пришлось бы заводить замену Stonecutter ради
+		// одной строки. getRegisteredName отдаёт «minecraft:efficiency» и есть
+		// во всех версиях, которые мы собираем.
+		ItemEnchantments vanilla = stack.get(DataComponents.ENCHANTMENTS);
+		if (vanilla != null) {
+			for (Holder<Enchantment> holder : vanilla.keySet()) {
+				String name = holder.getRegisteredName();
+				int colon = name.indexOf(':');
+				out.add(Paragraphs.bareName(colon >= 0 ? name.substring(colon + 1) : name));
+			}
+		}
+		// Пусто — значит данных нет вовсе: пусть потребитель работает по форме.
+		return out.isEmpty() ? null : out;
 	}
 
 	/** Ключи верхнего уровня — для разведки: что сервер вообще присылает. */
