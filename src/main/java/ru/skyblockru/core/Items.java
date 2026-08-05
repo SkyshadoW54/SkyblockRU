@@ -87,16 +87,31 @@ public final class Items {
 	 * уровни навыков, истребители, эссенции. Признак по форме их не отличает.
 	 */
 	public static Set<String> enchantsOf(ItemStack stack) {
-		Set<String> out = new HashSet<>();
 		CompoundTag tag = nbt(stack);
-		if (tag != null) {
-			CompoundTag list = nested(tag, "enchantments");
-			if (list.isEmpty()) {
-				list = nested(nested(tag, "ExtraAttributes"), "enchantments");
-			}
-			for (String key : keys(list)) {
-				out.add(Paragraphs.bareName(key));
-			}
+		if (tag == null) {
+			return null;
+		}
+		CompoundTag list = nested(tag, "enchantments");
+		if (list.isEmpty()) {
+			list = nested(nested(tag, "ExtraAttributes"), "enchantments");
+		}
+		// ⚠️ НЕТ СПИСКА SKYBLOCK — НЕ ФИЛЬТРУЕМ ВОВСЕ, даже если ваниль есть.
+		//
+		// Наступил на это 05.08, чиня соседнюю беду: начал собирать ванильные
+		// и возвращать их сами по себе. У дрели SkyBlock-часть не прочиталась,
+		// список вышел ИЗ ОДНОЙ ВАНИЛИ — и «Flowstate III», «Lapidary V»,
+		// «Prismatic V» перестали признаваться заголовками, хотя раньше
+		// признавались по форме. Стало хуже, чем было.
+		//
+		// Правило записано в этом файле выше и нарушено мной же: null и пустой
+		// набор значат «данных нет, работай по форме». Неполный список хуже
+		// пустого — он ЗАПРЕЩАЕТ то, о чём просто не знает.
+		if (list.isEmpty()) {
+			return null;
+		}
+		Set<String> out = new HashSet<>();
+		for (String key : keys(list)) {
+			out.add(Paragraphs.bareName(key));
 		}
 		// ⚠️ ВАНИЛЬНЫЕ ЗАЧАРОВАНИЯ ЛЕЖАТ ОТДЕЛЬНО, и без них список НЕПОЛОН.
 		//
@@ -124,8 +139,7 @@ public final class Items {
 				out.add(Paragraphs.bareName(colon >= 0 ? name.substring(colon + 1) : name));
 			}
 		}
-		// Пусто — значит данных нет вовсе: пусть потребитель работает по форме.
-		return out.isEmpty() ? null : out;
+		return out;
 	}
 
 	/** Ключи верхнего уровня — для разведки: что сервер вообще присылает. */
