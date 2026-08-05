@@ -1278,8 +1278,15 @@ public final class Paragraphs {
 		List<String> out = new ArrayList<>(run.size());
 		for (int i = run.from(); i < run.to(); i++) {
 			String text = LegacyText.strip(lines.get(i).getString()).trim();
-			out.add(text.isEmpty() || !isMarkerChar(text.charAt(0))
-					? "" : text.substring(0, 1));
+			// ⚠️ За НАСТОЯЩИМ маркером идёт ПРОБЕЛ: «ථ Hook NONE», «✔ Talk to
+			// the Farmhand». Без этого условия маркером считалась «[» у надписи
+			// над мобом («[Lvl {n}] Frog Man») и «{» у строки таба («{s}»), —
+			// то есть первый символ обычного текста. Замер по живым подсказкам:
+			// условие убирает 83 ложных куска из 122, не теряя ни одного
+			// настоящего списка.
+			boolean marked = text.length() > 1 && isMarkerChar(text.charAt(0))
+					&& text.charAt(1) == ' ';
+			out.add(marked ? text.substring(0, 1) : "");
 		}
 		return out;
 	}
