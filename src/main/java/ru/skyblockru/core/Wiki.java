@@ -65,7 +65,14 @@ public final class Wiki {
 	 *              к которой он относится: игрок ищет глазами то же слово того
 	 *              же цвета.
 	 */
-	public record Entry(String title, String color, List<String> lines) {
+	/**
+	 * @param names имена, ВНУТРИ которых этот термин термином не является:
+	 *              «Fear» стоит в имени NPC «Fear Mongerer», и справка про
+	 *              характеристику там ни при чём. Список собирает
+	 *              {@code tools/gen_wiki_names.py} из защищённых имён проекта —
+	 *              это ДАННЫЕ, а не догадка по виду текста.
+	 */
+	public record Entry(String title, String color, List<String> lines, List<String> names) {
 	}
 
 	/**
@@ -96,10 +103,16 @@ public final class Wiki {
 				JsonObject value = item.getValue().getAsJsonObject();
 				List<String> lines = new ArrayList<>();
 				value.getAsJsonArray("lines").forEach(line -> lines.add(line.getAsString()));
+				// ⚠️ Поля может не быть вовсе — оно нужно единицам статей
+				// (10 пар на 1049 защищённых имён). Нет — значит помех нет.
+				List<String> names = new ArrayList<>();
+				if (value.has("names") && value.get("names").isJsonArray()) {
+					value.getAsJsonArray("names").forEach(name -> names.add(name.getAsString()));
+				}
 				into.put(item.getKey(), new Entry(
 						value.has("title") ? value.get("title").getAsString() : "",
 						value.has("color") ? value.get("color").getAsString() : "",
-						lines));
+						lines, names));
 			}
 		} catch (RuntimeException | java.io.IOException ignored) {
 			// битый файл справки — не повод ломать перевод
@@ -184,7 +197,21 @@ public final class Wiki {
 	 * {@code protected.mentions()} на стороне инструментов.
 	 */
 	private static boolean mentions(String text, String term) {
-		return TermMatch.mentions(text, term, lineStarts);
+		return mentions(text, term, TERMS.get(term));
+	}
+
+	/**
+	 * То же, но с оглядкой на ИМЕНА, внутри которых термин термином не является.
+	 *
+	 * <p>⚠️ Игрок прислал Green Candy: «обменять у Fear / Mongerer во время
+	 * Spooky Festival!» — и справку про характеристику «Fear», которой в этом
+	 * предмете нет. Имя NPC разрезано переносом, а на границе строк защита
+	 * «слово с Заглавной справа — продолжение имени» отключается намеренно.
+	 * Список имён приходит из самой статьи — см. {@link Entry#names()}.
+	 */
+	private static boolean mentions(String text, String term, Entry entry) {
+		return TermMatch.mentions(text, term, lineStarts,
+				entry == null ? null : entry.names());
 	}
 
 	/**
@@ -252,8 +279,8 @@ public final class Wiki {
 		// и ещё четырьмя: сервер их в NBT не кладёт вовсе, хотя в лоре они
 		// стоят. Приглашение обязано совпадать с тем, что покажет панель,
 		// а панель теперь ищет по форме «имя + римский уровень».
-		for (String name : ENCHANTS.keySet()) {
-			if (TermMatch.showArticle(text, name)) {
+		for (Map.Entry<String, Entry> item : ENCHANTS.entrySet()) {
+			if (TermMatch.showArticle(text, item.getKey(), item.getValue().names())) {
 				return true;
 			}
 		}
@@ -414,9 +441,12 @@ public final class Wiki {
 			// зачарования (Gravity, Drain, Prismatic, Pyroclasm, Mana Pool…).
 			// Ложных срабатываний ноль: фильтр перебирает имена СТАТЕЙ, а
 			// коллекций среди них нет. Подробности — в TermMatch.showArticle.
+			// ⚠️ Имена-помехи берём У САМОЙ СТАТЬИ: «Fear» внутри «Fear Mongerer»
+			// термином не является, и справке там делать нечего.
+			Entry entry = source.get(term);
 			if (wantEnchants
-					? TermMatch.showArticle(text, term)
-					: mentions(text, term)) {
+					? TermMatch.showArticle(text, term, entry.names())
+					: mentions(text, term, entry)) {
 				found.add(term);
 			}
 		}

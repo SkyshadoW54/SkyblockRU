@@ -53,20 +53,29 @@ public class TermRun {
         StringBuilder out = new StringBuilder();
         for (String row : rows) {
             if (row.isEmpty()) { continue; }
-            // формат: термин \\u0001 строка \\u0001 строка ...
+            // формат: термин \\u0001 имена-помехи через \\u0003 \\u0001 строка \\u0001 строка ...
             String[] parts = row.split("\\u0001", -1);
             String term = parts[0];
+            // ⚠️ Имена, внутри которых термин термином не является («Fear»
+            // в «Fear Mongerer»), спрашиваются на ОБЕИХ сторонах сверки.
+            // Иначе сторож объявил бы поломкой правку, которая как раз и
+            // убирает чужую справку: в строке термин «стоит отдельно»,
+            // а в склейке его законно нет.
+            List<String> names = new ArrayList<>();
+            for (String name : parts[1].split("\\u0003", -1)) {
+                if (!name.isEmpty()) { names.add(name); }
+            }
             StringBuilder whole = new StringBuilder();
             List<Integer> starts = new ArrayList<>();
-            for (int i = 1; i < parts.length; i++) {
+            for (int i = 2; i < parts.length; i++) {
                 starts.add(whole.length());
                 whole.append(parts[i]).append(' ');
             }
             String text = whole.toString();
-            boolean joined = TermMatch.mentions(text, term, starts);
+            boolean joined = TermMatch.mentions(text, term, starts, names);
             boolean alone = false;
-            for (int i = 1; i < parts.length; i++) {
-                if (TermMatch.mentions(parts[i] + " ", term, null)) { alone = true; break; }
+            for (int i = 2; i < parts.length; i++) {
+                if (TermMatch.mentions(parts[i] + " ", term, null, names)) { alone = true; break; }
             }
             out.append(joined ? '1' : '0').append(alone ? '1' : '0').append('\\n');
         }
@@ -112,6 +121,18 @@ def cases() -> list[tuple[str, list[str]]]:
     return out
 
 
+def names_of() -> dict[str, list[str]]:
+    """Имена, внутри которых термин термином НЕ является.
+
+    Кладёт их в справку `tools/gen_wiki_names.py` из защищённых имён проекта:
+    «Fear» внутри NPC «Fear Mongerer», «Bank» внутри «Dragontail Bank».
+    Пустой словарь — значит помех нет, и сверка идёт как раньше.
+    """
+    terms = (json.loads(WIKI.read_text(encoding="utf-8")).get("terms") or {})
+    return {name: entry.get("names") or [] for name, entry in terms.items()
+            if entry.get("names")}
+
+
 def run_java(rows: list[tuple[str, list[str]]]) -> list[tuple[bool, bool]] | None:
     javac, java = find_java("javac"), find_java("java")
     if not javac or not java:
@@ -129,8 +150,13 @@ def run_java(rows: list[tuple[str, list[str]]]) -> list[tuple[bool, bool]] | Non
             print(build.stderr[:1500])
             return None
         data = work / "cases.txt"
-        data.write_text("\n".join("\u0001".join([term, *lines]).replace("\n", " ")
-                                  for term, lines in rows), encoding="utf-8")
+        # ⚠️ Вторым полем идут ИМЕНА-ПОМЕХИ этой статьи (см. RUNNER): без них
+        # сторож объявил бы поломкой правку, которая как раз убирает чужую
+        # справку: «Fear» внутри имени NPC «Fear Mongerer».
+        blockers = names_of()
+        data.write_text("\n".join(
+            "\u0001".join([term, "\u0003".join(blockers.get(term, [])), *lines])
+            .replace("\n", " ") for term, lines in rows), encoding="utf-8")
         got = subprocess.run([java, "-cp", str(work), "TermRun", str(data)],
                              capture_output=True, text=True,
                              encoding="utf-8", errors="replace")
@@ -141,11 +167,61 @@ def run_java(rows: list[tuple[str, list[str]]]) -> list[tuple[bool, bool]] | Non
                 for line in got.stdout.splitlines() if len(line) >= 2]
 
 
+# Заведомые случаи для ИМЁН-ПОМЕХ: «должна ли справка появиться».
+#
+# ⚠️ Нужны обоих краёв. Проверив только «чужая справка ушла», мы бы не заметили,
+# что заодно погасла законная: беда, ради которой всё делалось, — справка
+# про характеристику «Fear» на конфете, где есть лишь NPC «Fear Mongerer».
+BLOCKER_CASES = [
+    ("Fear", False, [
+        "Green Candy",
+        "Конфеты можно обменять у Fear",
+        "Mongerer во время Spooky Festival!",
+    ]),
+    ("Fear", True, [
+        "Great Spook Cloak",
+        "Fear: +{n}",
+        "Obtained during the Alchemist experiments!",
+    ]),
+    ("Fear", True, [
+        "Great Spook Armor",
+        "Мобы вокруг разбегаются, если их",
+        "уровень меньше твоего Fear.",
+    ]),
+]
+
+
+def check_blockers() -> int:
+    """Гасят ли имена-помехи ровно то, что надо, и ничего сверх."""
+    rows = [(term, lines) for term, _, lines in BLOCKER_CASES]
+    verdicts = run_java(rows)
+    if verdicts is None:
+        return 1
+    bad = []
+    for (term, want, lines), (joined, _) in zip(BLOCKER_CASES, verdicts):
+        if joined != want:
+            bad.append((term, want, lines[0], joined))
+    print("=== ИМЕНА-ПОМЕХИ ===")
+    if not bad:
+        print(f"    все {len(BLOCKER_CASES)} случая верны: термин внутри имени "
+              f"справки не даёт, законный — даёт")
+        return 0
+    print(f"СЛОМАНО: {len(bad)}")
+    for term, want, first, got in bad:
+        print(f"   {term} в «{first}»: ждали {'справку' if want else 'тишину'}, "
+              f"вышло {'справка' if got else 'тишина'}")
+    return 1
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description="Термины справки, потерянные при склейке")
     parser.add_argument("--show", type=int, default=12)
     args = parser.parse_args()
+
+    if check_blockers() != 0:
+        return 1
+    print()
 
     rows = cases()
     if not rows:
