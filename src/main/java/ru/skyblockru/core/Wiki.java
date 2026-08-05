@@ -74,15 +74,15 @@ public final class Wiki {
 	 * <p>Файла нет — просто нет справки: молчим, а не падаем.
 	 */
 	public static void load(String language) {
-		read(language, "/assets/skyblockru/wiki/" + language + ".json", TERMS);
+		read("/assets/skyblockru/wiki/" + language + ".json", TERMS);
 		// Зачарования лежат отдельным файлом: их 93, и наполняются они своим
 		// темпом. Нет файла — просто нет справки по зачарованиям.
-		read(language, "/assets/skyblockru/wiki/enchants_" + language + ".json", ENCHANTS);
+		read("/assets/skyblockru/wiki/enchants_" + language + ".json", ENCHANTS);
 	}
 
-	private static void read(String language, String path, Map<String, Entry> into) {
+	private static void read(String path, Map<String, Entry> into) {
 		into.clear();
-		try (InputStream stream = open(language, path)) {
+		try (InputStream stream = open(path)) {
 			if (stream == null) {
 				return;
 			}
@@ -116,15 +116,31 @@ public final class Wiki {
 	 * читали только из ресурсов, то есть добавить статью значило пересобрать
 	 * мод и заставить всех переустановить его.
 	 *
-	 * <p>Теперь {@code config/skyblockru/wiki/<язык>.json} перекрывает
+	 * <p>Теперь {@code config/skyblockru/wiki/<файл>.json} перекрывает
 	 * встроенный файл — тем же способом и с тем же ограничением: скачиваются
 	 * ТОЛЬКО тексты, никогда не код.
+	 *
+	 * <p>⚠️⚠️ ФАЙЛ НА ДИСКЕ ИЩЕМ ПО ИМЕНИ ВСТРОЕННОГО, а не по языку. Здесь
+	 * стояло {@code resolve(language + ".json")} — то есть на любой запрос
+	 * отдавался ОДИН И ТОТ ЖЕ {@code wiki/ru_ru.json}. Метод получал путь
+	 * запрошенного файла и для диска его игнорировал.
+	 *
+	 * <p>Беда была тихой и ждала своего дня: пока справку не выкладывали
+	 * в облако, файла на диске не было и подмениться было нечему. 05.08 туда
+	 * уехала правка справки ТЕРМИНОВ — и она встала на место справки
+	 * ЗАЧАРОВАНИЙ у всех разом, без нового jar. В {@code ENCHANTS} легли
+	 * 73 термина вместо 173 зачарований, а у термина римского уровня
+	 * не бывает никогда ({@link TermMatch#mentionsEnchant}) — значит панель
+	 * по Alt не находила НИЧЕГО и приглашение не показывалось вовсе.
+	 *
+	 * <p>⚠️ Мораль записанная: метод отвечает на СВОЙ вопрос. Ему передали,
+	 * какой файл нужен, а он ответил, какой язык у игрока.
 	 */
-	private static InputStream open(String language, String builtin) {
+	private static InputStream open(String builtin) {
 		try {
 			Path dir = ru.skyblockru.SkyblockRuClient.configDir();
 			if (dir != null) {
-				Path file = dir.resolve("wiki").resolve(language + ".json");
+				Path file = dir.resolve("wiki").resolve(userFileName(builtin));
 				if (Files.isRegularFile(file)) {
 					return Files.newInputStream(file);
 				}
@@ -133,6 +149,19 @@ public final class Wiki {
 			// не прочитали свой файл — берём встроенный, справка не критична
 		}
 		return Wiki.class.getResourceAsStream(builtin);
+	}
+
+	/**
+	 * Имя файла на диске, отвечающего встроенному: «…/wiki/enchants_ru_ru.json»
+	 * -> «enchants_ru_ru.json».
+	 *
+	 * <p>⚠️ Вынесено отдельным методом РАДИ ПРОВЕРЯЕМОСТИ: {@code open} завязан
+	 * на Minecraft и в одиночку не компилируется, а подмена файла — беда
+	 * молчаливая. Сторожит {@code tools/check_wiki_override.py} настоящей Java.
+	 */
+	public static String userFileName(String builtin) {
+		int slash = builtin.lastIndexOf('/');
+		return slash >= 0 ? builtin.substring(slash + 1) : builtin;
 	}
 
 	public static int size() {
