@@ -6,7 +6,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import ru.skyblockru.SkyblockRuClient;
 import ru.skyblockru.config.RuConfig;
 
@@ -91,6 +93,17 @@ public final class UpdateService {
 	 * раз, перестают читать вместе со всеми остальными.
 	 */
 	private static final int QUIET_FAILURES = 3;
+
+	/**
+	 * Сказали ли уже про новую версию мода в этот запуск игры.
+	 *
+	 * <p>⚠️ Событие входа приходит и при переходе между серверами сети Hypixel,
+	 * а сообщение теперь ждёт SkyBlock — без замка несколько ожидающих потоков
+	 * сказали бы по разу каждый. Не дождались SkyBlock — замок снимается,
+	 * и в следующий заход попробуем снова.
+	 */
+	private static final java.util.concurrent.atomic.AtomicBoolean newVersionShown =
+			new java.util.concurrent.atomic.AtomicBoolean();
 
 	/** Неудач подряд. Сбрасывается, как только сервер ответил. */
 	private static volatile int failures;
@@ -484,16 +497,62 @@ public final class UpdateService {
 		JsonObject mod = manifest.getAsJsonObject("mod");
 		if (mod != null) {
 			String version = string(mod, "version");
-			String link = string(mod, "url");
 			// ⚠️ Сравниваем ЛЕВУЮ часть версии: в jar она с хвостом версии игры
 			// («0.2.0+26.2»), а в манифесте голая («0.2.0»). Наивное equals
 			// показывало игроку «вышла версия 0.2.0» при установленной 0.2.0.
-			if (version != null && !Versions.same(version, SkyblockRuClient.modVersion())) {
-				chat(ChatFormatting.AQUA, Component.translatable("skyblockru.update.newversion", version,
-						link != null ? " — " + link : ""));
-				chat(ChatFormatting.GRAY, Component.translatable("skyblockru.update.manual"));
+			//
+			// ⚠️ И СТРОГО НОВЕЕ, а не «просто другая». Расхождение бывает в обе
+			// стороны: у собравшего мод из исходников версия ВПЕРЕДИ выложенной,
+			// и он видел «Вышла версия 0.2.5» при установленной 0.2.6 — призыв
+			// откатиться назад. Поймано скриншотом игрока.
+			if (version != null && Versions.newer(version, SkyblockRuClient.modVersion())) {
+				tellNewVersion(version, string(mod, "url"));
 			}
 		}
+	}
+
+	/**
+	 * Сказать про новую версию — В SKYBLOCK и со ссылкой.
+	 *
+	 * <p>⚠️ Раньше говорилось сразу при обновлении словарей, то есть при входе
+	 * в СЕТЬ Hypixel. Игрок прислал скриншот: сообщение висит в лобби, между
+	 * «joined the lobby» и рекламой мини-игр, где ему нечего делать. Ждём
+	 * SkyBlock тем же способом, что и приветствие про бету.
+	 *
+	 * <p>⚠️ И ССЫЛКА ДОЛЖНА БЫТЬ В САМОМ СООБЩЕНИИ. Прежний текст говорил
+	 * «скачать и положить в папку модов нужно вручную» — и не сообщал, ОТКУДА
+	 * скачивать: адрес брался из манифеста, а его туда никто не клал. Совет,
+	 * который нельзя выполнить, хуже молчания.
+	 */
+	private static void tellNewVersion(String version, String link) {
+		if (!newVersionShown.compareAndSet(false, true)) {
+			return;   // за запуск игры говорим об этом один раз
+		}
+		Thread.ofVirtual().name("skyblockru-newversion").start(() -> {
+			Minecraft client = Hypixel.awaitSkyBlock();
+			if (client == null) {
+				newVersionShown.set(false);   // не дождались — скажем в следующий заход
+				return;
+			}
+			chat(ChatFormatting.AQUA,
+					Component.translatable("skyblockru.update.newversion", version));
+			if (link != null && !link.isBlank()) {
+				// ⚠️ Ссылка задаётся ПО-РАЗНОМУ: в новых версиях это
+				// `ClickEvent.OpenUrl(URI)`, в 1.21.4 и ниже — конструктор
+				// с действием и СТРОКОЙ. Замена имени тут не поможет:
+				// расходится и тип аргумента, и форма вызова.
+				//? if >=1.21.5 {
+				ClickEvent open = new ClickEvent.OpenUrl(URI.create(link));
+				//?} else
+				/*ClickEvent open = new ClickEvent(ClickEvent.Action.OPEN_URL, link);*/
+				chat(ChatFormatting.AQUA,
+						Component.translatable("skyblockru.update.download", link)
+								.copy().withStyle(Style.EMPTY
+										.withUnderlined(true)
+										.withClickEvent(open)));
+			}
+			chat(ChatFormatting.GRAY, Component.translatable("skyblockru.update.manual"));
+		});
 	}
 
 	/**

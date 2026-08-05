@@ -109,6 +109,46 @@ public final class Hypixel {
 		return sidebarTitle.toLowerCase(Locale.ROOT).contains("skyblock");
 	}
 
+	/**
+	 * Ждёт, пока игрок дойдёт до SkyBlock, и отдаёт клиент. Не дождались — null.
+	 *
+	 * <p><b>Зачем ждать, а не спрашивать один раз.</b> Событие входа приходит
+	 * при подключении к СЕТИ Hypixel, а человек попадает оттуда в лобби и лишь
+	 * потом на остров: выбор режима и прогрузка дольше любой разумной задержки.
+	 * Спросив однажды, мы почти всегда попадаем в лобби — и говорим туда, где
+	 * сообщение ни к чему.
+	 *
+	 * <p>⚠️ Звать ТОЛЬКО из фонового потока: метод спит. В игровом это подвесит
+	 * отрисовку.
+	 *
+	 * <p>⚠️ Метод общий для всех, кому нужно «сказать игроку в SkyBlock», —
+	 * приветствия про бету и сообщения о новой версии мода. Две копии ожидания
+	 * разошлись бы при первой же правке шага или числа попыток.
+	 */
+	public static Minecraft awaitSkyBlock() {
+		for (int attempt = 0; attempt < WAIT_TRIES; attempt++) {
+			try {
+				Thread.sleep(WAIT_STEP_MS);
+			} catch (InterruptedException interrupted) {
+				Thread.currentThread().interrupt();
+				return null;
+			}
+			Minecraft now = Minecraft.getInstance();
+			if (now == null) {
+				return null;
+			}
+			if (isSkyBlock()) {
+				return now;
+			}
+		}
+		return null;
+	}
+
+	/** Шаг ожидания SkyBlock и сколько раз проверять — вместе около пяти минут. */
+	private static final long WAIT_STEP_MS = 8_000;
+
+	private static final int WAIT_TRIES = 40;
+
 	public static boolean isActive() {
 		RuConfig config = RuConfig.get();
 		if (config.onlyOnHypixel && !isOnHypixel()) {
