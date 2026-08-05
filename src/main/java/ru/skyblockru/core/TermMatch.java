@@ -93,14 +93,63 @@ public final class TermMatch {
 		return false;
 	}
 
+	/**
+	 * Стоит ли вхождение ВНУТРИ известного имени.
+	 *
+	 * <p>⚠️ Признак нужен там, где правило «слово с Заглавной справа —
+	 * продолжение имени» бессильно ПО УСТРОЙСТВУ: имя разрезано переносом.
+	 * Игрок прислал Green Candy —
+	 *
+	 * <pre>
+	 * Конфеты можно обменять у Fear      &lt;- строка кончилась
+	 * Mongerer во время Spooky Festival! &lt;- имя NPC продолжается здесь
+	 * </pre>
+	 *
+	 * а рядом развернулась справка про характеристику «Fear», которой в этом
+	 * предмете нет вовсе. На границе строк защита отключается намеренно, иначе
+	 * пропадает справка там, где следующая строка просто начинается с заглавной
+	 * («Magic Find» / «Increases the chance…»). Замер по 9150 живым подсказкам:
+	 * снять ту границу стоило бы 51 законного показа.
+	 *
+	 * <p>Поэтому спрашиваем ДАННЫЕ: имена приходят из справки, а туда их
+	 * кладёт {@code tools/gen_wiki_names.py} из защищённых имён проекта.
+	 * Пересечение оказалось крошечным — 10 пар на 1049 имён, — так что
+	 * перечислить их честнее, чем угадывать по форме текста.
+	 *
+	 * <p>⚠️ Имя ищем в СКЛЕЕННОМ тексте, и это то, что нужно: строки склеены
+	 * пробелом, значит разрезанное переносом имя снова стало целым.
+	 */
+	public static boolean insideName(String text, int from, int to, List<String> names) {
+		if (names == null || names.isEmpty()) {
+			return false;
+		}
+		for (String name : names) {
+			int at = text.indexOf(name);
+			while (at >= 0) {
+				if (at <= from && at + name.length() >= to) {
+					return true;
+				}
+				at = text.indexOf(name, at + 1);
+			}
+		}
+		return false;
+	}
+
 	/** Встречается ли термин как ЦЕЛОЕ слово и не внутри длинного имени. */
 	public static boolean mentions(String text, String term, List<Integer> lineStarts) {
+		return mentions(text, term, lineStarts, null);
+	}
+
+	/** То же, но вхождения внутри известных имён не в счёт. */
+	public static boolean mentions(String text, String term, List<Integer> lineStarts,
+			List<String> names) {
 		int at = text.indexOf(term);
 		while (at >= 0) {
 			boolean leftOk = at == 0 || !isWordChar(text.charAt(at - 1));
 			int after = at + term.length();
 			boolean rightOk = after >= text.length() || !isWordChar(text.charAt(after));
-			if (leftOk && rightOk && !partOfLongerName(text, at, after, lineStarts)) {
+			if (leftOk && rightOk && !partOfLongerName(text, at, after, lineStarts)
+					&& !insideName(text, at, after, names)) {
 				return true;
 			}
 			at = text.indexOf(term, at + 1);
@@ -118,11 +167,17 @@ public final class TermMatch {
 	 * У характеристики уровня не бывает никогда.
 	 */
 	public static boolean mentionsEnchant(String text, String name) {
+		return mentionsEnchant(text, name, null);
+	}
+
+	/** То же, но вхождения внутри известных имён не в счёт. */
+	public static boolean mentionsEnchant(String text, String name, List<String> names) {
 		int at = text.indexOf(name);
 		while (at >= 0) {
 			boolean leftOk = at == 0 || !isWordChar(text.charAt(at - 1));
 			int after = at + name.length();
-			if (leftOk && hasRomanLevel(text, after)) {
+			if (leftOk && hasRomanLevel(text, after)
+					&& !insideName(text, at, after, names)) {
 				return true;
 			}
 			at = text.indexOf(name, at + 1);
@@ -178,7 +233,12 @@ public final class TermMatch {
 	 * молчит, — здесь он молчит у семи зачарований из ста двадцати.
 	 */
 	public static boolean showArticle(String text, String name) {
-		return mentionsEnchant(text, name);
+		return mentionsEnchant(text, name, null);
+	}
+
+	/** То же, но вхождения внутри известных имён не в счёт. */
+	public static boolean showArticle(String text, String name, List<String> names) {
+		return mentionsEnchant(text, name, names);
 	}
 
 	/** Сразу за позицией стоит римский уровень («Growth VI»)? */

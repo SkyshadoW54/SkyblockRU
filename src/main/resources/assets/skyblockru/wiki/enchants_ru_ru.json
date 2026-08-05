@@ -1,1632 +1,1651 @@
 {
- "_comment": "Справка по ЗАЧАРОВАНИЯМ SkyBlock: что делает, где взять, до какого уровня качается. Показывается по отдельной клавише (по умолчанию Alt, меняется в Настройки -> Управление -> SkyblockRU). Название зачарования остаётся английским — по нему ищут вещи на аукционе, — а пояснение даётся рядом по-русски.",
- "_format": "ключ — имя зачарования, как его пишет Hypixel (без уровня); title — русское название; color — каким цветом Hypixel красит его В ИГРЕ (blue у большинства зачарований); lines — пояснение построчно. В строках можно ставить §-коды: §7 серый, §e жёлтый, §a зелёный, §b голубой, §l жирный.",
- "_rules": "Писать так, как объяснил бы игрок игроку: сперва ЧТО делает, потом сколько и откуда берётся. Строка не длиннее ~57 знаков без §-кодов, иначе панель разъедется. Факты не выдумывать. Пустой массив lines значит «статья ещё не написана» — такие мод пропускает, они не показываются.",
- "terms": {
-  "Absorb": {
-   "title": "Поглощение",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a1§7 Foraging Wisdom и §a+2§7 Foraging",
-    "§7Fortune за уровень.",
-    "§8Растёт от рубки брёвен топором с этим",
-    "§8зачарованием. В наковальне не объединяется."
-   ],
-   "_wiki": "Grants 1 FORAGING WISDOM and +2 Foraging Fortune per level.Upgrade by breaking logs using an axe with the enchantment applied to it. Cannot be combined in an anvil.",
-   "_source": "I: Community Center(4k); II: 1kLogs; III: 5kLogs; IV: 25kLogs; V: 100kLogs; VI: 300kLogs; VII: 1.5mLogs; VIII: 5mLogs; IX: 25mLogs; X: 50mLogs"
-  },
-  "Aiming": {
-   "title": "Прицеливание",
-   "color": "blue",
-   "lines": []
-  },
-  "Angler": {
-   "title": "Рыболов",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+1§7 Sea Creature Chance за уровень."
-   ],
-   "_wiki": "Grants +1 Sea Creature Chance per level.",
-   "_source": "I–V: Enchantment Table; VI: Deep Sea Protector"
-  },
-  "Aqua Affinity": {
-   "title": "Подводник",
-   "color": "blue",
-   "lines": [
-    "§7Под водой добыча идёт с обычной скоростью.",
-    "§8Без него под водой впятеро медленнее."
-   ],
-   "_wiki": "Increases underwater mining rate to normal level mining rate (mining in water is normally five times slower)."
-  },
-  "Arthropod Resistance": {
-   "title": "Сопротивление членистоногим",
-   "color": "blue",
-   "lines": []
-  },
-  "Bane of Arthropods": {
-   "title": "Бич членистоногих",
-   "color": "blue",
-   "lines": [
-    "§7Повышает урон по членистоногим:",
-    "§7паукам, жукам, клещам."
-   ],
-   "_wiki": "Increases damage dealt to Arthropod mobs by X%.",
-   "_source": "I–V: Enchantment Table; VI: Spider Slayer|4; VII: Ensnared Snail"
-  },
-  "Bank": {
-   "title": "Банк",
-   "color": "blue",
-   "lines": [
-    "§7Сохраняет §a10%§7 твоих монет за уровень",
-    "§7при смерти. Кроме того, враги роняют",
-    "§7§a+0.5§7 монет при убийстве."
-   ],
-   "_wiki": "Saves 10% of your coins per level on death. Additionally, enemies drop +0.5 when killed."
-  },
-  "Big Brain": {
-   "title": "Большой мозг",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+5§7 к интеллекту за уровень.",
-    "§8Не сочетается с Small Brain."
-   ],
-   "_wiki": "Grants +5 Intelligence per level. (An armor piece with this enchantment cannot have Small Brain)",
-   "_source": "I–II: Unobtainable; III–V: Darker Auction"
-  },
-  "Blast Protection": {
-   "title": "Взрывоустойчивость",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+30§7 к защите от взрывов за уровень.",
-    "§8Не сочетается с Protection, Fire",
-    "§8и Projectile Protection."
-   ],
-   "_wiki": "Grants +30 Defense per level against explosions. (An armor piece with this enchantment cannot have Protection, Fire Protection or Projectile Protection)",
-   "_source": "I–V: Enchantment Table; VI–VII: Experiments"
-  },
-  "Blazing Resistance": {
-   "title": "Пламенная стойкость",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a❈ Defense§7 против §4♨ Infernal§7 мобов."
-   ]
-  },
-  "Blessing": {
-   "title": "Благословение",
-   "color": "blue",
-   "lines": [
-    "§7Повышает шанс, что улов сокровищ окажется",
-    "§7§aGREAT§7 или §dOUTSTANDING§7, на §a2%§7 за уровень."
-   ],
-   "_wiki": "Increases the chance for Treasure catches to be GREAT or OUTSTANDING by 2% per level.",
-   "_source": "I–V: Enchantment Table; VI: Bayou Sludge"
-  },
-  "Bobbin' Time": {
-   "title": "Время клёва",
-   "color": "blue",
-   "lines": [
-    "§7Повышает все характеристики рыбалки",
-    "§7и §b✯ Magic Find§7 за каждый поплавок рядом."
-   ]
-  },
-  "Bug Blender": {
-   "title": "Жукодавка",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §6Farming Fortune§7 при засасывании",
-    "§7§6вредителей§7 пылесосом."
-   ]
-  },
-  "Caster": {
-   "title": "Заклинатель",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a5%§7 шанс за уровень не потратить",
-    "§7наживку."
-   ],
-   "_wiki": "5% chance to not consume bait per level.",
-   "_source": "I–V: Enchantment Table; VI: Carrot King"
-  },
-  "Cayenne": {
-   "title": "Кайенна",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+0.8§7 к здоровью за каждую цифру",
-    "§7твоей Magical Power."
-   ],
-   "_wiki": "Grants +0.8 Health per digit in your Magical Power.",
-   "_source": "I–III: Unobtainable; IV: Chili Pepper V{{Collapsible Crafting Grid"
-  },
-  "Champion": {
-   "title": "Чемпион",
-   "color": "blue",
-   "lines": [
-    "§7Даёт больше опыта боя. Второй удар по мобу",
-    "§7даёт монеты и сферы опыта.",
-    "§8Растёт от опыта боя. В наковальне",
-    "§8не объединяется."
-   ],
-   "_wiki": "Gain X% extra Combat XP. The 2nd hit on a mob gives +Y coins and +Z exp orbs.Upgrade by getting combat XP. Cannot be combined in an anvil.",
-   "_source": "I: Community Center(4k); II: 50KXP; III: 100kXP; IV: 250kXP; V: 500kXP; VI: 1mXP; VII: 1.5mXP; VIII: 2mXP; IX: 2.5mXP; X: 3mXP"
-  },
-  "Chance": {
-   "title": "Шанс",
-   "color": "blue",
-   "lines": [
-    "§7Повышает шанс, что моб выронит предмет,",
-    "§7на §a15%§7 за уровень."
-   ],
-   "_wiki": "Increases chance of a mob dropping an item by 15% per level.",
-   "_source": "I–III: Enchantment Table; IV–V: Experiments"
-  },
-  "Charm": {
-   "title": "Оберег",
-   "color": "blue",
-   "lines": [
-    "§7Повышает шанс поймать Trophy Fish",
-    "§7более высокой ступени на §a2%§7 за уровень."
-   ],
-   "_wiki": "Increases the chance to receive higher-tiered Trophy Fish by 2% per level.",
-   "_source": "I: Pyroclastic Worm; II–V: Combining Books; VI: Chain of the End Times"
-  },
-  "Chimera": {
-   "title": "Химера",
-   "color": "blue",
-   "lines": [
-    "§7Копирует §a20%§7 характеристик твоего",
-    "§7активного питомца за уровень, до §a100%§7 на V.",
-    "§8Характеристики от способностей питомца",
-    "§8не копируются, а от предметов питомца — да."
-   ],
-   "_wiki": "Copies 20% per level of your active pet's stats."
-  },
-  "Cleave": {
-   "title": "Рассечение",
-   "color": "blue",
-   "lines": [
-    "§7Удар задевает мобов вокруг цели:",
-    "§7до §a5%§7 твоего урона за уровень",
-    "§7в радиусе §e3.5§7 блока (§a+0.5§7 за уровень)."
-   ],
-   "_wiki": "Deals up to 5% of your damage per level dealt to other monsters within 3.5 (+.5 per level) blocks of the target.",
-   "_source": "I–V: Enchantment Table; VI: Experiments"
-  },
-  "Combo": {
-   "title": "Комбо",
-   "color": "blue",
-   "lines": [
-    "§7Каждое убийство даёт §a+1%§7 урона,",
-    "§7до §e2§7 убийств за §e2§7 секунды."
-   ],
-   "_wiki": "Increases your damage by 1% per kill up to 2 kills within 2s."
-  },
-  "Compact": {
-   "title": "Компактность",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a1§7 Mining Wisdom за уровень и §e0.1–0.6%§7",
-    "§7шанс выронить зачарованный предмет.",
-    "§8Растёт от добычи блоков киркой с этим",
-    "§8зачарованием. В наковальне не объединяется."
-   ],
-   "_wiki": "Gain 1 MW per level with a 0.1–0.6% chance to drop an enchanted item.Upgrade by mining blocks (that can be mined the fastest with the pickaxe) using a pickaxe with the enchantment applied to it. Cannot be combined in an anvil.",
-   "_source": "I: Community Center(4k); II: 100Blocks; III: 500Blocks; IV: 1.5kBlocks; V: 5kBlocks; VI: 15kBlocks; VII: 50kBlocks; VIII: 150kBlocks; IX: 500kBlocks; X: 1mBlocks"
-  },
-  "Corruption": {
-   "title": "Порча",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a1%§7 шанс за уровень призвать",
-    "§7испорченное морское существо."
-   ],
-   "_wiki": "Gain a 1% chance to spawn a Corrupted Sea Creature per level.",
-   "_source": "I: Corrupted Sea Creatures; II–V: Combining Books"
-  },
-  "Counter-Strike": {
-   "title": "Контрудар",
-   "color": "blue",
-   "lines": [
-    "§7Первый удар врага даёт §a+10§7 к защите",
-    "§7на §e7 секунд§7."
-   ],
-   "_wiki": "Gain +10 Defense for 7s on your first hit from an enemy.",
-   "_source": "III: Dark Auction when Scorpius is mayor; IV–V: Combining books"
-  },
-  "Critical": {
-   "title": "Критический удар",
-   "color": "blue",
-   "lines": [
-    "§7Повышает урон крита."
-   ],
-   "_wiki": "Increases Crit Damage by X%.",
-   "_source": "I–V: Enchantment Table; VI: Wolf Slayer|4; VII: Experiments"
-  },
-  "Crop Fever": {
-   "title": "Урожайная лихорадка",
-   "color": "blue",
-   "lines": [
-    "§7Сбор урожая даёт §e0.001%§7 шанс за уровень",
-    "§7на Crop Fever: §e60 с§7 лишнего урожая,",
-    "§7§a+15%§7 к шансу редкой добычи",
-    "§7и §a+100§7 Farming Fortune."
-   ],
-   "_wiki": "While breaking crops, the player has a 0.001% chance per level to trigger a Crop Fever. During Crop Fever, they roll additional crops for 60s, with a 15% increased chance of rare drops and +100 FMF."
-  },
-  "Cubism": {
-   "title": "Кубизм",
-   "color": "blue",
-   "lines": [
-    "§7Повышает урон по кубическим мобам",
-    "§7(слизни, магмовые кубы)."
-   ],
-   "_wiki": "Increases damage dealt to Cubic mobs by X%.",
-   "_source": "I–V: Enchantment Table; VI: Experiments"
-  },
-  "Cultivating": {
-   "title": "Возделывание",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a1§7 Farming Wisdom и §a+2§7 Farming",
-    "§7Fortune за уровень.",
-    "§8Растёт от сбора урожая мотыгой или топором",
-    "§8с этим зачарованием."
-   ],
-   "_wiki": "Gain 1 FMW and +2 Farming Fortune per level.Upgrade by breaking crops using a hoe or axe with the enchantment applied to it. Cannot be combined in an anvil.",
-   "_source": "I: Community Center(4k); II: 1kCrops; III: 5kCrops; IV: 25kCrops; V: 100kCrops; VI: 300kCrops; VII: 1.5mCrops; VIII: 5mCrops; IX: 20mCrops; X: 100mCrops"
-  },
-  "Dedication": {
-   "title": "Усердие",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a0.5§7 Farming Fortune для культуры,",
-    "§7умноженное на твой рубеж Garden по ней."
-   ],
-   "_wiki": "Grants 0.5 FARMING FORTUNE for crops, multiplied by your Garden milestone for that crop.",
-   "_source": "I: SkyMart; II–III: Combining Books; IV: Potential visitor reward for Librarian"
-  },
-  "Delicate": {
-   "title": "Бережность",
-   "color": "blue",
-   "lines": [
-    "§7Не ломает стебли и незрелые посевы."
-   ],
-   "_wiki": "Avoids breaking stems and baby crops.",
-   "_source": "I–IV: {{bc}}; V: Anita - 2 Silver Medals & 32x Jacob's Ticket"
-  },
-  "Depth Strider": {
-   "title": "Подводная ходьба",
-   "color": "blue",
-   "lines": [
-    "§7Замедление в воде меньше на §a33%§7",
-    "§7за уровень. На §eIII§7 плывёшь так же,",
-    "§7как ходишь по земле."
-   ],
-   "_wiki": "Reduces how much you are slowed in the water by 33% per level. At level III, the movement speed is the same as on land."
-  },
-  "Divine Gift": {
-   "title": "Божественный дар",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+2§7 Magic Find за уровень."
-   ],
-   "_wiki": "Grants +2 Magic Find per level."
-  },
-  "Dragon Hunter": {
-   "title": "Охотник на драконов",
-   "color": "blue",
-   "lines": [
-    "§7Повышает урон по летающим мобам."
-   ],
-   "_wiki": "an Enchantment that increases damage dealt to Airborne mobs"
-  },
-  "Dragon Tracer": {
-   "title": "Следопыт драконов",
-   "color": "blue",
-   "lines": [
-    "§7Стрелы сами наводятся на драконов",
-    "§7в радиусе §e2§7 блоков за уровень."
-   ],
-   "_wiki": "Arrows home towards dragons if they are within 2 blocks per level.Cannot be applied to Spider Queen's Stinger or Venom's Touch."
-  },
-  "Drain": {
-   "title": "Вытягивание",
-   "color": "blue",
-   "lines": [
-    "§7Лечит на §a% от твоего здоровья§7 при ударе",
-    "§7по мобу — за каждые §e100§7 урона крита,",
-    "§7но не больше чем за §e1000§7.",
-    "§70.2% за уровень I, §a0.6%§7 за V.",
-    "§8Мечи, длинные мечи и Gemstone Gauntlet.",
-    "§8Не сочетается с Life Steal и Mana Steal."
-   ],
-   "_wiki": "Heals for 0.X% of your max health per 100 Crit Damage you deal per hit, up to 1000 Crit Damage.(A weapon with this enchantment cannot have Life Steal or Mana Steal)",
-   "_source": "I–III: Enchantment Table; IV: Experiments; V: ExperimentsVargul the Unearthed200 Dark Candy10m"
-  },
-  "Duplex": {
-   "title": "Дуплет",
-   "color": "blue",
-   "lines": [
-    "§7Пускает вторую стрелу: §a4%§7 урона первой",
-    "§7за уровень. Цель горит §e60 с§7."
-   ],
-   "_wiki": "Shoot a second arrow dealing 4% per level of the first arrow's damage. Targets hit take 1x + 0.1x per level fire damage for 60s."
-  },
-  "Efficiency": {
-   "title": "Эффективность",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+10§7 Mining Speed и ещё §a+20§7",
-    "§7за каждый уровень."
-   ],
-   "_wiki": "Grants +10 Mining Speed and an extra +20 per level.",
-   "_source": "I–V: Enchantment Table; VI–X: Upgraded with SilexStonk pre-enchanted with VI"
-  },
-  "Ender Resistance": {
-   "title": "Сопротивление Края",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a❈ Defense§7 против §5⊙ Ender§7 мобов."
-   ]
-  },
-  "Ender Slayer": {
-   "title": "Убийца эндера",
-   "color": "blue",
-   "lines": [
-    "§7Повышает урон по мобам Края."
-   ],
-   "_wiki": "Increases damage dealt to Ender mobs by X%.",
-   "_source": "I–V: Enchantment Table; VI: Pearl Dealer; VII: ExperimentsEndstone Idol"
-  },
-  "Execute": {
-   "title": "Добивание",
-   "color": "blue",
-   "lines": [
-    "§7Чем меньше здоровья у цели, тем больше урон:",
-    "§7прибавка за каждый процент нехватки.",
-    "§8Не сочетается с Prosecute."
-   ],
-   "_wiki": "Increases damage dealt by X% for each percent of Health missing on your target.(A weapon with this enchantment cannot have Prosecute)",
-   "_source": "I–V: Enchantment Table; VI: Experiments"
-  },
-  "Experience": {
-   "title": "Опыт",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a12.5%§7 шанс за уровень, что моб",
-    "§7или руда дадут вдвое больше опыта."
-   ],
-   "_wiki": "Grants a 12.5% chance per level for Mobs and ores to drop double experience.",
-   "_source": "I–III: Enchantment Table; IV: Melancholic Viking; V: Frozen Alex"
-  },
-  "Expertise": {
-   "title": "Мастерство",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a2§7 Fishing Wisdom за уровень",
-    "§7и §a+0.6%§7 Sea Creature Chance за уровень.",
-    "§8Растёт от пойманных морских существ.",
-    "§8В наковальне не объединяется."
-   ],
-   "_wiki": "Gain 2 FSW per level and increase Sea Creature Chance by 0.6% per level. Upgrades by fishing up Sea Creatures while the rod is active. Cannot be combined in the anvil.(Sea Creature kills are contributed to the leftmost rod with Expertise in the player's hotbar.)",
-   "_source": "I: Community Center(4k); II: 50; III: 100; IV: 250; V: 500; VI: 1k; VII: 2.5k; VIII: 5.5k; IX: 10k; X: 15k"
-  },
-  "Fatal Tempo": {
-   "title": "Роковой темп",
-   "color": "blue",
-   "lines": [
-    "§7Каждый удар даёт §a+10%§7 Ferocity за уровень,",
-    "§7до §e200%§7. Держится §e3 с§7 после",
-    "§7последней атаки."
-   ],
-   "_wiki": "Attacking increases your Ferocity by 10% per level per hit, capped at 200% for 3 seconds after your last attack."
-  },
-  "Feast": {
-   "title": "Пиршество",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a☀ Overbloom§7."
-   ]
-  },
-  "Feather Falling": {
-   "title": "Невесомость",
-   "color": "blue",
-   "lines": [
-    "§7Безопасная высота падения выше на §e1§7",
-    "§7за уровень, урон от падения меньше",
-    "§7на §a5%§7 за уровень."
-   ],
-   "_wiki": "Increases how high you can fall before taking fall damage by 1 per level and reduces fall damage by 5% per level.",
-   "_source": "I–V: Enchantment Table; VI: Dungeon Loot Chest; VII–X: Combining Feather Falling VI books; 20: Pre-enchanted on Spring Boots"
-  },
-  "Ferocious Mana": {
-   "title": "Свирепая мана",
-   "color": "blue",
-   "lines": [
-    "§7Мана, потраченная рядом, даёт Ferocity",
-    "§7на §e10 с§7 за уровень. Не больше §e50§7.",
-    "§8Не сочетается с Hardened, Strong Mana",
-    "§8и Mana Vampire."
-   ],
-   "_wiki": "Gain 0.X% of mana used near you as Ferocity for 10 seconds per level, capped at 50 Ferocity.(An armor piece with this Enchantment cannot have Hardened Mana, Strong Mana or Mana Vampire)"
-  },
-  "Fire Aspect": {
-   "title": "Заговор огня",
-   "color": "blue",
-   "lines": [
-    "§7Поджигает врагов: §a3%§7 твоего урона",
-    "§7за уровень каждую секунду."
-   ],
-   "_wiki": "Ignites your enemies for Xs, dealing 3% of your damage per level per second.",
-   "_source": "I–II: Enchantment Table; III: Blaze Slayer|5"
-  },
-  "Fire Protection": {
-   "title": "Огнеупорность",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+2§7 к истинной защите от огня",
-    "§7и лавы за уровень.",
-    "§8Не сочетается с Protection, Blast",
-    "§8и Projectile Protection."
-   ],
-   "_wiki": "Grants +2 True Defense per level against fire and lava.(An armor piece with this enchantment cannot have Protection, Blast Protection or Projectile Protection)",
-   "_source": "I–V: Enchantment Table; VI–VII: Experiments"
-  },
-  "First Impression": {
-   "title": "Первое впечатление",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+1§7 Sweep в ближнем бою, а первый",
-    "§7удар по дереву даёт §a+2§7 Sweep."
-   ],
-   "_wiki": "Grants +1 SWEEP on melee hits, and your first melee hit against a tree gives you +2 SWEEP.",
-   "_source": "I: Tree Gift; II–VI: Combining Books"
-  },
-  "First Strike": {
-   "title": "Первый удар",
-   "color": "blue",
-   "lines": [
-    "§7Первый удар по мобу наносит",
-    "§7на §a+25%§7 больше урона за уровень.",
-    "§8Не сочетается с Triple-Strike."
-   ],
-   "_wiki": "Increases the melee damage dealt by 25% per level for the first hit on a mob.(A weapon with this Enchantment cannot have Triple Strike)",
-   "_source": "I–IV: Enchantment Table; V: Experiments"
-  },
-  "Flame": {
-   "title": "Воспламенение",
-   "color": "blue",
-   "lines": [
-    "§7Стрела поджигает врага и наносит урон",
-    "§7каждую секунду."
-   ],
-   "_wiki": "Arrow ignites your enemies for Xs, dealing Y% of your damage per second."
-  },
-  "Flash": {
-   "title": "Вспышка",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a1%§7 шанс за уровень мгновенно",
-    "§7приманить рыбу."
-   ],
-   "_wiki": "Gain a 1% chance per level to instantly attract a fish."
-  },
-  "Flowstate": {
-   "title": "Поток",
-   "color": "blue",
-   "lines": [
-    "§7Блоки подряд дают §a+1§7 Mining Speed.",
-    "§7Сбрасывается через §e10 с§7 без добычи,",
-    "§7предел — §e200§7 блоков."
-   ],
-   "_wiki": "Consecutive blocks broken grant +1 MINING SPEED. Stops after 10s of not mining and caps at 200 blocks."
-  },
-  "Forest Pledge": {
-   "title": "Клятва леса",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+2§7 Foraging Fortune за уровень."
-   ],
-   "_wiki": "Grants +2 FORAGING FORTUNE per level.",
-   "_source": "III: Agatha; IV–VIII: Combining books"
-  },
-  "Fortune": {
-   "title": "Удача",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+§7 Mining Fortune — шанс добыть",
-    "§7больше ресурсов с одного блока.",
-    "§8Не сочетается с Silk Touch."
-   ],
-   "_wiki": "Grants +X Mining Fortune.Not compatible with Silk Touch.",
-   "_source": "I–III: Enchantment Table; IV: Crystal Nucleus"
-  },
-  "Frail": {
-   "title": "Хрупкость",
-   "color": "blue",
-   "lines": [
-    "§7Морские существа появляются со здоровьем",
-    "§7меньше на §a2.5%§7 за уровень."
-   ],
-   "_wiki": "Sea Creatures start with 2.5% reduced health per level.",
-   "_source": "I–V: Enchantment Table; VI: Catfish; VII: Severed Pincer"
-  },
-  "Giant Killer": {
-   "title": "Убийца гигантов",
-   "color": "blue",
-   "lines": [
-    "§7Прибавка к урону за каждый процент",
-    "§7здоровья цели СВЕРХ твоего.",
-    "§8Не сочетается с Titan Killer."
-   ],
-   "_wiki": "Increases damage dealt by X% for each percent of extra Health that your target has above you, up to Y%.(A weapon with this Enchantment cannot have Titan Killer)",
-   "_source": "I–V: Enchantment Table; VI: ExperimentsDark Auction; VII: ExperimentsDarker Auction"
-  },
-  "Gravity": {
-   "title": "Гравитация",
-   "color": "blue",
-   "lines": [
-    "§7Повышает урон по летающим мобам."
-   ],
-   "_wiki": "Increases damage dealt to Airborne mobs by X%.",
-   "_source": "I–V: Enchantment Table; VI: Pearl Dealer"
-  },
-  "Great Spook": {
-   "title": "Великий ужас",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+1§7 Fear на броне Great Spook."
-   ],
-   "_wiki": "Grants +1 FEAR on Great Spook Armor.",
-   "_source": "I: Tyashoi Alchemist"
-  },
-  "Green Thumb": {
-   "title": "Зелёный палец",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a0.05§7 Farming Fortune за каждого",
-    "§7обслуженного посетителя."
-   ],
-   "_wiki": "Grants 0.05 FARMING FORTUNE per unique visitor served.",
-   "_source": "I: SkyMart; II–V: Combining books"
-  },
-  "Growth": {
-   "title": "Рост",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+15§7 к здоровью за уровень."
-   ],
-   "_wiki": "Grants +15 Health per level.",
-   "_source": "I–V: Enchantment Table; VI: ExperimentsDark Auction; VII: ExperimentsDarker Auction"
-  },
-  "Habanero Tactics": {
-   "title": "Тактика хабанеро",
-   "color": "blue",
-   "lines": [
-    "§7Лечение от жезлов сильнее, урон оружием",
-    "§7§5Slayer§7 выше, и растёт §a☯ Combat Wisdom§7."
-   ]
-  },
-  "Hardened Mana": {
-   "title": "Закалённая мана",
-   "color": "blue",
-   "lines": [
-    "§7Мана, потраченная рядом, даёт защиту",
-    "§7на §e10 с§7 за уровень. Не больше §e400§7.",
-    "§8Не сочетается со Strong, Ferocious Mana",
-    "§8и Mana Vampire."
-   ],
-   "_wiki": "Gain X% of mana used near you per level as Defense for 10 seconds per level, capped at 400 Defense.(An armor piece with this Enchantment cannot have Strong Mana, Ferocious Mana or Mana Vampire)"
-  },
-  "Hardened Vitality": {
-   "title": "Закалённая живучесть",
-   "color": "blue",
-   "lines": [
-    "§7Превращает часть потраченной §c Vitality§7",
-    "§7в §a Defense§7 на время."
-   ]
-  },
-  "Harvesting": {
-   "title": "Жатва",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+12.5§7 Farming Fortune за уровень.",
-    "§8Только на мотыги."
-   ],
-   "_wiki": "Grants +12.5 Farming Fortune per level. Can only be applied to hoes.",
-   "_source": "I–V: Enchantment Table; VI: Rare drop from Shiny Pigs"
-  },
-  "Hecatomb": {
-   "title": "Гекатомба",
-   "color": "blue",
-   "lines": [
-    "§7Даёт больше опыта Catacombs и класса,",
-    "§7вдвое больше за забеги на §eS+§7.",
-    "§7Плюс здоровье за каждые §e10§7 уровней",
-    "§7Catacombs.",
-    "§8Растёт за забеги S в подземельях."
-   ],
-   "_wiki": "Gain +X% Catacombs XP & +Y% Class XP, doubled from S+ runs. Grants +Z|icononly=true Health per 10 Catacombs levels.Upgrade by doing 2-100 S runs in Dungeons. Cannot be combined in an anvil.",
-   "_source": "I: Community Center(6k); II: 2 S runs; III: 5 S runs; IV: 10 S runs; V: 20 S runs; VI: 30 S runs; VII: 40 S runs; VIII: 60 S runs; IX: 80 S runs; X: 100 S runs"
-  },
-  "Help From Above": {
-   "title": "Помощь свыше",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §c Health Regen§7 — восстановление здоровья."
-   ]
-  },
-  "Ice Cold": {
-   "title": "Ледяной холод",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+1§7 к сопротивлению холоду",
-    "§7за уровень."
-   ],
-   "_wiki": "Grants +1 Cold Resistance per level.",
-   "_source": "I: Frozen Corpses; II–V: Combining Books"
-  },
-  "Impaling": {
-   "title": "Пронзатель",
-   "color": "blue",
-   "lines": [
-    "§7Повышает урон по водным мобам."
-   ],
-   "_wiki": "Increases damage dealt to Aquatic mobs by X%.",
-   "_source": "I–V: Enchantment Table"
-  },
-  "Inferno": {
-   "title": "Инферно",
-   "color": "blue",
-   "lines": [
-    "§7Каждый §e10-й§7 удар держит моба §e5 с§7",
-    "§7и наносит урон всё это время."
-   ],
-   "_wiki": "Every 10th hit on a mob traps it for 5s and deals 1 + 0.25x per level of that hit's damage over the trap's duration."
-  },
-  "Infinite Quiver": {
-   "title": "Бесконечный колчан",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a3%§7 шанс за уровень не потратить",
-    "§7стрелу при выстреле."
-   ],
-   "_wiki": "Saves arrows 3% per level of the time when you fire your bow.",
-   "_source": "I–V: Enchantment Table; VI–VII: Dungeon Loot Chest(VII) Floor VII onlyCombining Books; VIII–X: Combining Books"
-  },
-  "Knockback": {
-   "title": "Отдача",
-   "color": "blue",
-   "lines": [
-    "§7Отбрасывает врага на §e3§7 блока за уровень."
-   ],
-   "_wiki": "Increases knockback by 3 blocks per level."
-  },
-  "Lapidary": {
-   "title": "Огранка",
-   "color": "blue",
-   "lines": [
-    "§7Даёт Gemstone Fortune и Mining Speed,",
-    "§7пока добываешь самоцветы."
-   ],
-   "_wiki": "Grants +x Gemstone Fortune and +x Mining Speed while mining Gemstones."
-  },
-  "Last Stand": {
-   "title": "Последний рубеж",
-   "color": "blue",
-   "lines": [
-    "§7Ниже §e40%§7 здоровья даёт §a+5%§7 к защите",
-    "§7за уровень."
-   ],
-   "_wiki": "Increases your Defense by +5% per level when you are below 40% Health."
-  },
-  "Legion": {
-   "title": "Легион",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+0.07%§7 ко всем боевым",
-    "§7характеристикам и Magic Find за уровень",
-    "§7за каждого игрока в §e30§7 блоках,",
-    "§7до §e20§7 игроков."
-   ],
-   "_wiki": "Increases all Combat stats and ✯ Magic Find by +0.07% per player per level within 30 blocks of you, up to 20 players."
-  },
-  "Lethality": {
-   "title": "Смертоносность",
-   "color": "blue",
-   "lines": [
-    "§7Каждый удар в ближнем бою снижает защиту",
-    "§7цели на время §e4 с§7. Складывается до §e4§7 раз."
-   ],
-   "_wiki": "Reduces the Defense of your target by X% for 4s each time you hit them with melee. Stacks up to 4 times.",
-   "_source": "I–V: Enchantment Table; VI: ExperimentsDungeon Post-Boss Chest on Catacombs Floor V+"
-  },
-  "Life Steal": {
-   "title": "Кража жизни",
-   "color": "blue",
-   "lines": [
-    "§7Каждый удар по мобу лечит на §a0.5%§7",
-    "§7твоего максимума здоровья за уровень.",
-    "§8Не сочетается с Syphon и Mana Steal."
-   ],
-   "_wiki": "Heals for 0.5% per level of your max health each time you hit a mob.(A weapon with this Enchantment cannot have Syphon or Mana Steal)",
-   "_source": "I–III: Enchantment Table; IV: Fear Mongerer; V: Experiments"
-  },
-  "Lifeline": {
-   "title": "Спасательный круг",
-   "color": "blue",
-   "lines": []
-  },
-  "Looting": {
-   "title": "Добыча",
-   "color": "blue",
-   "lines": [
-    "§7Повышает шанс, что моб выронит предмет,",
-    "§7на §a15%§7 за уровень."
-   ],
-   "_wiki": "Increases the chance of a monster dropping an item by 15% per level.",
-   "_source": "I–III: Enchantment Table; IV: Einary; V: Experiments"
-  },
-  "Luck": {
-   "title": "Удача",
-   "color": "blue",
-   "lines": [
-    "§7Повышает шанс, что моб выронит свою броню,",
-    "§7на §a5%§7 за уровень."
-   ],
-   "_wiki": "Increases the chance for monsters to drop their armor pieces by 5% per level.",
-   "_source": "I–V: Enchantment Table; VI: Einary; VII: Experiments"
-  },
-  "Luck of the Sea": {
-   "title": "Везучий рыбак",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+0.5§7 Treasure Chance за уровень —",
-    "§7шанс выловить сокровище."
-   ],
-   "_wiki": "Grants +.5 TC per level, which increases the chance of fishing treasure.",
-   "_source": "I–V: Enchantment Table; VI: Water Hydra; VII: Gold Bottle Cap"
-  },
-  "Lure": {
-   "title": "Приманка",
-   "color": "blue",
-   "lines": [
-    "§7Сокращает наибольшее время ожидания",
-    "§7поклёвки на §a5%§7 за уровень."
-   ],
-   "_wiki": "Shortens the maximum time to catch something by 5% per level.",
-   "_source": "I–V: Enchantment Table; VI: Guardian Defender"
-  },
-  "Magmarizer": {
-   "title": "Магмаризатор",
-   "color": "blue",
-   "lines": []
-  },
-  "Magnet": {
-   "title": "Магнит",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a1§7 лишнюю сферу опыта за уровень",
-    "§7за каждую пойманную рыбу."
-   ],
-   "_wiki": "Grants 1 additional experience orb per level every time you successfully catch a fish.",
-   "_source": "I–V: Enchantment Table; VI: Rider of the Deep"
-  },
-  "Mana Pool": {
-   "title": "Запас маны",
-   "color": "blue",
-   "lines": []
-  },
-  "Mana Regeneration": {
-   "title": "Восстановление маны",
-   "color": "blue",
-   "lines": [
-    "§7Ускоряет восстановление §bМаны§7."
-   ]
-  },
-  "Mana Steal": {
-   "title": "Кража маны",
-   "color": "blue",
-   "lines": [
-    "§7Каждый удар возвращает §a0.25%§7 маны",
-    "§7за уровень.",
-    "§8Не сочетается с Life Steal и Syphon."
-   ],
-   "_wiki": "Regain 0.25% of your mana per level on hit.(A weapon with this enchantment cannot have Life Steal or Syphon)"
-  },
-  "Mana Vampire": {
-   "title": "Мана-вампир",
-   "color": "blue",
-   "lines": [
-    "§7Лечит на §a0.5%§7 маны, потраченной рядом,",
-    "§7за уровень.",
-    "§8Не сочетается с Hardened, Strong",
-    "§8и Ferocious Mana."
-   ],
-   "_wiki": "Heal for 0.5% of mana used near you per level.(An armor piece with this Enchantment cannot have Hardened Mana, Strong Mana or Ferocious Mana)"
-  },
-  "Mending": {
-   "title": "Починка",
-   "color": "blue",
-   "lines": [
-    "§7В SkyBlock это НЕ ванильная починка:",
-    "§7прочности у предметов здесь нет.",
-    "§7§aMending§7 — характеристика лечения.",
-    "§8Подробнее — в справке по терминам."
-   ]
-  },
-  "Missile": {
-   "title": "Снаряд",
-   "color": "blue",
-   "lines": [
-    "§7Штраф Throwing Axe за брёвна",
-    "§7меньше на §a10%§7."
-   ],
-   "_wiki": "The Log penalty on Throwing Axe is reduced by 10%.",
-   "_source": "I: Tree Gift; II–VI: Combining Books"
-  },
-  "No Pain No Gain": {
-   "title": "Без боли нет награды",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a20%§7 шанс за уровень получить",
-    "§e10§7 сфер опыта, когда тебя бьют."
-   ],
-   "_wiki": "You have 20% chance per level to gain 10 experience orbs every time you take hits from mobs."
-  },
-  "One For All": {
-   "title": "Всё в одном",
-   "color": "blue",
-   "lines": [
-    "§7Оставляет на предмете ОДНО зачарование,",
-    "§7но многократно усиливает его."
-   ],
-   "_wiki": "Refrigerate"
-  },
-  "Overload": {
-   "title": "Перегрузка",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+1%§7 к шансу крита и §a+1%§7 к урону",
-    "§7крита за уровень.",
-    "",
-    "§7При шансе крита выше §e100%§7 бывает",
-    "§7мега-крит: §a+10%§7 урона за уровень."
-   ],
-   "_wiki": "Increases Crit Chance by 1% and Crit Damage by 1% per level. Having a Critical chance above 100% grants a chance to perform a Mega Critical Hit dealing 10% extra damage per level.",
-   "_source": "I: Dungeon Post-Boss Chest on The Catacombs - Floor V; II–V: Combining Books"
-  },
-  "Paleontologist": {
-   "title": "Палеонтолог",
-   "color": "blue",
-   "lines": [
-    "§7Повышает шанс найти окаменелость.",
-    "§8Только на кирки, дрели и Gemstone Gauntlet."
-   ],
-   "_wiki": "an Enchantment for Pickaxes, Drills or Gemstone Gauntlet that increases the chance to find Suspicious Scrap inside Glacite Mineshafts"
-  },
-  "Pesterminator": {
-   "title": "Истребитель вредителей",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+2§7 Farming Fortune и §a+1§7 Bonus",
-    "§7Pest Chance за уровень."
-   ],
-   "_wiki": "Grants +2 FARMING FORTUNE and +1 BONUS PEST CHANCE per level.",
-   "_source": "I: 3.5% chance from killing Beetles; II–V: Combining Books; VI: A Beginner's Guide to Pesthunting"
-  },
-  "Piercing": {
-   "title": "Пронзающая стрела",
-   "color": "blue",
-   "lines": [
-    "§7Стрелы пролетают врагов насквозь.",
-    "§7Задетым достаётся §a25%§7 урона."
-   ],
-   "_wiki": "Arrows travel through enemies. The extra targets hit take 25% of the damage."
-  },
-  "Piscary": {
-   "title": "Промысел",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+1§7 Fishing Speed."
-   ],
-   "_wiki": "Grants +1 Fishing Speed.",
-   "_source": "I–V: Enchantment Table; VI: Abyssal MinerExperiments; VII: Troubled Bubble"
-  },
-  "Power": {
-   "title": "Сила",
-   "color": "blue",
-   "lines": [
-    "§7Повышает урон из лука."
-   ],
-   "_wiki": "Increases bow damage by X%.",
-   "_source": "I–V: Enchantment Table; VI–VII: Dark Auction"
-  },
-  "Prismatic": {
-   "title": "Призматичность",
-   "color": "blue",
-   "lines": [
-    "§7Даёт Pristine — шанс, что добытый самоцвет",
-    "§7окажется лучшего качества."
-   ],
-   "_wiki": "Grants x Pristine, which increases the chance to improve the quality of dropped Gemstones.",
-   "_source": "I: Gemstone|VIII{{Collapsible Crafting Grid|B2 = Paper,8|C2 = Paper,8|B3 = Paper,8|C3 = Fine Topaz Gemstone,40|output = Enchanted Book (Prismatic)}}; II–V: Combining Books"
-  },
-  "Projectile Protection": {
-   "title": "Защита от снарядов",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+7§7 к защите от снарядов за уровень.",
-    "§8Не сочетается с Protection, Blast",
-    "§8и Fire Protection."
-   ],
-   "_wiki": "Grants +7 Defense per level against projectiles.(An armor piece with this enchantment cannot have Protection, Blast Protection or Fire Protection)",
-   "_source": "I–V: Enchantment Table; VI–VII: Experiments"
-  },
-  "Prosecute": {
-   "title": "Преследование",
-   "color": "blue",
-   "lines": [
-    "§7Чем больше здоровья у цели, тем больше урон:",
-    "§7прибавка за каждый процент здоровья.",
-    "§8Не сочетается с Execute."
-   ],
-   "_wiki": "Increases damage dealt by X% for each percent of health your target has.(A weapon with this enchantment cannot have Execute)",
-   "_source": "I–V: Enchantment Table; VI: Experiments"
-  },
-  "Prosperity": {
-   "title": "Процветание",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+3§7 к здоровью."
-   ],
-   "_wiki": "Grants +3 Health."
-  },
-  "Protection": {
-   "title": "Защита",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+§7 к защите за уровень.",
-    "§8Не сочетается с Blast, Fire",
-    "§8и Projectile Protection."
-   ],
-   "_wiki": "Grants +X Defense per level.(An armor piece with this enchantment cannot have Blast Protection, Fire Protection or Projectile Protection)",
-   "_source": "I–V: Enchantment Table; VI: ExperimentsTomiokaDark Auction; VII: ExperimentsDarker Auction"
-  },
-  "Punch": {
-   "title": "Откидывание",
-   "color": "blue",
-   "lines": [
-    "§7Стрела отбрасывает на §e3§7 блока за уровень."
-   ],
-   "_wiki": "Increases arrow knockback by 3 blocks per level."
-  },
-  "Pyroclasm": {
-   "title": "Пирокластика",
-   "color": "blue",
-   "lines": [
-    "§7Повышает урон по §c♆ Magmatic§7 мобам."
-   ]
-  },
-  "Quantum": {
-   "title": "Квант",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+2.4§7 живучести в будни",
-    "§7и §a+1.2§7 случайной Wisdom в выходные."
-   ],
-   "_wiki": "Grants +2.4 VITALITY on weekdays and +1.212px of a random Wisdom stat on weekends.",
-   "_source": "I–II: Unobtainable * 3~Riftstalker Bloodfiend * 4span5~Combining books"
-  },
-  "Quick Bite": {
-   "title": "Быстрый клёв",
-   "color": "blue",
-   "lines": [
-    "§7Рыба плывёт к поплавку на §a5%§7 быстрее",
-    "§7за уровень."
-   ],
-   "_wiki": "Makes fish swim 5% faster towards your bobber per level.",
-   "_source": "I: Crafting{{Collapsible Crafting Grid|B2 = Enchanted Paper,1|B3 = Enchanted Paper,1|C2 = Enchanted Paper,1|C3 = Alligator Skin,8|output=Enchanted Book (Quick Bite I)}}; II–V: Combining Books"
-  },
-  "Rainbow": {
-   "title": "Радуга",
-   "color": "blue",
-   "lines": [
-    "§7§eI§7 — овца роняет шерсть случайного цвета.",
-    "§7§eII§7 — §a50%§7 шанс сменить ей цвет.",
-    "§7§eIII§7 — §a80%§7 шанс сменить цвет",
-    "§7и перевернуть овцу вверх ногами."
-   ],
-   "_wiki": "(I) Causes Sheep to drop a random wool color when sheared.(II) Shearing Sheep has a 50% chance to change their color.(III) Shearing Sheep has a 80% chance to change their color and flips the Sheep upside-down.",
-   "_source": "I: Enchantment Table; II: Mollim's quest; III: Enchanted Book Bundle"
-  },
-  "Reflection": {
-   "title": "Отражение",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+2§7 к интеллекту и §a+1§7 к истинной",
-    "§7защите за уровень. Стрела, попавшая в тебя,",
-    "§7бьёт стрелявшего уроном от твоего интеллекта.",
-    "§8Не сочетается с Thorns."
-   ],
-   "_wiki": "Grants +2 Intelligence and +1 True Defense per level. When damaged by an arrow, deal Zx your Intelligence to its shooter, where Z is the value of the third row.(An armor piece with this enchantment cannot have Thorns)",
-   "_source": "I: Rift Mirrorverse; II–V: Combining books"
-  },
-  "Refrigerate": {
-   "title": "Охлаждение",
-   "color": "blue",
-   "lines": [
-    "§7Даёт защиту в зависимости от того,",
-    "§7сколько интеллекта тратится рядом."
-   ],
-   "_wiki": "an Ultimate Enchantment that grants you Defense, based on how much Intelligence is being used"
-  },
-  "Reiterate": {
-   "title": "Повторение",
-   "color": "blue",
-   "lines": [
-    "§7Пускает вторую стрелу: §a4%§7 урона первой",
-    "§7за уровень. Цель горит §e60 с§7.",
-    "§8На вики это одно зачарование с Duplex."
-   ]
-  },
-  "Rejuvenate": {
-   "title": "Оздоровление",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+2§7 к восстановлению здоровья",
-    "§7за уровень.",
-    "§8Не сочетается с Respite."
-   ],
-   "_wiki": "Grants +2 HEALTH REGEN per level.(An armor piece with this enchantment cannot have Respite)"
-  },
-  "Rend": {
-   "title": "Разрыв",
-   "color": "blue",
-   "lines": [
-    "§7ЛКМ вырывает стрелы из ближних врагов",
-    "§7и наносит §a5%§7 последнего крита за уровень",
-    "§7за каждую стрелу. Перезарядка §e2 с§7,",
-    "§7до §e5§7 стрел за раз."
-   ],
-   "_wiki": "Grants a bow a Left Click ability that rips out the arrows from nearby enemies and deals 5% per level of your last critical hit for every arrow in the target. 2s Cooldown. Max of 5 arrows at a time."
-  },
-  "Replenish": {
-   "title": "Восполнение",
-   "color": "blue",
-   "lines": [
-    "§7Собранные посевы досаживаются сами",
-    "§7из инвентаря — включая какао и адский нарост."
-   ],
-   "_wiki": "Upon breaking crops, including Cocoa Beans and Nether Wart, automatically replant from materials in the inventory."
-  },
-  "Respiration": {
-   "title": "Подводное дыхание",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+15§7 Respiration за уровень."
-   ],
-   "_wiki": "Grants +15 RESPIRATION per level.",
-   "_source": "I–III: Enchantment Table; IV: Nemo"
-  },
-  "Respite": {
-   "title": "Передышка",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+5§7 к восстановлению здоровья",
-    "§7за уровень ВНЕ боя.",
-    "§8Не сочетается с Rejuvenate."
-   ],
-   "_wiki": "Grants +5 HEALTH REGEN per level while out of combat.(An armor piece with this enchantment cannot have Rejuvenate)"
-  },
-  "Scavenger": {
-   "title": "Собиратель",
-   "color": "blue",
-   "lines": [
-    "§7Убийство даёт монеты за уровень моба."
-   ],
-   "_wiki": "Scavenge 0.3 per monster level on kill per enchantment level. (Scavenger Bonus * Monster Level)",
-   "_source": "I–III: Enchantment Table; IV: Einary; V: ExperimentsTomioka (Costs 15m|short=y); VI: Golden Bounty"
-  },
-  "Scuba": {
-   "title": "Акваланг",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+1§7 к сопротивлению давлению",
-    "§7за уровень."
-   ],
-   "_wiki": "Grants +1 PRESSURE RESISTANCE per level.",
-   "_source": "I: (IV) Crafting{{Collapsible Crafting Grid|B2 = Paper,1|C2 = Paper,1|B3 = Paper,1|C3 = Enchanted Sea Lumies,1|output=Enchanted Book (Scuba I)}}; II–VI: Combining Books"
-  },
-  "Sharpness": {
-   "title": "Острота",
-   "color": "blue",
-   "lines": [
-    "§7Повышает урон в ближнем бою."
-   ],
-   "_wiki": "Increases melee damage dealt by X%.",
-   "_source": "I–V: Enchantment Table; VI: Dark AuctionTomioka (Costs 10m|short=y); VII: Darker Auction; X: Pre-enchanted on Aspect of the Jerry, Signature Edition"
-  },
-  "Silk Touch": {
-   "title": "Шёлковое касание",
-   "color": "blue",
-   "lines": [
-    "§7Блок падает как есть, а не своей добычей:",
-    "§7угольная руда вместо угля.",
-    "§8Не сочетается со Smelting Touch и Fortune."
-   ],
-   "_wiki": "Mined blocks drop themselves instead of their normal drops (e.g., coal ore instead of coal)Not compatible with Smelting Touch and Fortune. Note: For all ores except Redstone, which always drops one when mined, the Spelunker perk applies."
-  },
-  "Small Brain": {
-   "title": "Маленький мозг",
-   "color": "blue",
-   "lines": [
-    "§7Убавляет интеллект, но даёт",
-    "§7истинную защиту.",
-    "§8Не сочетается с Big Brain."
-   ],
-   "_wiki": "Grants -X Intelligence and +Y True Defense. (An armor piece with this enchantment cannot have Big Brain)"
-  },
-  "Smarty Pants": {
-   "title": "Умник",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+5§7 к интеллекту за уровень."
-   ],
-   "_wiki": "Grants +5 Intelligence per level."
-  },
-  "Smelting Touch": {
-   "title": "Плавка",
-   "color": "blue",
-   "lines": [
-    "§7Добытые блоки сразу переплавляются:",
-    "§7железные слитки вместо руды.",
-    "§8Не сочетается с Silk Touch."
-   ],
-   "_wiki": "Automatically smelts mined blocks into their smelted form (e.g., iron ingots instead of iron ore).Not compatible with Silk Touch."
-  },
-  "Smite": {
-   "title": "Небесная кара",
-   "color": "blue",
-   "lines": [
-    "§7Повышает урон по нежити, визерам",
-    "§7и скелетам."
-   ],
-   "_wiki": "Increases damage dealt to Undead, Wither and Skeletal mobs by X%.",
-   "_source": "I–V: Enchantment Table; VI: Zombie Slayer|4 III+; VII: Tomioka (Costs 25m|short=y)Severed Hand"
-  },
-  "Smoldering": {
-   "title": "Тление",
-   "color": "blue",
-   "lines": [
-    "§7Повышает урон по адским мобам."
-   ],
-   "_wiki": "Increases damage dealt to Infernal mobs by X%."
-  },
-  "Snipe": {
-   "title": "Снайпер",
-   "color": "blue",
-   "lines": [
-    "§7Стрела наносит §a+1%§7 урона за уровень",
-    "§7за каждые §e10§7 пролетевших блоков."
-   ],
-   "_wiki": "Arrows deal +1% damage per level for every 10 blocks traveled.Damage is calculated based on the distance between the player and the arrow when it hits an enemy.",
-   "_source": "I–III: Enchantment Table; IV: Experiments"
-  },
-  "Soul Eater": {
-   "title": "Пожиратель душ",
-   "color": "blue",
-   "lines": [
-    "§7Оружие запоминает урон последнего убитого",
-    "§7моба и добавляет его как силу",
-    "§7к следующему криту.",
-    "§8Вне подземелий не больше §e5000§7."
-   ],
-   "_wiki": "Your weapon gains 2x per level of the Mob Damage of the latest monster killed and adds it as Strength on your next critical hit. (Max 5k outside Dungeons)."
-  },
-  "Spiked Hook": {
-   "title": "Шипастый крюк",
-   "color": "blue",
-   "lines": [
-    "§7Удочка наносит мобам на §a5%§7 больше",
-    "§7урона за уровень."
-   ],
-   "_wiki": "Fishing rod deals 5% more damage to monsters per level.",
-   "_source": "I–V: Enchantment Table; VI: Sea Leech; VII: Octopus Tendril"
-  },
-  "Stealth": {
-   "title": "Скрытность",
-   "color": "blue",
-   "lines": [
-    "§7Пугливые существа не убегают,",
-    "§7а остаются на месте."
-   ],
-   "_wiki": "Causes timid creatures that normally flee to remain still."
-  },
-  "Strong Mana": {
-   "title": "Сильная мана",
-   "color": "blue",
-   "lines": [
-    "§7Мана, потраченная рядом, даёт §a+0.1%§7",
-    "§7силы за уровень на §e10 с§7. Не больше §e100§7.",
-    "§8Не сочетается с Hardened, Ferocious Mana",
-    "§8и Mana Vampire."
-   ],
-   "_wiki": "Gain +0.1% of mana used near you per level as Strength for 10 seconds per level, capped at 100 Strength.(An armor piece with this Enchantment cannot have Hardened Mana, Ferocious Mana or Mana Vampire)"
-  },
-  "Strong Vitality": {
-   "title": "Сильная живучесть",
-   "color": "blue",
-   "lines": [
-    "§7Превращает часть потраченной §c Vitality§7",
-    "§7в §c Strength§7 на время."
-   ]
-  },
-  "Sugar Rush": {
-   "title": "Сахарный прилив",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+2§7 к скорости за уровень."
-   ],
-   "_wiki": "Grants +2 Speed per level.",
-   "_source": "I: Fear Mongerer; II–III: Combining Books"
-  },
-  "Sunder": {
-   "title": "Раскол",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+12.5§7 Farming Fortune."
-   ],
-   "_wiki": "Grants +12.5 FARMING FORTUNE, which increases your chance for multiple crops.",
-   "_source": "I: SkyMart; II–V: Combining Books; V: Locust"
-  },
-  "Sunset": {
-   "title": "Закат",
-   "color": "blue",
-   "lines": [
-    "§7Днём даёт §a☀ Overbloom§7,",
-    "§7ночью сокращает перезарядку посетителей."
-   ]
-  },
-  "Swarm": {
-   "title": "Рой",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+2%§7 урона за каждого врага",
-    "§7в радиусе §e10§7 блоков, до §e10§7 врагов."
-   ],
-   "_wiki": "Increases your damage by 2% for each enemy within 10 blocks. Maximum of 10 enemies."
-  },
-  "Syphon": {
-   "title": "Вытягивание",
-   "color": "blue",
-   "lines": []
-  },
-  "Tabasco": {
-   "title": "Табаско",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+2§7 к урону оружия, если у тебя",
-    "§7НЕ надет питомец-дракон."
-   ],
-   "_wiki": "Grants +2 weapon damage if you don't have a Dragon pet equipped.",
-   "_source": "I: ?; II: Chili Pepper|IX{{Collapsible Crafting Grid|A1 = Chili Pepper,16|B1 = Kuudra Teeth|C1 = Chili Pepper,16|B2 = Kuudra Teeth|B3 = Kuudra Teeth|output=Enchanted Book (Tabasco II)}}; III: Combining Tabasco II Books"
-  },
-  "Telekinesis": {
-   "title": "Телекинез",
-   "color": "blue",
-   "lines": [
-    "§7Добыча попадает сразу в инвентарь."
-   ]
-  },
-  "The One": {
-   "title": "Единственный",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+0.5§7 к здоровью и §a+0.1§7 к силе",
-    "§7за каждую собранную полностью коллекцию."
-   ],
-   "_wiki": "Grants +0.5 Health and +0.1 Strength per maxed out collection (You have #)"
-  },
-  "Thorns": {
-   "title": "Шипы",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a50%§7 шанс отразить §a3%§7 урона",
-    "§7за уровень обратно в атакующего."
-   ],
-   "_wiki": "Grants a 50% chance to rebound 3% of damage per level dealt back at the attacker."
-  },
-  "Thunderbolt": {
-   "title": "Молния",
-   "color": "blue",
-   "lines": [
-    "§7Каждый §e3-й§7 удар бьёт молнией по всем",
-    "§7мобам в радиусе §e2§7 блоков, до §e10§7 штук.",
-    "§8Не сочетается с Thunderlord."
-   ],
-   "_wiki": "Every 3 hits on a monster, strike lightning, dealing X% of the hit's damage to up to 10 monsters within 2 blocks.(A weapon with this enchantment cannot have Thunderlord)",
-   "_source": "I–V: Enchantment Table; VI–VII: Experiments"
-  },
-  "Thunderlord": {
-   "title": "Повелитель грома",
-   "color": "blue",
-   "lines": [
-    "§7Каждый §e3-й§7 удар бьёт молнией,",
-    "§7нанося часть урона этого удара.",
-    "§8Не сочетается с Thunderbolt."
-   ],
-   "_wiki": "Every 3 hits on a monster, strike lightning, dealing X% of the hit's damage.(A weapon with this enchantment cannot have Thunderbolt)",
-   "_source": "I–V: Enchantment Table; VI: Stormy-type Undeads from The Watcher on Catacombs Floor V+; VII: ExperimentsMaster Mode Floor VII"
-  },
-  "Tidal": {
-   "title": "Приливный",
-   "color": "blue",
-   "lines": [
-    "§7Повышает §a❈ Defense§7 против §bморских существ§7."
-   ]
-  },
-  "Titan Killer": {
-   "title": "Убийца титанов",
-   "color": "blue",
-   "lines": [
-    "§7Прибавка к урону за каждые §a100§7 защиты цели.",
-    "§8Не сочетается с Giant Killer."
-   ],
-   "_wiki": "Increases damage dealt by X% for every 100 Defense your target has up to Y%.(A weapon with this enchantment cannot have Giant Killer)",
-   "_source": "I–V: Enchantment Table; VI–VII: Experiments"
-  },
-  "Toxophilite": {
-   "title": "Стрелок",
-   "color": "blue",
-   "lines": [
-    "§7Даёт больше опыта боя и §a+§7 к шансу крита.",
-    "§8Растёт от опыта боя. В наковальне",
-    "§8не объединяется."
-   ],
-   "_wiki": "Gain X% extra Combat XP. Grants +Y Crit Chance.Upgrade by getting Combat XP.Cannot be combined in an anvil.",
-   "_source": "I: Community Center(4k); II: 50KXP; III: 100kXP; IV: 250kXP; V: 500kXP; VI: 1mXP; VII: 1.5mXP; VIII: 2mXP; IX: 2.5mXP; X: 3mXP"
-  },
-  "Transylvanian": {
-   "title": "Трансильванский",
-   "color": "blue",
-   "lines": [
-    "§7Лечит каждую секунду за каждого врага",
-    "§7в радиусе §e10§7 блоков, до предела."
-   ],
-   "_wiki": "Heal X|icononly=yes Health/s per enemy within 10 blocks, up to Y|icononly=yes Health/s.",
-   "_source": "IV: (IV) Crafting{{Collapsible Crafting Grid|B2 = Paper,8|C2 = Paper,8|B3 = Paper,8|C3 = Hemoglass,8|output=Enchanted Book (Transylvanian IV)}}; V: Combining Transylvanian IV Books"
-  },
-  "Triple-Strike": {
-   "title": "Тройной удар",
-   "color": "blue",
-   "lines": [
-    "§7Первые ТРИ удара по мобу наносят",
-    "§7на §a+10%§7 больше урона за уровень.",
-    "§8Не сочетается с First Strike."
-   ],
-   "_wiki": "Increases damage dealt by 10% per level for the first three hits on a mob.(A weapon with this enchantment cannot have First Strike)"
-  },
-  "True Protection": {
-   "title": "Истинная броня",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+5§7 к истинной защите."
-   ],
-   "_wiki": "Grants +5 True Defense."
-  },
-  "Turbo-Cactus": {
-   "title": "Турбо-кактус",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §6☘ Cactus Fortune§7 — больше урожая",
-    "§7именно этой культуры."
-   ]
-  },
-  "Turbo-Cane": {
-   "title": "Турбо-тростник",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §6☘ Sugar Cane Fortune§7 — больше урожая",
-    "§7именно этой культуры."
-   ]
-  },
-  "Turbo-Carrot": {
-   "title": "Турбо-морковь",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §6☘ Carrot Fortune§7 — больше урожая",
-    "§7именно этой культуры."
-   ]
-  },
-  "Turbo-Coco": {
-   "title": "Турбо-какао",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §6☘ Cocoa Beans Fortune§7 — больше урожая",
-    "§7именно этой культуры."
-   ]
-  },
-  "Turbo-Crop": {
-   "title": "Турбо-культура",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a+5§7 Farming Fortune за уровень",
-    "§7на своей культуре.",
-    "§8Есть под пшеницу, морковь, картофель,",
-    "§8тыкву, арбуз, грибы, какао, кактус,",
-    "§8тростник и адский нарост."
-   ],
-   "_wiki": "Grants +5 Farming Fortune per level when breaking the specified crop.Comes in Turbo-Wheat, Turbo-Carrot, Turbo-Potato, Turbo-Pumpkin, Turbo-Melon, Turbo-Mushrooms, Turbo-Cocoa, Turbo-Cacti, Turbo-Cane, and Turbo-Warts variants.Level IV requires Bronze in a contest for that crop, and V requires Silver",
-   "_source": "I: Jacob's Farming ContestsLibrarian visitor; II–V: Combining Books"
-  },
-  "Turbo-Melon": {
-   "title": "Турбо-арбуз",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §6☘ Melon Slice Fortune§7 — больше урожая",
-    "§7именно этой культуры."
-   ]
-  },
-  "Turbo-Moonflower": {
-   "title": "Турбо-луноцвет",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §6☘ Moonflower Fortune§7 — больше урожая",
-    "§7именно этой культуры."
-   ]
-  },
-  "Turbo-Mushrooms": {
-   "title": "Турбо-грибы",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §6☘ Mushroom Fortune§7 — больше урожая",
-    "§7именно этой культуры."
-   ]
-  },
-  "Turbo-Potato": {
-   "title": "Турбо-картофель",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §6☘ Potato Fortune§7 — больше урожая",
-    "§7именно этой культуры."
-   ]
-  },
-  "Turbo-Pumpkin": {
-   "title": "Турбо-тыква",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §6☘ Pumpkin Fortune§7 — больше урожая",
-    "§7именно этой культуры."
-   ]
-  },
-  "Turbo-Rose": {
-   "title": "Турбо-роза",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §6☘ Wild Rose Fortune§7 — больше урожая",
-    "§7именно этой культуры."
-   ]
-  },
-  "Turbo-Sunflower": {
-   "title": "Турбо-подсолнух",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §6☘ Sunflower Fortune§7 — больше урожая",
-    "§7именно этой культуры."
-   ]
-  },
-  "Turbo-Warts": {
-   "title": "Турбо-наросты",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §6☘ Nether Wart Fortune§7 — больше урожая",
-    "§7именно этой культуры."
-   ]
-  },
-  "Turbo-Wheat": {
-   "title": "Турбо-пшеница",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §6☘ Wheat Fortune§7 — больше урожая",
-    "§7именно этой культуры."
-   ]
-  },
-  "Ultimate Jerry": {
-   "title": "Ультимативный Jerry",
-   "color": "blue",
-   "lines": [
-    "§7Повышает базовый урон Aspect of the Jerry",
-    "§7на §a1000%§7 за уровень."
-   ],
-   "_wiki": "Increases the base Damage of Aspect of the Jerry by 1000% per level"
-  },
-  "Ultimate Wise": {
-   "title": "Абсолютная мудрость",
-   "color": "blue",
-   "lines": [
-    "§7Способность предмета тратит",
-    "§7на §a10%§7 меньше маны за уровень,",
-    "§7до §a50%§7 на V.",
-    "§8Оружие, инструменты, удочки и жезлы."
-   ],
-   "_wiki": "Reduces the ability Manacost of this item by 10% per level"
-  },
-  "Undead Resistance": {
-   "title": "Сопротивление нежити",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a❈ Defense§7 против §f༕ Undead§7 мобов."
-   ]
-  },
-  "Vampiric Vitality": {
-   "title": "Вампирская живучесть",
-   "color": "blue",
-   "lines": [
-    "§7Лечит §c❤§7 за каждую потраченную §c Vitality§7."
-   ]
-  },
-  "Vampirism": {
-   "title": "Вампиризм",
-   "color": "blue",
-   "lines": [
-    "§7Убийство врага лечит на §a1%§7 нехватки",
-    "§7здоровья за уровень."
-   ],
-   "_wiki": "Heals for 1% of your missing Health per level whenever you kill an enemy.",
-   "_source": "I–V: Enchantment Table; VI: Spooky Festival RewardTrick or Treat Chest"
-  },
-  "Venomous": {
-   "title": "Ядовитость",
-   "color": "blue",
-   "lines": [
-    "§7Замедляет цель и наносит урон каждую секунду.",
-    "§7Складывается до §e40§7 ударов, держится §e5 с§7."
-   ],
-   "_wiki": "Reduces the target's walk Speed by X% and deals X% of your damage per second per hit, stacking globally up to 40 hits. Lasts 5s.",
-   "_source": "I–V: Enchantment Table; VI: Experiments"
-  },
-  "Veteran": {
-   "title": "Ветеран",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a☯ Combat Wisdom§7 — опыт боя."
-   ]
-  },
-  "Vicious": {
-   "title": "Свирепый",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a1§7 Ferocity за уровень."
-   ],
-   "_wiki": "Grants 1 Ferocity per level.",
-   "_source": "I–II: Enchantment Table; III–V: Dark Auction"
-  },
-  "Vivacious Vitality": {
-   "title": "Бодрая живучесть",
-   "color": "blue",
-   "lines": [
-    "§7Превращает часть потраченной §c Vitality§7",
-    "§7в §e Attack Speed§7 на время."
-   ]
-  },
-  "Wisdom": {
-   "title": "Мудрость",
-   "color": "blue",
-   "lines": [
-    "§7Даёт §a1§7 к интеллекту за уровень",
-    "§7за каждые §e5§7 уровней опыта при тебе.",
-    "§7Не больше §e20§7 за уровень."
-   ],
-   "_wiki": "Gain 1 Intelligence per level, for every 5 levels of exp you have on you. Capped at 20 Intelligence per level."
-  },
-  "Woodsplitter": {
-   "title": "Дровосек",
-   "color": "blue",
-   "lines": [
-    "§7Повышает урон по лесным мобам."
-   ],
-   "_wiki": "Increases damage dealt to woodland mobs by X%.",
-   "_source": "I–V: Enchantment Table; VI: .1% chance to drop from Chillshot or Chillblade"
+  "_comment": "Справка по ЗАЧАРОВАНИЯМ SkyBlock: что делает, где взять, до какого уровня качается. Показывается по отдельной клавише (по умолчанию Alt, меняется в Настройки -> Управление -> SkyblockRU). Название зачарования остаётся английским — по нему ищут вещи на аукционе, — а пояснение даётся рядом по-русски.",
+  "_format": "ключ — имя зачарования, как его пишет Hypixel (без уровня); title — русское название; color — каким цветом Hypixel красит его В ИГРЕ (blue у большинства зачарований); lines — пояснение построчно. В строках можно ставить §-коды: §7 серый, §e жёлтый, §a зелёный, §b голубой, §l жирный.",
+  "_rules": "Писать так, как объяснил бы игрок игроку: сперва ЧТО делает, потом сколько и откуда берётся. Строка не длиннее ~57 знаков без §-кодов, иначе панель разъедется. Факты не выдумывать. Пустой массив lines значит «статья ещё не написана» — такие мод пропускает, они не показываются.",
+  "terms": {
+    "Absorb": {
+      "title": "Поглощение",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a1§7 Foraging Wisdom и §a+2§7 Foraging",
+        "§7Fortune за уровень.",
+        "§8Растёт от рубки брёвен топором с этим",
+        "§8зачарованием. В наковальне не объединяется."
+      ],
+      "_wiki": "Grants 1 FORAGING WISDOM and +2 Foraging Fortune per level.Upgrade by breaking logs using an axe with the enchantment applied to it. Cannot be combined in an anvil.",
+      "_source": "I: Community Center(4k); II: 1kLogs; III: 5kLogs; IV: 25kLogs; V: 100kLogs; VI: 300kLogs; VII: 1.5mLogs; VIII: 5mLogs; IX: 25mLogs; X: 50mLogs"
+    },
+    "Aiming": {
+      "title": "Прицеливание",
+      "color": "blue",
+      "lines": []
+    },
+    "Angler": {
+      "title": "Рыболов",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+1§7 Sea Creature Chance за уровень."
+      ],
+      "_wiki": "Grants +1 Sea Creature Chance per level.",
+      "_source": "I–V: Enchantment Table; VI: Deep Sea Protector",
+      "names": [
+        "Angler Angus"
+      ]
+    },
+    "Aqua Affinity": {
+      "title": "Подводник",
+      "color": "blue",
+      "lines": [
+        "§7Под водой добыча идёт с обычной скоростью.",
+        "§8Без него под водой впятеро медленнее."
+      ],
+      "_wiki": "Increases underwater mining rate to normal level mining rate (mining in water is normally five times slower)."
+    },
+    "Arthropod Resistance": {
+      "title": "Сопротивление членистоногим",
+      "color": "blue",
+      "lines": []
+    },
+    "Bane of Arthropods": {
+      "title": "Бич членистоногих",
+      "color": "blue",
+      "lines": [
+        "§7Повышает урон по членистоногим:",
+        "§7паукам, жукам, клещам."
+      ],
+      "_wiki": "Increases damage dealt to Arthropod mobs by X%.",
+      "_source": "I–V: Enchantment Table; VI: Spider Slayer|4; VII: Ensnared Snail"
+    },
+    "Bank": {
+      "title": "Банк",
+      "color": "blue",
+      "lines": [
+        "§7Сохраняет §a10%§7 твоих монет за уровень",
+        "§7при смерти. Кроме того, враги роняют",
+        "§7§a+0.5§7 монет при убийстве."
+      ],
+      "_wiki": "Saves 10% of your coins per level on death. Additionally, enemies drop +0.5 when killed.",
+      "names": [
+        "Dragontail Bank",
+        "Empty Bank",
+        "Scarleton Bank",
+        "Tangleburg Bank"
+      ]
+    },
+    "Big Brain": {
+      "title": "Большой мозг",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+5§7 к интеллекту за уровень.",
+        "§8Не сочетается с Small Brain."
+      ],
+      "_wiki": "Grants +5 Intelligence per level. (An armor piece with this enchantment cannot have Small Brain)",
+      "_source": "I–II: Unobtainable; III–V: Darker Auction"
+    },
+    "Blast Protection": {
+      "title": "Взрывоустойчивость",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+30§7 к защите от взрывов за уровень.",
+        "§8Не сочетается с Protection, Fire",
+        "§8и Projectile Protection."
+      ],
+      "_wiki": "Grants +30 Defense per level against explosions. (An armor piece with this enchantment cannot have Protection, Fire Protection or Projectile Protection)",
+      "_source": "I–V: Enchantment Table; VI–VII: Experiments"
+    },
+    "Blazing Resistance": {
+      "title": "Пламенная стойкость",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a❈ Defense§7 против §4♨ Infernal§7 мобов."
+      ]
+    },
+    "Blessing": {
+      "title": "Благословение",
+      "color": "blue",
+      "lines": [
+        "§7Повышает шанс, что улов сокровищ окажется",
+        "§7§aGREAT§7 или §dOUTSTANDING§7, на §a2%§7 за уровень."
+      ],
+      "_wiki": "Increases the chance for Treasure catches to be GREAT or OUTSTANDING by 2% per level.",
+      "_source": "I–V: Enchantment Table; VI: Bayou Sludge"
+    },
+    "Bobbin' Time": {
+      "title": "Время клёва",
+      "color": "blue",
+      "lines": [
+        "§7Повышает все характеристики рыбалки",
+        "§7и §b✯ Magic Find§7 за каждый поплавок рядом."
+      ]
+    },
+    "Bug Blender": {
+      "title": "Жукодавка",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §6Farming Fortune§7 при засасывании",
+        "§7§6вредителей§7 пылесосом."
+      ]
+    },
+    "Caster": {
+      "title": "Заклинатель",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a5%§7 шанс за уровень не потратить",
+        "§7наживку."
+      ],
+      "_wiki": "5% chance to not consume bait per level.",
+      "_source": "I–V: Enchantment Table; VI: Carrot King"
+    },
+    "Cayenne": {
+      "title": "Кайенна",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+0.8§7 к здоровью за каждую цифру",
+        "§7твоей Magical Power."
+      ],
+      "_wiki": "Grants +0.8 Health per digit in your Magical Power.",
+      "_source": "I–III: Unobtainable; IV: Chili Pepper V{{Collapsible Crafting Grid"
+    },
+    "Champion": {
+      "title": "Чемпион",
+      "color": "blue",
+      "lines": [
+        "§7Даёт больше опыта боя. Второй удар по мобу",
+        "§7даёт монеты и сферы опыта.",
+        "§8Растёт от опыта боя. В наковальне",
+        "§8не объединяется."
+      ],
+      "_wiki": "Gain X% extra Combat XP. The 2nd hit on a mob gives +Y coins and +Z exp orbs.Upgrade by getting combat XP. Cannot be combined in an anvil.",
+      "_source": "I: Community Center(4k); II: 50KXP; III: 100kXP; IV: 250kXP; V: 500kXP; VI: 1mXP; VII: 1.5mXP; VIII: 2mXP; IX: 2.5mXP; X: 3mXP"
+    },
+    "Chance": {
+      "title": "Шанс",
+      "color": "blue",
+      "lines": [
+        "§7Повышает шанс, что моб выронит предмет,",
+        "§7на §a15%§7 за уровень."
+      ],
+      "_wiki": "Increases chance of a mob dropping an item by 15% per level.",
+      "_source": "I–III: Enchantment Table; IV–V: Experiments"
+    },
+    "Charm": {
+      "title": "Оберег",
+      "color": "blue",
+      "lines": [
+        "§7Повышает шанс поймать Trophy Fish",
+        "§7более высокой ступени на §a2%§7 за уровень."
+      ],
+      "_wiki": "Increases the chance to receive higher-tiered Trophy Fish by 2% per level.",
+      "_source": "I: Pyroclastic Worm; II–V: Combining Books; VI: Chain of the End Times"
+    },
+    "Chimera": {
+      "title": "Химера",
+      "color": "blue",
+      "lines": [
+        "§7Копирует §a20%§7 характеристик твоего",
+        "§7активного питомца за уровень, до §a100%§7 на V.",
+        "§8Характеристики от способностей питомца",
+        "§8не копируются, а от предметов питомца — да."
+      ],
+      "_wiki": "Copies 20% per level of your active pet's stats."
+    },
+    "Cleave": {
+      "title": "Рассечение",
+      "color": "blue",
+      "lines": [
+        "§7Удар задевает мобов вокруг цели:",
+        "§7до §a5%§7 твоего урона за уровень",
+        "§7в радиусе §e3.5§7 блока (§a+0.5§7 за уровень)."
+      ],
+      "_wiki": "Deals up to 5% of your damage per level dealt to other monsters within 3.5 (+.5 per level) blocks of the target.",
+      "_source": "I–V: Enchantment Table; VI: Experiments"
+    },
+    "Combo": {
+      "title": "Комбо",
+      "color": "blue",
+      "lines": [
+        "§7Каждое убийство даёт §a+1%§7 урона,",
+        "§7до §e2§7 убийств за §e2§7 секунды."
+      ],
+      "_wiki": "Increases your damage by 1% per kill up to 2 kills within 2s."
+    },
+    "Compact": {
+      "title": "Компактность",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a1§7 Mining Wisdom за уровень и §e0.1–0.6%§7",
+        "§7шанс выронить зачарованный предмет.",
+        "§8Растёт от добычи блоков киркой с этим",
+        "§8зачарованием. В наковальне не объединяется."
+      ],
+      "_wiki": "Gain 1 MW per level with a 0.1–0.6% chance to drop an enchanted item.Upgrade by mining blocks (that can be mined the fastest with the pickaxe) using a pickaxe with the enchantment applied to it. Cannot be combined in an anvil.",
+      "_source": "I: Community Center(4k); II: 100Blocks; III: 500Blocks; IV: 1.5kBlocks; V: 5kBlocks; VI: 15kBlocks; VII: 50kBlocks; VIII: 150kBlocks; IX: 500kBlocks; X: 1mBlocks"
+    },
+    "Corruption": {
+      "title": "Порча",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a1%§7 шанс за уровень призвать",
+        "§7испорченное морское существо."
+      ],
+      "_wiki": "Gain a 1% chance to spawn a Corrupted Sea Creature per level.",
+      "_source": "I: Corrupted Sea Creatures; II–V: Combining Books"
+    },
+    "Counter-Strike": {
+      "title": "Контрудар",
+      "color": "blue",
+      "lines": [
+        "§7Первый удар врага даёт §a+10§7 к защите",
+        "§7на §e7 секунд§7."
+      ],
+      "_wiki": "Gain +10 Defense for 7s on your first hit from an enemy.",
+      "_source": "III: Dark Auction when Scorpius is mayor; IV–V: Combining books"
+    },
+    "Critical": {
+      "title": "Критический удар",
+      "color": "blue",
+      "lines": [
+        "§7Повышает урон крита."
+      ],
+      "_wiki": "Increases Crit Damage by X%.",
+      "_source": "I–V: Enchantment Table; VI: Wolf Slayer|4; VII: Experiments"
+    },
+    "Crop Fever": {
+      "title": "Урожайная лихорадка",
+      "color": "blue",
+      "lines": [
+        "§7Сбор урожая даёт §e0.001%§7 шанс за уровень",
+        "§7на Crop Fever: §e60 с§7 лишнего урожая,",
+        "§7§a+15%§7 к шансу редкой добычи",
+        "§7и §a+100§7 Farming Fortune."
+      ],
+      "_wiki": "While breaking crops, the player has a 0.001% chance per level to trigger a Crop Fever. During Crop Fever, they roll additional crops for 60s, with a 15% increased chance of rare drops and +100 FMF."
+    },
+    "Cubism": {
+      "title": "Кубизм",
+      "color": "blue",
+      "lines": [
+        "§7Повышает урон по кубическим мобам",
+        "§7(слизни, магмовые кубы)."
+      ],
+      "_wiki": "Increases damage dealt to Cubic mobs by X%.",
+      "_source": "I–V: Enchantment Table; VI: Experiments"
+    },
+    "Cultivating": {
+      "title": "Возделывание",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a1§7 Farming Wisdom и §a+2§7 Farming",
+        "§7Fortune за уровень.",
+        "§8Растёт от сбора урожая мотыгой или топором",
+        "§8с этим зачарованием."
+      ],
+      "_wiki": "Gain 1 FMW and +2 Farming Fortune per level.Upgrade by breaking crops using a hoe or axe with the enchantment applied to it. Cannot be combined in an anvil.",
+      "_source": "I: Community Center(4k); II: 1kCrops; III: 5kCrops; IV: 25kCrops; V: 100kCrops; VI: 300kCrops; VII: 1.5mCrops; VIII: 5mCrops; IX: 20mCrops; X: 100mCrops"
+    },
+    "Dedication": {
+      "title": "Усердие",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a0.5§7 Farming Fortune для культуры,",
+        "§7умноженное на твой рубеж Garden по ней."
+      ],
+      "_wiki": "Grants 0.5 FARMING FORTUNE for crops, multiplied by your Garden milestone for that crop.",
+      "_source": "I: SkyMart; II–III: Combining Books; IV: Potential visitor reward for Librarian"
+    },
+    "Delicate": {
+      "title": "Бережность",
+      "color": "blue",
+      "lines": [
+        "§7Не ломает стебли и незрелые посевы."
+      ],
+      "_wiki": "Avoids breaking stems and baby crops.",
+      "_source": "I–IV: {{bc}}; V: Anita - 2 Silver Medals & 32x Jacob's Ticket"
+    },
+    "Depth Strider": {
+      "title": "Подводная ходьба",
+      "color": "blue",
+      "lines": [
+        "§7Замедление в воде меньше на §a33%§7",
+        "§7за уровень. На §eIII§7 плывёшь так же,",
+        "§7как ходишь по земле."
+      ],
+      "_wiki": "Reduces how much you are slowed in the water by 33% per level. At level III, the movement speed is the same as on land."
+    },
+    "Divine Gift": {
+      "title": "Божественный дар",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+2§7 Magic Find за уровень."
+      ],
+      "_wiki": "Grants +2 Magic Find per level."
+    },
+    "Dragon Hunter": {
+      "title": "Охотник на драконов",
+      "color": "blue",
+      "lines": [
+        "§7Повышает урон по летающим мобам."
+      ],
+      "_wiki": "an Enchantment that increases damage dealt to Airborne mobs"
+    },
+    "Dragon Tracer": {
+      "title": "Следопыт драконов",
+      "color": "blue",
+      "lines": [
+        "§7Стрелы сами наводятся на драконов",
+        "§7в радиусе §e2§7 блоков за уровень."
+      ],
+      "_wiki": "Arrows home towards dragons if they are within 2 blocks per level.Cannot be applied to Spider Queen's Stinger or Venom's Touch."
+    },
+    "Drain": {
+      "title": "Вытягивание",
+      "color": "blue",
+      "lines": [
+        "§7Лечит на §a% от твоего здоровья§7 при ударе",
+        "§7по мобу — за каждые §e100§7 урона крита,",
+        "§7но не больше чем за §e1000§7.",
+        "§70.2% за уровень I, §a0.6%§7 за V.",
+        "§8Мечи, длинные мечи и Gemstone Gauntlet.",
+        "§8Не сочетается с Life Steal и Mana Steal."
+      ],
+      "_wiki": "Heals for 0.X% of your max health per 100 Crit Damage you deal per hit, up to 1000 Crit Damage.(A weapon with this enchantment cannot have Life Steal or Mana Steal)",
+      "_source": "I–III: Enchantment Table; IV: Experiments; V: ExperimentsVargul the Unearthed200 Dark Candy10m"
+    },
+    "Duplex": {
+      "title": "Дуплет",
+      "color": "blue",
+      "lines": [
+        "§7Пускает вторую стрелу: §a4%§7 урона первой",
+        "§7за уровень. Цель горит §e60 с§7."
+      ],
+      "_wiki": "Shoot a second arrow dealing 4% per level of the first arrow's damage. Targets hit take 1x + 0.1x per level fire damage for 60s."
+    },
+    "Efficiency": {
+      "title": "Эффективность",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+10§7 Mining Speed и ещё §a+20§7",
+        "§7за каждый уровень."
+      ],
+      "_wiki": "Grants +10 Mining Speed and an extra +20 per level.",
+      "_source": "I–V: Enchantment Table; VI–X: Upgraded with SilexStonk pre-enchanted with VI"
+    },
+    "Ender Resistance": {
+      "title": "Сопротивление Края",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a❈ Defense§7 против §5⊙ Ender§7 мобов."
+      ]
+    },
+    "Ender Slayer": {
+      "title": "Убийца эндера",
+      "color": "blue",
+      "lines": [
+        "§7Повышает урон по мобам Края."
+      ],
+      "_wiki": "Increases damage dealt to Ender mobs by X%.",
+      "_source": "I–V: Enchantment Table; VI: Pearl Dealer; VII: ExperimentsEndstone Idol"
+    },
+    "Execute": {
+      "title": "Добивание",
+      "color": "blue",
+      "lines": [
+        "§7Чем меньше здоровья у цели, тем больше урон:",
+        "§7прибавка за каждый процент нехватки.",
+        "§8Не сочетается с Prosecute."
+      ],
+      "_wiki": "Increases damage dealt by X% for each percent of Health missing on your target.(A weapon with this enchantment cannot have Prosecute)",
+      "_source": "I–V: Enchantment Table; VI: Experiments"
+    },
+    "Experience": {
+      "title": "Опыт",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a12.5%§7 шанс за уровень, что моб",
+        "§7или руда дадут вдвое больше опыта."
+      ],
+      "_wiki": "Grants a 12.5% chance per level for Mobs and ores to drop double experience.",
+      "_source": "I–III: Enchantment Table; IV: Melancholic Viking; V: Frozen Alex"
+    },
+    "Expertise": {
+      "title": "Мастерство",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a2§7 Fishing Wisdom за уровень",
+        "§7и §a+0.6%§7 Sea Creature Chance за уровень.",
+        "§8Растёт от пойманных морских существ.",
+        "§8В наковальне не объединяется."
+      ],
+      "_wiki": "Gain 2 FSW per level and increase Sea Creature Chance by 0.6% per level. Upgrades by fishing up Sea Creatures while the rod is active. Cannot be combined in the anvil.(Sea Creature kills are contributed to the leftmost rod with Expertise in the player's hotbar.)",
+      "_source": "I: Community Center(4k); II: 50; III: 100; IV: 250; V: 500; VI: 1k; VII: 2.5k; VIII: 5.5k; IX: 10k; X: 15k"
+    },
+    "Fatal Tempo": {
+      "title": "Роковой темп",
+      "color": "blue",
+      "lines": [
+        "§7Каждый удар даёт §a+10%§7 Ferocity за уровень,",
+        "§7до §e200%§7. Держится §e3 с§7 после",
+        "§7последней атаки."
+      ],
+      "_wiki": "Attacking increases your Ferocity by 10% per level per hit, capped at 200% for 3 seconds after your last attack."
+    },
+    "Feast": {
+      "title": "Пиршество",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a☀ Overbloom§7."
+      ],
+      "names": [
+        "Feast Baker Scott",
+        "Feast Chef Ted"
+      ]
+    },
+    "Feather Falling": {
+      "title": "Невесомость",
+      "color": "blue",
+      "lines": [
+        "§7Безопасная высота падения выше на §e1§7",
+        "§7за уровень, урон от падения меньше",
+        "§7на §a5%§7 за уровень."
+      ],
+      "_wiki": "Increases how high you can fall before taking fall damage by 1 per level and reduces fall damage by 5% per level.",
+      "_source": "I–V: Enchantment Table; VI: Dungeon Loot Chest; VII–X: Combining Feather Falling VI books; 20: Pre-enchanted on Spring Boots"
+    },
+    "Ferocious Mana": {
+      "title": "Свирепая мана",
+      "color": "blue",
+      "lines": [
+        "§7Мана, потраченная рядом, даёт Ferocity",
+        "§7на §e10 с§7 за уровень. Не больше §e50§7.",
+        "§8Не сочетается с Hardened, Strong Mana",
+        "§8и Mana Vampire."
+      ],
+      "_wiki": "Gain 0.X% of mana used near you as Ferocity for 10 seconds per level, capped at 50 Ferocity.(An armor piece with this Enchantment cannot have Hardened Mana, Strong Mana or Mana Vampire)"
+    },
+    "Fire Aspect": {
+      "title": "Заговор огня",
+      "color": "blue",
+      "lines": [
+        "§7Поджигает врагов: §a3%§7 твоего урона",
+        "§7за уровень каждую секунду."
+      ],
+      "_wiki": "Ignites your enemies for Xs, dealing 3% of your damage per level per second.",
+      "_source": "I–II: Enchantment Table; III: Blaze Slayer|5"
+    },
+    "Fire Protection": {
+      "title": "Огнеупорность",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+2§7 к истинной защите от огня",
+        "§7и лавы за уровень.",
+        "§8Не сочетается с Protection, Blast",
+        "§8и Projectile Protection."
+      ],
+      "_wiki": "Grants +2 True Defense per level against fire and lava.(An armor piece with this enchantment cannot have Protection, Blast Protection or Projectile Protection)",
+      "_source": "I–V: Enchantment Table; VI–VII: Experiments"
+    },
+    "First Impression": {
+      "title": "Первое впечатление",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+1§7 Sweep в ближнем бою, а первый",
+        "§7удар по дереву даёт §a+2§7 Sweep."
+      ],
+      "_wiki": "Grants +1 SWEEP on melee hits, and your first melee hit against a tree gives you +2 SWEEP.",
+      "_source": "I: Tree Gift; II–VI: Combining Books"
+    },
+    "First Strike": {
+      "title": "Первый удар",
+      "color": "blue",
+      "lines": [
+        "§7Первый удар по мобу наносит",
+        "§7на §a+25%§7 больше урона за уровень.",
+        "§8Не сочетается с Triple-Strike."
+      ],
+      "_wiki": "Increases the melee damage dealt by 25% per level for the first hit on a mob.(A weapon with this Enchantment cannot have Triple Strike)",
+      "_source": "I–IV: Enchantment Table; V: Experiments"
+    },
+    "Flame": {
+      "title": "Воспламенение",
+      "color": "blue",
+      "lines": [
+        "§7Стрела поджигает врага и наносит урон",
+        "§7каждую секунду."
+      ],
+      "_wiki": "Arrow ignites your enemies for Xs, dealing Y% of your damage per second."
+    },
+    "Flash": {
+      "title": "Вспышка",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a1%§7 шанс за уровень мгновенно",
+        "§7приманить рыбу."
+      ],
+      "_wiki": "Gain a 1% chance per level to instantly attract a fish."
+    },
+    "Flowstate": {
+      "title": "Поток",
+      "color": "blue",
+      "lines": [
+        "§7Блоки подряд дают §a+1§7 Mining Speed.",
+        "§7Сбрасывается через §e10 с§7 без добычи,",
+        "§7предел — §e200§7 блоков."
+      ],
+      "_wiki": "Consecutive blocks broken grant +1 MINING SPEED. Stops after 10s of not mining and caps at 200 blocks."
+    },
+    "Forest Pledge": {
+      "title": "Клятва леса",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+2§7 Foraging Fortune за уровень."
+      ],
+      "_wiki": "Grants +2 FORAGING FORTUNE per level.",
+      "_source": "III: Agatha; IV–VIII: Combining books"
+    },
+    "Fortune": {
+      "title": "Удача",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+§7 Mining Fortune — шанс добыть",
+        "§7больше ресурсов с одного блока.",
+        "§8Не сочетается с Silk Touch."
+      ],
+      "_wiki": "Grants +X Mining Fortune.Not compatible with Silk Touch.",
+      "_source": "I–III: Enchantment Table; IV: Crystal Nucleus"
+    },
+    "Frail": {
+      "title": "Хрупкость",
+      "color": "blue",
+      "lines": [
+        "§7Морские существа появляются со здоровьем",
+        "§7меньше на §a2.5%§7 за уровень."
+      ],
+      "_wiki": "Sea Creatures start with 2.5% reduced health per level.",
+      "_source": "I–V: Enchantment Table; VI: Catfish; VII: Severed Pincer"
+    },
+    "Giant Killer": {
+      "title": "Убийца гигантов",
+      "color": "blue",
+      "lines": [
+        "§7Прибавка к урону за каждый процент",
+        "§7здоровья цели СВЕРХ твоего.",
+        "§8Не сочетается с Titan Killer."
+      ],
+      "_wiki": "Increases damage dealt by X% for each percent of extra Health that your target has above you, up to Y%.(A weapon with this Enchantment cannot have Titan Killer)",
+      "_source": "I–V: Enchantment Table; VI: ExperimentsDark Auction; VII: ExperimentsDarker Auction"
+    },
+    "Gravity": {
+      "title": "Гравитация",
+      "color": "blue",
+      "lines": [
+        "§7Повышает урон по летающим мобам."
+      ],
+      "_wiki": "Increases damage dealt to Airborne mobs by X%.",
+      "_source": "I–V: Enchantment Table; VI: Pearl Dealer"
+    },
+    "Great Spook": {
+      "title": "Великий ужас",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+1§7 Fear на броне Great Spook."
+      ],
+      "_wiki": "Grants +1 FEAR on Great Spook Armor.",
+      "_source": "I: Tyashoi Alchemist"
+    },
+    "Green Thumb": {
+      "title": "Зелёный палец",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a0.05§7 Farming Fortune за каждого",
+        "§7обслуженного посетителя."
+      ],
+      "_wiki": "Grants 0.05 FARMING FORTUNE per unique visitor served.",
+      "_source": "I: SkyMart; II–V: Combining books"
+    },
+    "Growth": {
+      "title": "Рост",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+15§7 к здоровью за уровень."
+      ],
+      "_wiki": "Grants +15 Health per level.",
+      "_source": "I–V: Enchantment Table; VI: ExperimentsDark Auction; VII: ExperimentsDarker Auction"
+    },
+    "Habanero Tactics": {
+      "title": "Тактика хабанеро",
+      "color": "blue",
+      "lines": [
+        "§7Лечение от жезлов сильнее, урон оружием",
+        "§7§5Slayer§7 выше, и растёт §a☯ Combat Wisdom§7."
+      ]
+    },
+    "Hardened Mana": {
+      "title": "Закалённая мана",
+      "color": "blue",
+      "lines": [
+        "§7Мана, потраченная рядом, даёт защиту",
+        "§7на §e10 с§7 за уровень. Не больше §e400§7.",
+        "§8Не сочетается со Strong, Ferocious Mana",
+        "§8и Mana Vampire."
+      ],
+      "_wiki": "Gain X% of mana used near you per level as Defense for 10 seconds per level, capped at 400 Defense.(An armor piece with this Enchantment cannot have Strong Mana, Ferocious Mana or Mana Vampire)"
+    },
+    "Hardened Vitality": {
+      "title": "Закалённая живучесть",
+      "color": "blue",
+      "lines": [
+        "§7Превращает часть потраченной §c Vitality§7",
+        "§7в §a Defense§7 на время."
+      ]
+    },
+    "Harvesting": {
+      "title": "Жатва",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+12.5§7 Farming Fortune за уровень.",
+        "§8Только на мотыги."
+      ],
+      "_wiki": "Grants +12.5 Farming Fortune per level. Can only be applied to hoes.",
+      "_source": "I–V: Enchantment Table; VI: Rare drop from Shiny Pigs"
+    },
+    "Hecatomb": {
+      "title": "Гекатомба",
+      "color": "blue",
+      "lines": [
+        "§7Даёт больше опыта Catacombs и класса,",
+        "§7вдвое больше за забеги на §eS+§7.",
+        "§7Плюс здоровье за каждые §e10§7 уровней",
+        "§7Catacombs.",
+        "§8Растёт за забеги S в подземельях."
+      ],
+      "_wiki": "Gain +X% Catacombs XP & +Y% Class XP, doubled from S+ runs. Grants +Z|icononly=true Health per 10 Catacombs levels.Upgrade by doing 2-100 S runs in Dungeons. Cannot be combined in an anvil.",
+      "_source": "I: Community Center(6k); II: 2 S runs; III: 5 S runs; IV: 10 S runs; V: 20 S runs; VI: 30 S runs; VII: 40 S runs; VIII: 60 S runs; IX: 80 S runs; X: 100 S runs"
+    },
+    "Help From Above": {
+      "title": "Помощь свыше",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §c Health Regen§7 — восстановление здоровья."
+      ]
+    },
+    "Ice Cold": {
+      "title": "Ледяной холод",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+1§7 к сопротивлению холоду",
+        "§7за уровень."
+      ],
+      "_wiki": "Grants +1 Cold Resistance per level.",
+      "_source": "I: Frozen Corpses; II–V: Combining Books"
+    },
+    "Impaling": {
+      "title": "Пронзатель",
+      "color": "blue",
+      "lines": [
+        "§7Повышает урон по водным мобам."
+      ],
+      "_wiki": "Increases damage dealt to Aquatic mobs by X%.",
+      "_source": "I–V: Enchantment Table"
+    },
+    "Inferno": {
+      "title": "Инферно",
+      "color": "blue",
+      "lines": [
+        "§7Каждый §e10-й§7 удар держит моба §e5 с§7",
+        "§7и наносит урон всё это время."
+      ],
+      "_wiki": "Every 10th hit on a mob traps it for 5s and deals 1 + 0.25x per level of that hit's damage over the trap's duration."
+    },
+    "Infinite Quiver": {
+      "title": "Бесконечный колчан",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a3%§7 шанс за уровень не потратить",
+        "§7стрелу при выстреле."
+      ],
+      "_wiki": "Saves arrows 3% per level of the time when you fire your bow.",
+      "_source": "I–V: Enchantment Table; VI–VII: Dungeon Loot Chest(VII) Floor VII onlyCombining Books; VIII–X: Combining Books"
+    },
+    "Knockback": {
+      "title": "Отдача",
+      "color": "blue",
+      "lines": [
+        "§7Отбрасывает врага на §e3§7 блока за уровень."
+      ],
+      "_wiki": "Increases knockback by 3 blocks per level."
+    },
+    "Lapidary": {
+      "title": "Огранка",
+      "color": "blue",
+      "lines": [
+        "§7Даёт Gemstone Fortune и Mining Speed,",
+        "§7пока добываешь самоцветы."
+      ],
+      "_wiki": "Grants +x Gemstone Fortune and +x Mining Speed while mining Gemstones."
+    },
+    "Last Stand": {
+      "title": "Последний рубеж",
+      "color": "blue",
+      "lines": [
+        "§7Ниже §e40%§7 здоровья даёт §a+5%§7 к защите",
+        "§7за уровень."
+      ],
+      "_wiki": "Increases your Defense by +5% per level when you are below 40% Health."
+    },
+    "Legion": {
+      "title": "Легион",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+0.07%§7 ко всем боевым",
+        "§7характеристикам и Magic Find за уровень",
+        "§7за каждого игрока в §e30§7 блоках,",
+        "§7до §e20§7 игроков."
+      ],
+      "_wiki": "Increases all Combat stats and ✯ Magic Find by +0.07% per player per level within 30 blocks of you, up to 20 players."
+    },
+    "Lethality": {
+      "title": "Смертоносность",
+      "color": "blue",
+      "lines": [
+        "§7Каждый удар в ближнем бою снижает защиту",
+        "§7цели на время §e4 с§7. Складывается до §e4§7 раз."
+      ],
+      "_wiki": "Reduces the Defense of your target by X% for 4s each time you hit them with melee. Stacks up to 4 times.",
+      "_source": "I–V: Enchantment Table; VI: ExperimentsDungeon Post-Boss Chest on Catacombs Floor V+"
+    },
+    "Life Steal": {
+      "title": "Кража жизни",
+      "color": "blue",
+      "lines": [
+        "§7Каждый удар по мобу лечит на §a0.5%§7",
+        "§7твоего максимума здоровья за уровень.",
+        "§8Не сочетается с Syphon и Mana Steal."
+      ],
+      "_wiki": "Heals for 0.5% per level of your max health each time you hit a mob.(A weapon with this Enchantment cannot have Syphon or Mana Steal)",
+      "_source": "I–III: Enchantment Table; IV: Fear Mongerer; V: Experiments"
+    },
+    "Lifeline": {
+      "title": "Спасательный круг",
+      "color": "blue",
+      "lines": []
+    },
+    "Looting": {
+      "title": "Добыча",
+      "color": "blue",
+      "lines": [
+        "§7Повышает шанс, что моб выронит предмет,",
+        "§7на §a15%§7 за уровень."
+      ],
+      "_wiki": "Increases the chance of a monster dropping an item by 15% per level.",
+      "_source": "I–III: Enchantment Table; IV: Einary; V: Experiments"
+    },
+    "Luck": {
+      "title": "Удача",
+      "color": "blue",
+      "lines": [
+        "§7Повышает шанс, что моб выронит свою броню,",
+        "§7на §a5%§7 за уровень."
+      ],
+      "_wiki": "Increases the chance for monsters to drop their armor pieces by 5% per level.",
+      "_source": "I–V: Enchantment Table; VI: Einary; VII: Experiments"
+    },
+    "Luck of the Sea": {
+      "title": "Везучий рыбак",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+0.5§7 Treasure Chance за уровень —",
+        "§7шанс выловить сокровище."
+      ],
+      "_wiki": "Grants +.5 TC per level, which increases the chance of fishing treasure.",
+      "_source": "I–V: Enchantment Table; VI: Water Hydra; VII: Gold Bottle Cap"
+    },
+    "Lure": {
+      "title": "Приманка",
+      "color": "blue",
+      "lines": [
+        "§7Сокращает наибольшее время ожидания",
+        "§7поклёвки на §a5%§7 за уровень."
+      ],
+      "_wiki": "Shortens the maximum time to catch something by 5% per level.",
+      "_source": "I–V: Enchantment Table; VI: Guardian Defender"
+    },
+    "Magmarizer": {
+      "title": "Магмаризатор",
+      "color": "blue",
+      "lines": []
+    },
+    "Magnet": {
+      "title": "Магнит",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a1§7 лишнюю сферу опыта за уровень",
+        "§7за каждую пойманную рыбу."
+      ],
+      "_wiki": "Grants 1 additional experience orb per level every time you successfully catch a fish.",
+      "_source": "I–V: Enchantment Table; VI: Rider of the Deep"
+    },
+    "Mana Pool": {
+      "title": "Запас маны",
+      "color": "blue",
+      "lines": []
+    },
+    "Mana Regeneration": {
+      "title": "Восстановление маны",
+      "color": "blue",
+      "lines": [
+        "§7Ускоряет восстановление §bМаны§7."
+      ]
+    },
+    "Mana Steal": {
+      "title": "Кража маны",
+      "color": "blue",
+      "lines": [
+        "§7Каждый удар возвращает §a0.25%§7 маны",
+        "§7за уровень.",
+        "§8Не сочетается с Life Steal и Syphon."
+      ],
+      "_wiki": "Regain 0.25% of your mana per level on hit.(A weapon with this enchantment cannot have Life Steal or Syphon)"
+    },
+    "Mana Vampire": {
+      "title": "Мана-вампир",
+      "color": "blue",
+      "lines": [
+        "§7Лечит на §a0.5%§7 маны, потраченной рядом,",
+        "§7за уровень.",
+        "§8Не сочетается с Hardened, Strong",
+        "§8и Ferocious Mana."
+      ],
+      "_wiki": "Heal for 0.5% of mana used near you per level.(An armor piece with this Enchantment cannot have Hardened Mana, Strong Mana or Ferocious Mana)"
+    },
+    "Mending": {
+      "title": "Починка",
+      "color": "blue",
+      "lines": [
+        "§7В SkyBlock это НЕ ванильная починка:",
+        "§7прочности у предметов здесь нет.",
+        "§7§aMending§7 — характеристика лечения.",
+        "§8Подробнее — в справке по терминам."
+      ]
+    },
+    "Missile": {
+      "title": "Снаряд",
+      "color": "blue",
+      "lines": [
+        "§7Штраф Throwing Axe за брёвна",
+        "§7меньше на §a10%§7."
+      ],
+      "_wiki": "The Log penalty on Throwing Axe is reduced by 10%.",
+      "_source": "I: Tree Gift; II–VI: Combining Books"
+    },
+    "No Pain No Gain": {
+      "title": "Без боли нет награды",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a20%§7 шанс за уровень получить",
+        "§e10§7 сфер опыта, когда тебя бьют."
+      ],
+      "_wiki": "You have 20% chance per level to gain 10 experience orbs every time you take hits from mobs."
+    },
+    "One For All": {
+      "title": "Всё в одном",
+      "color": "blue",
+      "lines": [
+        "§7Оставляет на предмете ОДНО зачарование,",
+        "§7но многократно усиливает его."
+      ],
+      "_wiki": "Refrigerate"
+    },
+    "Overload": {
+      "title": "Перегрузка",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+1%§7 к шансу крита и §a+1%§7 к урону",
+        "§7крита за уровень.",
+        "",
+        "§7При шансе крита выше §e100%§7 бывает",
+        "§7мега-крит: §a+10%§7 урона за уровень."
+      ],
+      "_wiki": "Increases Crit Chance by 1% and Crit Damage by 1% per level. Having a Critical chance above 100% grants a chance to perform a Mega Critical Hit dealing 10% extra damage per level.",
+      "_source": "I: Dungeon Post-Boss Chest on The Catacombs - Floor V; II–V: Combining Books"
+    },
+    "Paleontologist": {
+      "title": "Палеонтолог",
+      "color": "blue",
+      "lines": [
+        "§7Повышает шанс найти окаменелость.",
+        "§8Только на кирки, дрели и Gemstone Gauntlet."
+      ],
+      "_wiki": "an Enchantment for Pickaxes, Drills or Gemstone Gauntlet that increases the chance to find Suspicious Scrap inside Glacite Mineshafts"
+    },
+    "Pesterminator": {
+      "title": "Истребитель вредителей",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+2§7 Farming Fortune и §a+1§7 Bonus",
+        "§7Pest Chance за уровень."
+      ],
+      "_wiki": "Grants +2 FARMING FORTUNE and +1 BONUS PEST CHANCE per level.",
+      "_source": "I: 3.5% chance from killing Beetles; II–V: Combining Books; VI: A Beginner's Guide to Pesthunting"
+    },
+    "Piercing": {
+      "title": "Пронзающая стрела",
+      "color": "blue",
+      "lines": [
+        "§7Стрелы пролетают врагов насквозь.",
+        "§7Задетым достаётся §a25%§7 урона."
+      ],
+      "_wiki": "Arrows travel through enemies. The extra targets hit take 25% of the damage."
+    },
+    "Piscary": {
+      "title": "Промысел",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+1§7 Fishing Speed."
+      ],
+      "_wiki": "Grants +1 Fishing Speed.",
+      "_source": "I–V: Enchantment Table; VI: Abyssal MinerExperiments; VII: Troubled Bubble"
+    },
+    "Power": {
+      "title": "Сила",
+      "color": "blue",
+      "lines": [
+        "§7Повышает урон из лука."
+      ],
+      "_wiki": "Increases bow damage by X%.",
+      "_source": "I–V: Enchantment Table; VI–VII: Dark Auction"
+    },
+    "Prismatic": {
+      "title": "Призматичность",
+      "color": "blue",
+      "lines": [
+        "§7Даёт Pristine — шанс, что добытый самоцвет",
+        "§7окажется лучшего качества."
+      ],
+      "_wiki": "Grants x Pristine, which increases the chance to improve the quality of dropped Gemstones.",
+      "_source": "I: Gemstone|VIII{{Collapsible Crafting Grid|B2 = Paper,8|C2 = Paper,8|B3 = Paper,8|C3 = Fine Topaz Gemstone,40|output = Enchanted Book (Prismatic)}}; II–V: Combining Books"
+    },
+    "Projectile Protection": {
+      "title": "Защита от снарядов",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+7§7 к защите от снарядов за уровень.",
+        "§8Не сочетается с Protection, Blast",
+        "§8и Fire Protection."
+      ],
+      "_wiki": "Grants +7 Defense per level against projectiles.(An armor piece with this enchantment cannot have Protection, Blast Protection or Fire Protection)",
+      "_source": "I–V: Enchantment Table; VI–VII: Experiments"
+    },
+    "Prosecute": {
+      "title": "Преследование",
+      "color": "blue",
+      "lines": [
+        "§7Чем больше здоровья у цели, тем больше урон:",
+        "§7прибавка за каждый процент здоровья.",
+        "§8Не сочетается с Execute."
+      ],
+      "_wiki": "Increases damage dealt by X% for each percent of health your target has.(A weapon with this enchantment cannot have Execute)",
+      "_source": "I–V: Enchantment Table; VI: Experiments"
+    },
+    "Prosperity": {
+      "title": "Процветание",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+3§7 к здоровью."
+      ],
+      "_wiki": "Grants +3 Health."
+    },
+    "Protection": {
+      "title": "Защита",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+§7 к защите за уровень.",
+        "§8Не сочетается с Blast, Fire",
+        "§8и Projectile Protection."
+      ],
+      "_wiki": "Grants +X Defense per level.(An armor piece with this enchantment cannot have Blast Protection, Fire Protection or Projectile Protection)",
+      "_source": "I–V: Enchantment Table; VI: ExperimentsTomiokaDark Auction; VII: ExperimentsDarker Auction"
+    },
+    "Punch": {
+      "title": "Откидывание",
+      "color": "blue",
+      "lines": [
+        "§7Стрела отбрасывает на §e3§7 блока за уровень."
+      ],
+      "_wiki": "Increases arrow knockback by 3 blocks per level."
+    },
+    "Pyroclasm": {
+      "title": "Пирокластика",
+      "color": "blue",
+      "lines": [
+        "§7Повышает урон по §c♆ Magmatic§7 мобам."
+      ]
+    },
+    "Quantum": {
+      "title": "Квант",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+2.4§7 живучести в будни",
+        "§7и §a+1.2§7 случайной Wisdom в выходные."
+      ],
+      "_wiki": "Grants +2.4 VITALITY on weekdays and +1.212px of a random Wisdom stat on weekends.",
+      "_source": "I–II: Unobtainable * 3~Riftstalker Bloodfiend * 4span5~Combining books"
+    },
+    "Quick Bite": {
+      "title": "Быстрый клёв",
+      "color": "blue",
+      "lines": [
+        "§7Рыба плывёт к поплавку на §a5%§7 быстрее",
+        "§7за уровень."
+      ],
+      "_wiki": "Makes fish swim 5% faster towards your bobber per level.",
+      "_source": "I: Crafting{{Collapsible Crafting Grid|B2 = Enchanted Paper,1|B3 = Enchanted Paper,1|C2 = Enchanted Paper,1|C3 = Alligator Skin,8|output=Enchanted Book (Quick Bite I)}}; II–V: Combining Books"
+    },
+    "Rainbow": {
+      "title": "Радуга",
+      "color": "blue",
+      "lines": [
+        "§7§eI§7 — овца роняет шерсть случайного цвета.",
+        "§7§eII§7 — §a50%§7 шанс сменить ей цвет.",
+        "§7§eIII§7 — §a80%§7 шанс сменить цвет",
+        "§7и перевернуть овцу вверх ногами."
+      ],
+      "_wiki": "(I) Causes Sheep to drop a random wool color when sheared.(II) Shearing Sheep has a 50% chance to change their color.(III) Shearing Sheep has a 80% chance to change their color and flips the Sheep upside-down.",
+      "_source": "I: Enchantment Table; II: Mollim's quest; III: Enchanted Book Bundle"
+    },
+    "Reflection": {
+      "title": "Отражение",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+2§7 к интеллекту и §a+1§7 к истинной",
+        "§7защите за уровень. Стрела, попавшая в тебя,",
+        "§7бьёт стрелявшего уроном от твоего интеллекта.",
+        "§8Не сочетается с Thorns."
+      ],
+      "_wiki": "Grants +2 Intelligence and +1 True Defense per level. When damaged by an arrow, deal Zx your Intelligence to its shooter, where Z is the value of the third row.(An armor piece with this enchantment cannot have Thorns)",
+      "_source": "I: Rift Mirrorverse; II–V: Combining books"
+    },
+    "Refrigerate": {
+      "title": "Охлаждение",
+      "color": "blue",
+      "lines": [
+        "§7Даёт защиту в зависимости от того,",
+        "§7сколько интеллекта тратится рядом."
+      ],
+      "_wiki": "an Ultimate Enchantment that grants you Defense, based on how much Intelligence is being used"
+    },
+    "Reiterate": {
+      "title": "Повторение",
+      "color": "blue",
+      "lines": [
+        "§7Пускает вторую стрелу: §a4%§7 урона первой",
+        "§7за уровень. Цель горит §e60 с§7.",
+        "§8На вики это одно зачарование с Duplex."
+      ]
+    },
+    "Rejuvenate": {
+      "title": "Оздоровление",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+2§7 к восстановлению здоровья",
+        "§7за уровень.",
+        "§8Не сочетается с Respite."
+      ],
+      "_wiki": "Grants +2 HEALTH REGEN per level.(An armor piece with this enchantment cannot have Respite)"
+    },
+    "Rend": {
+      "title": "Разрыв",
+      "color": "blue",
+      "lines": [
+        "§7ЛКМ вырывает стрелы из ближних врагов",
+        "§7и наносит §a5%§7 последнего крита за уровень",
+        "§7за каждую стрелу. Перезарядка §e2 с§7,",
+        "§7до §e5§7 стрел за раз."
+      ],
+      "_wiki": "Grants a bow a Left Click ability that rips out the arrows from nearby enemies and deals 5% per level of your last critical hit for every arrow in the target. 2s Cooldown. Max of 5 arrows at a time."
+    },
+    "Replenish": {
+      "title": "Восполнение",
+      "color": "blue",
+      "lines": [
+        "§7Собранные посевы досаживаются сами",
+        "§7из инвентаря — включая какао и адский нарост."
+      ],
+      "_wiki": "Upon breaking crops, including Cocoa Beans and Nether Wart, automatically replant from materials in the inventory."
+    },
+    "Respiration": {
+      "title": "Подводное дыхание",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+15§7 Respiration за уровень."
+      ],
+      "_wiki": "Grants +15 RESPIRATION per level.",
+      "_source": "I–III: Enchantment Table; IV: Nemo"
+    },
+    "Respite": {
+      "title": "Передышка",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+5§7 к восстановлению здоровья",
+        "§7за уровень ВНЕ боя.",
+        "§8Не сочетается с Rejuvenate."
+      ],
+      "_wiki": "Grants +5 HEALTH REGEN per level while out of combat.(An armor piece with this enchantment cannot have Rejuvenate)"
+    },
+    "Scavenger": {
+      "title": "Собиратель",
+      "color": "blue",
+      "lines": [
+        "§7Убийство даёт монеты за уровень моба."
+      ],
+      "_wiki": "Scavenge 0.3 per monster level on kill per enchantment level. (Scavenger Bonus * Monster Level)",
+      "_source": "I–III: Enchantment Table; IV: Einary; V: ExperimentsTomioka (Costs 15m|short=y); VI: Golden Bounty"
+    },
+    "Scuba": {
+      "title": "Акваланг",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+1§7 к сопротивлению давлению",
+        "§7за уровень."
+      ],
+      "_wiki": "Grants +1 PRESSURE RESISTANCE per level.",
+      "_source": "I: (IV) Crafting{{Collapsible Crafting Grid|B2 = Paper,1|C2 = Paper,1|B3 = Paper,1|C3 = Enchanted Sea Lumies,1|output=Enchanted Book (Scuba I)}}; II–VI: Combining Books",
+      "names": [
+        "Scuba Simulator"
+      ]
+    },
+    "Sharpness": {
+      "title": "Острота",
+      "color": "blue",
+      "lines": [
+        "§7Повышает урон в ближнем бою."
+      ],
+      "_wiki": "Increases melee damage dealt by X%.",
+      "_source": "I–V: Enchantment Table; VI: Dark AuctionTomioka (Costs 10m|short=y); VII: Darker Auction; X: Pre-enchanted on Aspect of the Jerry, Signature Edition"
+    },
+    "Silk Touch": {
+      "title": "Шёлковое касание",
+      "color": "blue",
+      "lines": [
+        "§7Блок падает как есть, а не своей добычей:",
+        "§7угольная руда вместо угля.",
+        "§8Не сочетается со Smelting Touch и Fortune."
+      ],
+      "_wiki": "Mined blocks drop themselves instead of their normal drops (e.g., coal ore instead of coal)Not compatible with Smelting Touch and Fortune. Note: For all ores except Redstone, which always drops one when mined, the Spelunker perk applies."
+    },
+    "Small Brain": {
+      "title": "Маленький мозг",
+      "color": "blue",
+      "lines": [
+        "§7Убавляет интеллект, но даёт",
+        "§7истинную защиту.",
+        "§8Не сочетается с Big Brain."
+      ],
+      "_wiki": "Grants -X Intelligence and +Y True Defense. (An armor piece with this enchantment cannot have Big Brain)"
+    },
+    "Smarty Pants": {
+      "title": "Умник",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+5§7 к интеллекту за уровень."
+      ],
+      "_wiki": "Grants +5 Intelligence per level."
+    },
+    "Smelting Touch": {
+      "title": "Плавка",
+      "color": "blue",
+      "lines": [
+        "§7Добытые блоки сразу переплавляются:",
+        "§7железные слитки вместо руды.",
+        "§8Не сочетается с Silk Touch."
+      ],
+      "_wiki": "Automatically smelts mined blocks into their smelted form (e.g., iron ingots instead of iron ore).Not compatible with Silk Touch."
+    },
+    "Smite": {
+      "title": "Небесная кара",
+      "color": "blue",
+      "lines": [
+        "§7Повышает урон по нежити, визерам",
+        "§7и скелетам."
+      ],
+      "_wiki": "Increases damage dealt to Undead, Wither and Skeletal mobs by X%.",
+      "_source": "I–V: Enchantment Table; VI: Zombie Slayer|4 III+; VII: Tomioka (Costs 25m|short=y)Severed Hand"
+    },
+    "Smoldering": {
+      "title": "Тление",
+      "color": "blue",
+      "lines": [
+        "§7Повышает урон по адским мобам."
+      ],
+      "_wiki": "Increases damage dealt to Infernal mobs by X%.",
+      "names": [
+        "Smoldering Tomb"
+      ]
+    },
+    "Snipe": {
+      "title": "Снайпер",
+      "color": "blue",
+      "lines": [
+        "§7Стрела наносит §a+1%§7 урона за уровень",
+        "§7за каждые §e10§7 пролетевших блоков."
+      ],
+      "_wiki": "Arrows deal +1% damage per level for every 10 blocks traveled.Damage is calculated based on the distance between the player and the arrow when it hits an enemy.",
+      "_source": "I–III: Enchantment Table; IV: Experiments"
+    },
+    "Soul Eater": {
+      "title": "Пожиратель душ",
+      "color": "blue",
+      "lines": [
+        "§7Оружие запоминает урон последнего убитого",
+        "§7моба и добавляет его как силу",
+        "§7к следующему криту.",
+        "§8Вне подземелий не больше §e5000§7."
+      ],
+      "_wiki": "Your weapon gains 2x per level of the Mob Damage of the latest monster killed and adds it as Strength on your next critical hit. (Max 5k outside Dungeons)."
+    },
+    "Spiked Hook": {
+      "title": "Шипастый крюк",
+      "color": "blue",
+      "lines": [
+        "§7Удочка наносит мобам на §a5%§7 больше",
+        "§7урона за уровень."
+      ],
+      "_wiki": "Fishing rod deals 5% more damage to monsters per level.",
+      "_source": "I–V: Enchantment Table; VI: Sea Leech; VII: Octopus Tendril"
+    },
+    "Stealth": {
+      "title": "Скрытность",
+      "color": "blue",
+      "lines": [
+        "§7Пугливые существа не убегают,",
+        "§7а остаются на месте."
+      ],
+      "_wiki": "Causes timid creatures that normally flee to remain still."
+    },
+    "Strong Mana": {
+      "title": "Сильная мана",
+      "color": "blue",
+      "lines": [
+        "§7Мана, потраченная рядом, даёт §a+0.1%§7",
+        "§7силы за уровень на §e10 с§7. Не больше §e100§7.",
+        "§8Не сочетается с Hardened, Ferocious Mana",
+        "§8и Mana Vampire."
+      ],
+      "_wiki": "Gain +0.1% of mana used near you per level as Strength for 10 seconds per level, capped at 100 Strength.(An armor piece with this Enchantment cannot have Hardened Mana, Ferocious Mana or Mana Vampire)"
+    },
+    "Strong Vitality": {
+      "title": "Сильная живучесть",
+      "color": "blue",
+      "lines": [
+        "§7Превращает часть потраченной §c Vitality§7",
+        "§7в §c Strength§7 на время."
+      ]
+    },
+    "Sugar Rush": {
+      "title": "Сахарный прилив",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+2§7 к скорости за уровень."
+      ],
+      "_wiki": "Grants +2 Speed per level.",
+      "_source": "I: Fear Mongerer; II–III: Combining Books"
+    },
+    "Sunder": {
+      "title": "Раскол",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+12.5§7 Farming Fortune."
+      ],
+      "_wiki": "Grants +12.5 FARMING FORTUNE, which increases your chance for multiple crops.",
+      "_source": "I: SkyMart; II–V: Combining Books; V: Locust"
+    },
+    "Sunset": {
+      "title": "Закат",
+      "color": "blue",
+      "lines": [
+        "§7Днём даёт §a☀ Overbloom§7,",
+        "§7ночью сокращает перезарядку посетителей."
+      ]
+    },
+    "Swarm": {
+      "title": "Рой",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+2%§7 урона за каждого врага",
+        "§7в радиусе §e10§7 блоков, до §e10§7 врагов."
+      ],
+      "_wiki": "Increases your damage by 2% for each enemy within 10 blocks. Maximum of 10 enemies."
+    },
+    "Syphon": {
+      "title": "Вытягивание",
+      "color": "blue",
+      "lines": []
+    },
+    "Tabasco": {
+      "title": "Табаско",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+2§7 к урону оружия, если у тебя",
+        "§7НЕ надет питомец-дракон."
+      ],
+      "_wiki": "Grants +2 weapon damage if you don't have a Dragon pet equipped.",
+      "_source": "I: ?; II: Chili Pepper|IX{{Collapsible Crafting Grid|A1 = Chili Pepper,16|B1 = Kuudra Teeth|C1 = Chili Pepper,16|B2 = Kuudra Teeth|B3 = Kuudra Teeth|output=Enchanted Book (Tabasco II)}}; III: Combining Tabasco II Books"
+    },
+    "Telekinesis": {
+      "title": "Телекинез",
+      "color": "blue",
+      "lines": [
+        "§7Добыча попадает сразу в инвентарь."
+      ]
+    },
+    "The One": {
+      "title": "Единственный",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+0.5§7 к здоровью и §a+0.1§7 к силе",
+        "§7за каждую собранную полностью коллекцию."
+      ],
+      "_wiki": "Grants +0.5 Health and +0.1 Strength per maxed out collection (You have #)"
+    },
+    "Thorns": {
+      "title": "Шипы",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a50%§7 шанс отразить §a3%§7 урона",
+        "§7за уровень обратно в атакующего."
+      ],
+      "_wiki": "Grants a 50% chance to rebound 3% of damage per level dealt back at the attacker."
+    },
+    "Thunderbolt": {
+      "title": "Молния",
+      "color": "blue",
+      "lines": [
+        "§7Каждый §e3-й§7 удар бьёт молнией по всем",
+        "§7мобам в радиусе §e2§7 блоков, до §e10§7 штук.",
+        "§8Не сочетается с Thunderlord."
+      ],
+      "_wiki": "Every 3 hits on a monster, strike lightning, dealing X% of the hit's damage to up to 10 monsters within 2 blocks.(A weapon with this enchantment cannot have Thunderlord)",
+      "_source": "I–V: Enchantment Table; VI–VII: Experiments"
+    },
+    "Thunderlord": {
+      "title": "Повелитель грома",
+      "color": "blue",
+      "lines": [
+        "§7Каждый §e3-й§7 удар бьёт молнией,",
+        "§7нанося часть урона этого удара.",
+        "§8Не сочетается с Thunderbolt."
+      ],
+      "_wiki": "Every 3 hits on a monster, strike lightning, dealing X% of the hit's damage.(A weapon with this enchantment cannot have Thunderbolt)",
+      "_source": "I–V: Enchantment Table; VI: Stormy-type Undeads from The Watcher on Catacombs Floor V+; VII: ExperimentsMaster Mode Floor VII"
+    },
+    "Tidal": {
+      "title": "Приливный",
+      "color": "blue",
+      "lines": [
+        "§7Повышает §a❈ Defense§7 против §bморских существ§7."
+      ]
+    },
+    "Titan Killer": {
+      "title": "Убийца титанов",
+      "color": "blue",
+      "lines": [
+        "§7Прибавка к урону за каждые §a100§7 защиты цели.",
+        "§8Не сочетается с Giant Killer."
+      ],
+      "_wiki": "Increases damage dealt by X% for every 100 Defense your target has up to Y%.(A weapon with this enchantment cannot have Giant Killer)",
+      "_source": "I–V: Enchantment Table; VI–VII: Experiments"
+    },
+    "Toxophilite": {
+      "title": "Стрелок",
+      "color": "blue",
+      "lines": [
+        "§7Даёт больше опыта боя и §a+§7 к шансу крита.",
+        "§8Растёт от опыта боя. В наковальне",
+        "§8не объединяется."
+      ],
+      "_wiki": "Gain X% extra Combat XP. Grants +Y Crit Chance.Upgrade by getting Combat XP.Cannot be combined in an anvil.",
+      "_source": "I: Community Center(4k); II: 50KXP; III: 100kXP; IV: 250kXP; V: 500kXP; VI: 1mXP; VII: 1.5mXP; VIII: 2mXP; IX: 2.5mXP; X: 3mXP"
+    },
+    "Transylvanian": {
+      "title": "Трансильванский",
+      "color": "blue",
+      "lines": [
+        "§7Лечит каждую секунду за каждого врага",
+        "§7в радиусе §e10§7 блоков, до предела."
+      ],
+      "_wiki": "Heal X|icononly=yes Health/s per enemy within 10 blocks, up to Y|icononly=yes Health/s.",
+      "_source": "IV: (IV) Crafting{{Collapsible Crafting Grid|B2 = Paper,8|C2 = Paper,8|B3 = Paper,8|C3 = Hemoglass,8|output=Enchanted Book (Transylvanian IV)}}; V: Combining Transylvanian IV Books"
+    },
+    "Triple-Strike": {
+      "title": "Тройной удар",
+      "color": "blue",
+      "lines": [
+        "§7Первые ТРИ удара по мобу наносят",
+        "§7на §a+10%§7 больше урона за уровень.",
+        "§8Не сочетается с First Strike."
+      ],
+      "_wiki": "Increases damage dealt by 10% per level for the first three hits on a mob.(A weapon with this enchantment cannot have First Strike)"
+    },
+    "True Protection": {
+      "title": "Истинная броня",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+5§7 к истинной защите."
+      ],
+      "_wiki": "Grants +5 True Defense."
+    },
+    "Turbo-Cactus": {
+      "title": "Турбо-кактус",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §6☘ Cactus Fortune§7 — больше урожая",
+        "§7именно этой культуры."
+      ]
+    },
+    "Turbo-Cane": {
+      "title": "Турбо-тростник",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §6☘ Sugar Cane Fortune§7 — больше урожая",
+        "§7именно этой культуры."
+      ]
+    },
+    "Turbo-Carrot": {
+      "title": "Турбо-морковь",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §6☘ Carrot Fortune§7 — больше урожая",
+        "§7именно этой культуры."
+      ]
+    },
+    "Turbo-Coco": {
+      "title": "Турбо-какао",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §6☘ Cocoa Beans Fortune§7 — больше урожая",
+        "§7именно этой культуры."
+      ]
+    },
+    "Turbo-Crop": {
+      "title": "Турбо-культура",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a+5§7 Farming Fortune за уровень",
+        "§7на своей культуре.",
+        "§8Есть под пшеницу, морковь, картофель,",
+        "§8тыкву, арбуз, грибы, какао, кактус,",
+        "§8тростник и адский нарост."
+      ],
+      "_wiki": "Grants +5 Farming Fortune per level when breaking the specified crop.Comes in Turbo-Wheat, Turbo-Carrot, Turbo-Potato, Turbo-Pumpkin, Turbo-Melon, Turbo-Mushrooms, Turbo-Cocoa, Turbo-Cacti, Turbo-Cane, and Turbo-Warts variants.Level IV requires Bronze in a contest for that crop, and V requires Silver",
+      "_source": "I: Jacob's Farming ContestsLibrarian visitor; II–V: Combining Books"
+    },
+    "Turbo-Melon": {
+      "title": "Турбо-арбуз",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §6☘ Melon Slice Fortune§7 — больше урожая",
+        "§7именно этой культуры."
+      ]
+    },
+    "Turbo-Moonflower": {
+      "title": "Турбо-луноцвет",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §6☘ Moonflower Fortune§7 — больше урожая",
+        "§7именно этой культуры."
+      ]
+    },
+    "Turbo-Mushrooms": {
+      "title": "Турбо-грибы",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §6☘ Mushroom Fortune§7 — больше урожая",
+        "§7именно этой культуры."
+      ]
+    },
+    "Turbo-Potato": {
+      "title": "Турбо-картофель",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §6☘ Potato Fortune§7 — больше урожая",
+        "§7именно этой культуры."
+      ]
+    },
+    "Turbo-Pumpkin": {
+      "title": "Турбо-тыква",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §6☘ Pumpkin Fortune§7 — больше урожая",
+        "§7именно этой культуры."
+      ]
+    },
+    "Turbo-Rose": {
+      "title": "Турбо-роза",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §6☘ Wild Rose Fortune§7 — больше урожая",
+        "§7именно этой культуры."
+      ]
+    },
+    "Turbo-Sunflower": {
+      "title": "Турбо-подсолнух",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §6☘ Sunflower Fortune§7 — больше урожая",
+        "§7именно этой культуры."
+      ]
+    },
+    "Turbo-Warts": {
+      "title": "Турбо-наросты",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §6☘ Nether Wart Fortune§7 — больше урожая",
+        "§7именно этой культуры."
+      ]
+    },
+    "Turbo-Wheat": {
+      "title": "Турбо-пшеница",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §6☘ Wheat Fortune§7 — больше урожая",
+        "§7именно этой культуры."
+      ]
+    },
+    "Ultimate Jerry": {
+      "title": "Ультимативный Jerry",
+      "color": "blue",
+      "lines": [
+        "§7Повышает базовый урон Aspect of the Jerry",
+        "§7на §a1000%§7 за уровень."
+      ],
+      "_wiki": "Increases the base Damage of Aspect of the Jerry by 1000% per level"
+    },
+    "Ultimate Wise": {
+      "title": "Абсолютная мудрость",
+      "color": "blue",
+      "lines": [
+        "§7Способность предмета тратит",
+        "§7на §a10%§7 меньше маны за уровень,",
+        "§7до §a50%§7 на V.",
+        "§8Оружие, инструменты, удочки и жезлы."
+      ],
+      "_wiki": "Reduces the ability Manacost of this item by 10% per level"
+    },
+    "Undead Resistance": {
+      "title": "Сопротивление нежити",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a❈ Defense§7 против §f༕ Undead§7 мобов."
+      ]
+    },
+    "Vampiric Vitality": {
+      "title": "Вампирская живучесть",
+      "color": "blue",
+      "lines": [
+        "§7Лечит §c❤§7 за каждую потраченную §c Vitality§7."
+      ]
+    },
+    "Vampirism": {
+      "title": "Вампиризм",
+      "color": "blue",
+      "lines": [
+        "§7Убийство врага лечит на §a1%§7 нехватки",
+        "§7здоровья за уровень."
+      ],
+      "_wiki": "Heals for 1% of your missing Health per level whenever you kill an enemy.",
+      "_source": "I–V: Enchantment Table; VI: Spooky Festival RewardTrick or Treat Chest"
+    },
+    "Venomous": {
+      "title": "Ядовитость",
+      "color": "blue",
+      "lines": [
+        "§7Замедляет цель и наносит урон каждую секунду.",
+        "§7Складывается до §e40§7 ударов, держится §e5 с§7."
+      ],
+      "_wiki": "Reduces the target's walk Speed by X% and deals X% of your damage per second per hit, stacking globally up to 40 hits. Lasts 5s.",
+      "_source": "I–V: Enchantment Table; VI: Experiments"
+    },
+    "Veteran": {
+      "title": "Ветеран",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a☯ Combat Wisdom§7 — опыт боя."
+      ]
+    },
+    "Vicious": {
+      "title": "Свирепый",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a1§7 Ferocity за уровень."
+      ],
+      "_wiki": "Grants 1 Ferocity per level.",
+      "_source": "I–II: Enchantment Table; III–V: Dark Auction"
+    },
+    "Vivacious Vitality": {
+      "title": "Бодрая живучесть",
+      "color": "blue",
+      "lines": [
+        "§7Превращает часть потраченной §c Vitality§7",
+        "§7в §e Attack Speed§7 на время."
+      ]
+    },
+    "Wisdom": {
+      "title": "Мудрость",
+      "color": "blue",
+      "lines": [
+        "§7Даёт §a1§7 к интеллекту за уровень",
+        "§7за каждые §e5§7 уровней опыта при тебе.",
+        "§7Не больше §e20§7 за уровень."
+      ],
+      "_wiki": "Gain 1 Intelligence per level, for every 5 levels of exp you have on you. Capped at 20 Intelligence per level."
+    },
+    "Woodsplitter": {
+      "title": "Дровосек",
+      "color": "blue",
+      "lines": [
+        "§7Повышает урон по лесным мобам."
+      ],
+      "_wiki": "Increases damage dealt to woodland mobs by X%.",
+      "_source": "I–V: Enchantment Table; VI: .1% chance to drop from Chillshot or Chillblade"
+    }
   }
- }
 }
