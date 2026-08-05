@@ -81,7 +81,7 @@ public final class Telemetry {
 	private static final AtomicBoolean noticeScheduled = new AtomicBoolean();
 
 	/**
-	 * Шаг ожидания SkyBlock и сколько раз пробовать.
+	 * Шаг ожидания SkyBlock и число попыток переехали в {@link Hypixel}.
 	 *
 	 * <p>Первая пауза нужна сама по себе: сразу после входа чат забит
 	 * приветствиями сервера, и одинокая строка утонет в них незамеченной —
@@ -89,9 +89,11 @@ public final class Telemetry {
 	 * человек доберётся до острова: пять минут покрывают лобби, выбор режима
 	 * и прогрузку, а если он в этот вечер вообще не пойдёт в SkyBlock —
 	 * приветствие достанется следующему заходу.
+	 *
+	 * <p>⚠️ Держать их здесь значило иметь ВТОРУЮ копию ожидания: точно такое
+	 * же нужно сообщению о новой версии мода. Копии в этом проекте расходятся
+	 * молча — см. CLAUDE.md.
 	 */
-	private static final long WAIT_STEP_MS = 8_000;
-	private static final int WAIT_TRIES = 40;
 
 	private Telemetry() {
 	}
@@ -295,27 +297,13 @@ public final class Telemetry {
 			// попадает оттуда в лобби и только потом на остров. Одной проверки
 			// через восемь секунд не хватало: к этому моменту он обычно ещё
 			// выбирает режим, а второго JOIN может и не быть.
-			Minecraft client = null;
-			for (int attempt = 0; attempt < WAIT_TRIES; attempt++) {
-				try {
-					Thread.sleep(WAIT_STEP_MS);
-				} catch (InterruptedException interrupted) {
-					Thread.currentThread().interrupt();
-					noticeScheduled.set(false);
-					return;
-				}
-				Minecraft now = Minecraft.getInstance();
-				if (now == null) {
-					noticeScheduled.set(false);
-					return;
-				}
-				// Говорим только в SkyBlock — там же, где и собираем. В лобби
-				// сообщение про перевод SkyBlock игроку ни к чему.
-				if (Hypixel.isSkyBlock()) {
-					client = now;
-					break;
-				}
-			}
+			//
+			// ⚠️ Ожидание живёт в ОДНОМ месте (Hypixel.awaitSkyBlock) и общее
+			// со всеми, кому надо «сказать игроку в SkyBlock»: сообщение
+			// о новой версии мода ждёт им же. Своя копия разошлась бы шагом
+			// или числом попыток — и сообщения повели бы себя по-разному
+			// без всякой причины.
+			Minecraft client = Hypixel.awaitSkyBlock();
 			if (client == null) {
 				noticeScheduled.set(false);   // не дождались — попробуем в следующий заход
 				return;

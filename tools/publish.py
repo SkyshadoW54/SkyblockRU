@@ -74,6 +74,29 @@ def mod_version() -> str:
     return found.group(1).strip() if found else ""
 
 
+def releases_url() -> str:
+    """Куда игроку идти за новым jar — из git remote, а не вшито.
+
+    ⚠️ Адрес берётся у САМОГО репозитория: вшитая ссылка устаревает молча,
+    и проект на этом уже попадался (версия в имени файла, ссылка на Java).
+    Не смогли определить — ссылки в манифесте просто не будет: сообщение
+    останется без неё, но врать не станет.
+    """
+    import subprocess
+    try:
+        out = subprocess.run(["git", "remote", "get-url", "origin"],
+                             cwd=ROOT, capture_output=True, text=True, timeout=10)
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    if out.returncode != 0:
+        return ""
+    remote = out.stdout.strip()
+    match = re.search(r"github\.com[:/]+([^/]+)/([^/\s]+?)(?:\.git)?$", remote)
+    if not match:
+        return ""
+    return f"https://github.com/{match.group(1)}/{match.group(2)}/releases/latest"
+
+
 def declared() -> set[str]:
     """Словари, ОБЪЯВЛЕННЫЕ в index.json, — ровно то, что грузит мод.
 
@@ -252,6 +275,13 @@ def main() -> int:
     if version:
         # Про новую версию мода мод только СООБЩАЕТ — jar по сети не качается.
         manifest["mod"] = {"version": version}
+        # ⚠️ БЕЗ ССЫЛКИ СОВЕТ НЕВЫПОЛНИМ. Мод читал `mod.url`, а сюда его
+        # никто не клал — и в чате висело «скачать и положить в папку модов
+        # нужно вручную» без единого намёка, откуда скачивать. Поймано
+        # скриншотом игрока.
+        link = releases_url()
+        if link:
+            manifest["mod"]["url"] = link
     if args.note:
         manifest["note"] = args.note
 
