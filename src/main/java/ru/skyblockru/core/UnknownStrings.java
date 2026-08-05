@@ -317,6 +317,22 @@ public final class UnknownStrings {
 	private static volatile boolean colorsFull;
 
 	/**
+	 * Раскраска строк БОКОВОЙ ПАНЕЛИ и ТАБА: «источник + ключ» -> куски с цветами.
+	 *
+	 * <p>⚠️ Источник в ключе не для порядка: одна и та же строка выглядит
+	 * в панели и в табе по-разному, и цвета у них свои.
+	 */
+	private static final Map<String, String> PANEL_COLORS = new ConcurrentHashMap<>();
+
+	// Панель и таб отдают несколько десятков строк за заход, и почти все
+	// повторяются. Предел взят с тем же запасом, что у абзацев, — упереться
+	// в него можно разве что за месяцы игры, зато отказ будет ГРОМКИМ.
+	private static final int MAX_PANEL_COLORS = 60_000;
+
+	/** Сказали ли уже, что сбор цветов панели остановлен. */
+	private static volatile boolean panelColorsFull;
+
+	/**
 	 * Ключи, поднятые с диска, — их живая запись имеет право ПЕРЕЗАПИСАТЬ.
 	 *
 	 * <p>Цвета кусков приходят от Hypixel и от версии мода не зависят, а вот
@@ -385,6 +401,65 @@ public final class UnknownStrings {
 		} else {
 			PARAGRAPH_COLORS.putIfAbsent(key, row);
 		}
+		dirty = true;
+	}
+
+	/**
+	 * Цвета строки БОКОВОЙ ПАНЕЛИ и ТАБА — единственный их источник.
+	 *
+	 * <p><b>Зачем.</b> Чтобы разметить перевод панели, нужен цвет от Hypixel,
+	 * а взять его было НЕГДЕ: дамп снимает §-коды при записи, в логи Minecraft
+	 * таблица игроков не попадает (это не чат), в NEU и на аукционе её нет
+	 * вовсе. Для абзацев лора такой сбор есть с 26.07, а панель и таб остались
+	 * без него — и цвета там правились по скриншотам, вручную, по одной строке.
+	 * Ровно та работа «ремонтником по вызову», от которой проект уходит.
+	 *
+	 * <p>⚠️ Пишем ДО перевода и до снятия кодов: дальше по дороге разметка
+	 * пропадает навсегда. Место одно — {@link TextTranslator}, через который
+	 * проходят обе области; врезаться в пять миксинов значило бы однажды
+	 * забыть шестой.
+	 *
+	 * <p>⚠️ Ключ строится {@link #dumpKey} — тем же, что у самой строки.
+	 * Иначе цвет не нашёл бы свою строку ни разу.
+	 */
+	public static void recordPanelColors(String source, net.minecraft.network.chat.Component line) {
+		if (!RuConfig.get().dumpUntranslated || line == null) {
+			return;
+		}
+		String key = dumpKey(source, line.getString());
+		if (key == null) {
+			return;
+		}
+		if (PANEL_COLORS.size() >= MAX_PANEL_COLORS) {
+			// ⚠️ Отказ ГРОМКИЙ, как у абзацев: молчаливый предел уже дважды
+			// стоил проекту данных — счётчик просто перестаёт расти, и со
+			// стороны это неотличимо от «новых цветов больше не встречается».
+			if (!panelColorsFull) {
+				panelColorsFull = true;
+				SkyblockRuClient.LOG.warn(
+						"[SkyblockRU] panel color collection stopped: reached {} entries. "
+						+ "Raise MAX_PANEL_COLORS or archive dump/panel-colors.json",
+						MAX_PANEL_COLORS);
+				noteProblem("panel-colors", String.valueOf(MAX_PANEL_COLORS));
+			}
+			return;
+		}
+		java.util.List<ParagraphColors.Piece> pieces = Paragraphs.piecesOf(
+				java.util.List.of(line), net.minecraft.network.chat.Style.EMPTY,
+				new java.util.LinkedHashMap<>());
+		if (pieces.isEmpty()) {
+			return;
+		}
+		StringBuilder row = new StringBuilder();
+		for (ParagraphColors.Piece piece : pieces) {
+			if (row.length() > 0) {
+				row.append(PIECE_SEP);
+			}
+			row.append(piece.color()).append(FIELD_SEP).append(piece.text());
+		}
+		// ⚠️ Свежая запись ВЫТЕСНЯЕТ вчерашнюю: Hypixel перекрашивает панель
+		// (статус миньона, выбранный пункт), и старая раскладка устаревает.
+		PANEL_COLORS.put(source + FIELD_SEP + key, row.toString());
 		dirty = true;
 	}
 
@@ -465,6 +540,69 @@ public final class UnknownStrings {
 					PARAGRAPH_COLORS.size(), broken == 0 ? "" : " (" + broken + " unreadable)");
 		} catch (IOException | RuntimeException exception) {
 			SkyblockRuClient.LOG.warn("[SkyblockRU] could not read paragraph-colors.json: {}",
+					exception.toString());
+		}
+	}
+
+	/**
+	 * Поднимает цвета панели и таба, собранные в прошлые запуски.
+	 *
+	 * <p>⚠️ Обязательно, и по той же причине, что у абзацев: без подъёма
+	 * коллекция пуста, а первая же автозапись подменяет файл на диске —
+	 * собранное за прошлые вечера исчезает молча. Это ДАННЫЕ ОТ СЕРВЕРА,
+	 * они от версии мода не зависят и копятся; сторожит
+	 * {@code tools/check_dump_persistence.py}.
+	 */
+	private static void loadPanelColors() {
+		Path file = dumpDir.resolve("panel-colors.json");
+		if (!Files.exists(file)) {
+			return;
+		}
+		try {
+			JsonObject root = new com.google.gson.Gson()
+					.fromJson(Files.readString(file, StandardCharsets.UTF_8), JsonObject.class);
+			com.google.gson.JsonArray cases = root == null ? null : root.getAsJsonArray("cases");
+			if (cases == null) {
+				return;
+			}
+			int broken = 0;
+			for (com.google.gson.JsonElement element : cases) {
+				if (PANEL_COLORS.size() >= MAX_PANEL_COLORS) {
+					break;
+				}
+				// Разбираем ПОЗАПИСНО: одна запись старого образца не должна
+				// отменять восстановление всех остальных.
+				try {
+					JsonObject one = element.getAsJsonObject();
+					if (!one.has("key")) {
+						continue;
+					}
+					String source = one.has("source") ? one.get("source").getAsString() : "";
+					StringBuilder pieces = new StringBuilder();
+					com.google.gson.JsonArray saved = one.getAsJsonArray("pieces");
+					if (saved != null) {
+						for (com.google.gson.JsonElement pieceElement : saved) {
+							com.google.gson.JsonArray pair = pieceElement.getAsJsonArray();
+							if (pair.isEmpty()) {
+								continue;
+							}
+							if (pieces.length() > 0) {
+								pieces.append(PIECE_SEP);
+							}
+							pieces.append(pair.get(0).getAsString()).append(FIELD_SEP)
+									.append(pair.size() > 1 ? pair.get(1).getAsString() : "");
+						}
+					}
+					PANEL_COLORS.put(source + FIELD_SEP + one.get("key").getAsString(),
+							pieces.toString());
+				} catch (RuntimeException ignored) {
+					broken++;
+				}
+			}
+			SkyblockRuClient.LOG.info("[SkyblockRU] restored panel colors: {} lines{}",
+					PANEL_COLORS.size(), broken == 0 ? "" : " (" + broken + " unreadable)");
+		} catch (IOException | RuntimeException exception) {
+			SkyblockRuClient.LOG.warn("[SkyblockRU] could not read panel-colors.json: {}",
 					exception.toString());
 		}
 	}
@@ -812,6 +950,7 @@ public final class UnknownStrings {
 	private static void load() {
 		loadHighlights();
 		loadParagraphColors();
+		loadPanelColors();
 		loadTooltips();
 		loadItemIds();
 		Path state = dumpDir.resolve("collected.json");
@@ -891,21 +1030,30 @@ public final class UnknownStrings {
 		record(source, text, null);
 	}
 
-	public static void record(String source, String text, String context) {
-		if (!RuConfig.get().dumpUntranslated || text == null) {
-			return;
+	/**
+	 * Ключ строки в дампе: §-коды сняты, ники в {@code {s}}, числа в {@code {n}}.
+	 * {@code null} — записывать такое не стоит вовсе.
+	 *
+	 * <p>⚠️ Вынесено из {@link #record}, чтобы ЦВЕТА панели ложились под ТЕМ ЖЕ
+	 * ключом, что и сама строка. Своя копия обобщения разошлась бы при первой
+	 * правке — и цвета не нашли бы свою строку ни разу, молча: файлы на месте,
+	 * ошибок нет, разметка просто не применяется.
+	 */
+	static String dumpKey(String source, String text) {
+		if (text == null) {
+			return null;
 		}
 		String clean = LegacyText.strip(text).trim();
 		if (!isWorthRecording(clean)) {
-			return;
+			return null;
 		}
 		// Чужая переписка: не наше дело, и переводить там нечего.
 		// Правило одно на перевод и на сбор — оно живёт в PlayerChat.
 		if (TextTranslator.SRC_CHAT.equals(source) && PlayerChat.isPlayerMessage(clean)) {
-			return;
+			return null;
 		}
 		if (TextTranslator.SRC_NAME_TAG.equals(source) && BARE_TOKEN.matcher(clean).matches()) {
-			return; // одинокое слово над головой — ник игрока
+			return null; // одинокое слово над головой — ник игрока
 		}
 		// Ники обобщаем ПЕРВЫМИ: иначе цифра внутри ника («RealW0sh») сначала
 		// станет {n}, и шаблон имени уже не совпадёт.
@@ -920,6 +1068,17 @@ public final class UnknownStrings {
 		// ⚠️ МУСОР НЕ КОПИМ. Проверять надо ПОСЛЕ обобщения: ник становится
 		// «{s}», а число «{n}», и до этого шага признак их не узнаёт.
 		if (isNoise(source, clean)) {
+			return null;
+		}
+		return clean;
+	}
+
+	public static void record(String source, String text, String context) {
+		if (!RuConfig.get().dumpUntranslated || text == null) {
+			return;
+		}
+		String clean = dumpKey(source, text);
+		if (clean == null) {
 			return;
 		}
 		if (context != null && !context.isBlank()) {
@@ -1332,6 +1491,35 @@ public final class UnknownStrings {
 			writeAtomic(dumpDir.resolve("paragraph-colors.json"),
 					new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create()
 							.toJson(paragraphFile));
+
+			// Цвета боковой панели и таба — ЕДИНСТВЕННЫЙ их источник: в NEU,
+			// на аукционе и в логах Minecraft этих строк нет вовсе.
+			com.google.gson.JsonArray panels = new com.google.gson.JsonArray();
+			PANEL_COLORS.forEach((full, row) -> {
+				int split = full.indexOf(FIELD_SEP);
+				JsonObject one = new JsonObject();
+				one.addProperty("source", split < 0 ? "" : full.substring(0, split));
+				one.addProperty("key", split < 0 ? full : full.substring(split + 1));
+				com.google.gson.JsonArray pieces = new com.google.gson.JsonArray();
+				for (String piece : row.split(String.valueOf(PIECE_SEP), -1)) {
+					String[] pair = piece.split(String.valueOf(FIELD_SEP), 2);
+					com.google.gson.JsonArray entry = new com.google.gson.JsonArray();
+					entry.add(pair[0]);
+					entry.add(pair.length > 1 ? pair[1] : "");
+					pieces.add(entry);
+				}
+				one.add("pieces", pieces);
+				panels.add(one);
+			});
+			JsonObject panelFile = new JsonObject();
+			panelFile.addProperty("_comment", "Colored pieces of sidebar and tab lines, "
+					+ "exactly as Hypixel sends them. The ONLY source of those colors: "
+					+ "the dump strips codes, NEU and the auction have no sidebar at all. "
+					+ "Accumulates between sessions on purpose.");
+			panelFile.add("cases", panels);
+			writeAtomic(dumpDir.resolve("panel-colors.json"),
+					new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create()
+							.toJson(panelFile));
 
 			// Подсказки целиком, до и после перевода: их рисует tools/preview.py
 			com.google.gson.JsonArray previews = new com.google.gson.JsonArray();
