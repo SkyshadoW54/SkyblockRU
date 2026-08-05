@@ -124,6 +124,19 @@ SERVER_LINE = re.compile(r"^\{n\}/\{n\}/\{n\}\s+[a-zA-Z]?\{n\}[A-Z]{0,3}$")
 ITEM_COUNT = re.compile(r"^[A-Z][A-Za-z' ]+ x\{n\}$")
 
 
+def nick_free(line: str) -> str:
+    """Строка с чужим ником, обобщённым в «{s}».
+
+    ⚠️ Ленивый импорт: `check_nicknames` сам тянет `protected`, а тот —
+    рабочие файлы. Наверху это замкнуло бы круг импортов.
+    """
+    try:
+        import check_nicknames
+    except ImportError:
+        return line
+    return check_nicknames.generalized(line)
+
+
 def worth_translating(line: str, source: str) -> bool:
     """Строку вообще есть смысл отдавать модели?"""
     if NOTHING_TO_DO.match(line):
@@ -742,6 +755,19 @@ def main() -> int:
             print(f"  пропускаю {source}: такие строки переводить нельзя")
             continue
         for line, count in (sources.get(source) or {}).items():
+            # ⚠️ ЧУЖОЙ НИК ОБОБЩАЕМ, А НЕ ПЕРЕВОДИМ ПОШТУЧНО.
+            #
+            # «RARE REWARD! sentiences found a Fuming Potato Book…» — это
+            # тринадцать отдельных строк на тринадцать игроков, и каждая
+            # бесполезна остальным. Обобщённая «RARE REWARD! {s} found…»
+            # работает у всех и никого не называет. Замер 05.08: из 151 строки,
+            # отобранной к покупке, около 60 были такими.
+            #
+            # ⚠️ Признак берётся ПО СТРУКТУРЕ строки (check_nicknames.STRUCTURAL),
+            # а не по виду ника: у половины игроков ник — обычное слово
+            # (zuhnia, sentiences, nograssbro), и признак «есть цифра или
+            # подчёркивание» их не видит. Своей копии тут не заводим.
+            line = nick_free(line)
             if not worth_translating(line, source):
                 continue
             if line in known:
