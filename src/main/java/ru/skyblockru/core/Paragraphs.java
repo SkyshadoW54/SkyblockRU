@@ -976,7 +976,7 @@ public final class Paragraphs {
 		return first[0] == null ? line.getStyle() : first[0];
 	}
 
-	private static List<ParagraphColors.Piece> piecesOf(List<Component> source, Style base,
+	public static List<ParagraphColors.Piece> piecesOf(List<Component> source, Style base,
 			Map<String, Style> palette) {
 		List<ParagraphColors.Piece> out = new ArrayList<>();
 		for (Component line : source) {
