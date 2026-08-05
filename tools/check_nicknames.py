@@ -55,6 +55,10 @@ STRUCTURAL = [
     re.compile(r"^(LOOT SHARE You received loot for assisting )(\S+?)(!?$)"),
     re.compile(r"^()(\S+)( invited .* to visit )"),
     re.compile(r"^(Player: )(\S+)($)"),
+    # ⚠️ Ник в ПРИТЯЖАТЕЛЬНОЙ форме — вторая сторона приглашения:
+    # «{s} accepted _Skyshadow_'s invite!». Первую («X invited …») признак
+    # ловил, а эту нет, и строка уезжала в покупку вместе с чужим именем.
+    re.compile(r"^(\{s\} accepted )(\S+?)('s invite)"),
 ]
 
 # служебные слова, которые под признак попадают, но ником не являются
