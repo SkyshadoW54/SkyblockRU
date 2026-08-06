@@ -21,6 +21,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 
 # ⚠️ Ровно как в моде: цифры и разделители ВНУТРИ числа. Знак процента,
 # значок и скобки остаются снаружи — они часть текста, а не значения.
@@ -76,6 +77,40 @@ def runs(lines: list[str]) -> list[list[str]]:
             out.append(run.copy())
         run = []
     return out
+
+
+def every_line_marked(lines) -> bool:
+    """Все ли строки куска начинаются со ЗНАЧКА — то есть это перечисление.
+
+    ⚠️ ОДНА реализация на весь проект: тот же признак живёт в моде
+    (`ColorLayout`: «у каждой строки свой знак — это перечисление»). Копии
+    в этом проекте расходились молча уже трижды, а цена расхождения тут
+    высокая: мод такой абзац НЕ склеивает, и если очередь считает его строки
+    «закрытыми абзацем», они проваливаются между двумя системами — перевод
+    куплен, а на экране английский.
+
+    ⚠️ Знаком считается не-буква ЛИБО буква чужого алфавита: Hypixel берёт
+    под иконки сингальскую «ථ», чамскую «ꨃ», тибетскую «࿉». За знаком обязан
+    идти ПРОБЕЛ — иначе под правило попадают «[Lvl {n}] Frog Man» и «{s}»,
+    где первый символ просто часть текста.
+    """
+    rows = [str(line).strip() for line in lines]
+    if len(rows) < 2:
+        return False
+    for row in rows:
+        if len(row) < 2 or row[1] != " ":
+            return False
+        first = row[0]
+        if first.isdigit() or first.isspace():
+            return False
+        if first.isalpha():
+            try:
+                script = unicodedata.name(first).split()[0]
+            except ValueError:
+                script = ""
+            if script in ("LATIN", "CYRILLIC"):
+                return False
+    return True
 
 
 def main() -> int:

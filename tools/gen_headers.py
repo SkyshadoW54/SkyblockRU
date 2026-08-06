@@ -38,8 +38,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import unicodedata
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import pkey  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 CORE = ROOT / "src" / "main" / "java" / "ru" / "skyblockru" / "core"
@@ -56,34 +58,6 @@ KEY_HINT = re.compile(r"\b(?:SNEAK|RIGHT CLICK|LEFT CLICK|ON SHOOT|CLICK|DIG)\b"
 # как они выглядят в наших переводах
 KEY_RU = re.compile(r"ШИФТ|ПКМ|ЛКМ|ВЫСТРЕЛ|КОПАЙ|НАЖМИ", re.IGNORECASE)
 SPACES = re.compile(r"\s+")
-
-
-def list_run(lines) -> bool:
-    """Все ли строки куска начинаются со ЗНАЧКА — то есть это перечисление.
-
-    ⚠️ Признак повторяет мод (`ColorLayout`: «у каждой строки свой знак»),
-    а не выдуман заново: значком считается не-буква (либо буква ЧУЖОГО
-    алфавита — Hypixel берёт под иконки сингальские и тибетские знаки),
-    и за ним обязан идти ПРОБЕЛ. Без пробела под правило попадали бы
-    «[Lvl {n}] Frog Man» и «{s}», где первый символ — часть текста.
-    """
-    rows = [str(line).strip() for line in lines]
-    if len(rows) < 2:
-        return False
-    for row in rows:
-        if len(row) < 2 or row[1] != " ":
-            return False
-        first = row[0]
-        if first.isdigit() or first.isspace():
-            return False
-        if first.isalpha():
-            try:
-                script = unicodedata.name(first).split()[0]
-            except ValueError:
-                script = ""
-            if script in ("LATIN", "CYRILLIC"):
-                return False
-    return True
 
 
 def plain(text: str) -> str:
@@ -255,7 +229,7 @@ def main() -> int:
         # Признак тот же, что у мода (ColorLayout: «у каждой строки свой
         # знак — это перечисление»), и потому согласован с ним: такой абзац
         # мод не склеивает, значит заголовков в нём не бывает по построению.
-        if list_run(para["lines"]):
+        if pkey.every_line_marked(para["lines"]):
             dropped_list += 1
             continue
         whole = CODES.sub("", para["ru"])
