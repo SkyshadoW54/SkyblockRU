@@ -4711,6 +4711,8 @@
   " Magmatic,  Undead,  Woodland": " Магматический,  Нежить,  Лесной",
   " Skeletal,  Aquatic": " Костяной,  Водный",
   " Undead and  Skeletal mobs by": " Undead и  Skeletal мобам на",
-  " Woodland,  Aquatic": " Лесной,  Водный"
+  " Woodland,  Aquatic": " Лесной,  Водный",
+  "This item can be reclaimed! Use": "Этот предмет можно вернуть! Используй",
+  "/reclaim to take back what's rightfully yours!": "/reclaim, чтобы забрать своё по праву!"
  }
 }
