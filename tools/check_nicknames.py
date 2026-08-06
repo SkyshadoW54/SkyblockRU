@@ -315,7 +315,39 @@ def main() -> int:
             gone = drop_from(path, total_keys, sections)
             if gone:
                 print("  %-28s -%d  (источник)" % (name, gone))
+    gone = drop_from_corpus(total_keys)
+    if gone:
+        print("  %-28s -%d  (источник)" % ("paragraphs.json", gone))
     return 0
+
+
+def drop_from_corpus(keys: set[str]) -> int:
+    """Убирает абзацы с никами из КОРПУСА.
+
+    ⚠️⚠️ Без этого чистка не держится. `96-paragraphs.json` собирается из
+    корпуса (`merge_paragraphs`), поэтому вычищенные из словаря ники
+    возвращались при первой же пересборке — за один вечер трижды, и каждый
+    раз сторож честно краснел, а я честно чистил не то место.
+    ⚠️ Абзац УДАЛЯЕМ целиком, а не обобщаем: там списки игроков
+    («Players: - X - Y - Z»), у другого игрока в них другие имена, и перевод
+    ему бесполезен.
+    """
+    path = WORK / "paragraphs.json"
+    if not path.is_file():
+        return 0
+    data = json.loads(path.read_text(encoding="utf-8"))
+    paras = data.get("paragraphs")
+    if not isinstance(paras, list):
+        return 0
+    left = [p for p in paras
+            if not (str(p.get("text") or "") in keys
+                    or any(str(p.get("text") or "").strip() == k.strip() for k in keys))]
+    gone = len(paras) - len(left)
+    if gone:
+        data["paragraphs"] = left
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=1) + "\n",
+                        encoding="utf-8")
+    return gone
 
 
 if __name__ == "__main__":
