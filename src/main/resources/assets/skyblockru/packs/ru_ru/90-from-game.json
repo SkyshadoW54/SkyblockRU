@@ -4204,7 +4204,9 @@
   "» Slay {n} Combat XP worth of Zombies.": "» Убей зомби на {n} опыта Combat.",
   "» Talk to Maddox to claim your Zombie Slayer XP!": "» Поговори с Maddox, чтобы забрать опыт Zombie Slayer!",
   "४: Grants +{n}% Damage towards Foraging": "४: Даёт +{n}% к урону по существам лесозаготовки",
+  "ථ Hook NONE": "ථ Крючок НЕТ",
   "ථ Hooks": "ථ Крючки",
+  "࿉ Sinker NONE": "࿉ Грузило НЕТ",
   "࿉ Sinkers": "࿉ Грузила",
   "• Bank & Purse": "• Bank и Purse",
   "• Grants +{n}% base mana regen.": "• Даёт +{n}% к базовой регенерации маны.",
@@ -4653,6 +4655,7 @@
   "➜ [Sure.] \n  ➜ [I'd rather talk about special Mayors.] \n  ➜ [Nah.]": "➜ [Конечно.] \n  ➜ [Лучше расскажи про особых мэров.] \n  ➜ [Не-а.]",
   "➜  Pests are {n}x more likely to": "➜  Вредители в {n}x раз чаще будут",
   "ꨃ Line": "ꨃ Леска",
+  "ꨃ Line NONE": "ꨃ Леска НЕТ",
   "ꨃ Lines": "ꨃ Лески",
   " Breaking Power allows you to mine tougher blocks. For example, Diamond Ore has a  Breaking Power of {n}, meaning you’ll need a tool with {n} Breaking Power or higher to mine it. You can find more information about blocks via /blockguide.": " Breaking Power позволяет добывать более прочные блоки. Например, у Diamond Ore  Breaking Power {n}, то есть нужен инструмент с {n} Breaking Power или выше, чтобы его добыть. Больше о блоках — через /blockguide.",
   " Double Hook Chance": " шанс двойного улова",
@@ -4708,12 +4711,6 @@
   " Magmatic,  Undead,  Woodland": " Магматический,  Нежить,  Лесной",
   " Skeletal,  Aquatic": " Костяной,  Водный",
   " Undead and  Skeletal mobs by": " Undead и  Skeletal мобам на",
-  " Woodland,  Aquatic": " Лесной,  Водный",
-  "[NPC] Bartender: Words cannot describe how thankful I am, {s}!": "[NPC] Bartender: Не передать словами, как я благодарен, {s}!",
-  "[NPC] Elizabeth: Hey {s}!": "[NPC] Elizabeth: Привет, {s}!",
-  "[NPC] Farmer Rigby: Howdy, {s}!": "[NPC] Farmer Rigby: Здорово, {s}!",
-  "[NPC] Guildford: Well done, {s}!": "[NPC] Guildford: Отлично, {s}!",
-  "[NPC] Rosetta: Hey {s}!!!": "[NPC] Rosetta: Привет, {s}!!!",
-  "[NPC] Tia the Fairy: Welcome to the Fairy Pond, {s}! I am Tia.": "[NPC] Tia the Fairy: Добро пожаловать в Fairy Pond, {s}! Я — Tia."
+  " Woodland,  Aquatic": " Лесной,  Водный"
  }
 }
