@@ -515,6 +515,8 @@ def main() -> int:
     ok = True
     for game in TARGETS:
         ok = build(game, jars, dry, offline) and ok
+    if ok and not dry:
+        bundle()
     if dry:
         print("сухой прогон: ничего не записано")
     elif ok:
@@ -522,6 +524,79 @@ def main() -> int:
     else:
         print("СЛОМАНО — смотри пометки выше")
     return 0 if ok else 1
+
+
+def bundle() -> None:
+    """ОДИН архив со всеми версиями — для облачных дисков.
+
+    <b>Зачем.</b> На Google Drive и Яндекс.Диске удобна ОДНА ссылка, а три
+    файла рядом заставляют человека гадать, какой его. Класть zip внутрь zip
+    тоже нельзя: тогда он распаковывает дважды и всё равно выбирает.
+
+    ⚠️ Поэтому внутри лежат ПАПКИ ПО ВЕРСИЯМ, а не архивы: скачал, распаковал,
+    открыл папку со своей версией, положил оба файла в mods. Выбор очевиден
+    по названию папки — это то же правило, ради которого мы отказались от трёх
+    форматов раздачи: «инструкция дешевле выбора».
+
+    ⚠️ Цена решения честная: человек качает ~12 МБ вместо 4. Ужать нельзя —
+    Fabric API у каждой ветки СВОЙ, это не дубликат одного файла.
+    """
+    packs = sorted(OUT.glob("SkyblockRU-*.zip"))
+    packs = [p for p in packs if not p.name.startswith("SkyblockRU-все")]
+    if not packs:
+        return
+    target = OUT / "SkyblockRU-все-версии.zip"
+    readme = []
+    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as out:
+        for pack in packs:
+            # «SkyblockRU-26.1.x.zip» -> папка «26.1.x»
+            folder = pack.stem.replace("SkyblockRU-", "")
+            readme.append(folder)
+            with zipfile.ZipFile(pack) as src:
+                for item in src.namelist():
+                    if item.endswith("/"):
+                        continue
+                    data = src.read(item)
+                    # инструкцию кладём одну, общую — она у веток одинакова
+                    # по смыслу и различается лишь списком версий
+                    if item.lower().endswith(".txt"):
+                        out.writestr("%s/%s" % (folder, item), data)
+                        continue
+                    out.writestr("%s/%s" % (folder, item), data)
+        out.writestr("ЧИТАТЬ ПЕРВЫМ.txt", pick_text(readme))
+    print("     -> %-26s %5.0f КБ  одна ссылка на все версии"
+          % (target.name, target.stat().st_size / 1024))
+
+
+def pick_text(folders: list) -> bytes:
+    """Записка «выбери свою папку» — первое, что видит скачавший."""
+    rows = [
+        "SkyblockRU - русский перевод Hypixel SkyBlock",
+        "=" * 46,
+        "",
+        "  !!! МОД В БЕТА-ТЕСТЕ. ПЕРЕВОД НЕПОЛНЫЙ И ПОЛНЫМ НЕ БУДЕТ !!!",
+        "",
+        "В этом архиве СРАЗУ ВСЕ версии. Возьмите ОДНУ папку - свою:",
+        "",
+    ]
+    # ⚠️ «26.1.x» разворачиваем в перечень: человек ищет СВОЮ версию глазами,
+    # а «для Minecraft 26.1.x» не отвечает на вопрос «а моя 26.1.1 подойдёт?».
+    spell = {"26.1.x": "26.1, 26.1.1, 26.1.2"}
+    for folder in folders:
+        rows.append("  %-12s - для Minecraft %s" % (folder, spell.get(folder, folder)))
+    rows += [
+        "",
+        "Внутри вашей папки лежит подробная инструкция КАК-УСТАНОВИТЬ.txt",
+        "и папка mods с ДВУМЯ файлами - нужны оба.",
+        "",
+        "Коротко: поставить Fabric Loader под свою версию игры",
+        "и положить оба файла из mods в папку модов своей сборки.",
+        "",
+        "Ниже 1.21.11 SkyBlock не пускает - это ограничение Hypixel,",
+        "а не мода.",
+        "",
+    ]
+    return "\r\n".join(rows).encode("utf-8")
 
 
 if __name__ == "__main__":
