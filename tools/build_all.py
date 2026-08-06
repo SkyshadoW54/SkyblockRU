@@ -177,7 +177,47 @@ def main() -> int:
         print(f"СЛОМАНО: {bad}")
         return 1
     print("СЛОМАНО: 0 — все версии собраны, сверены и разложены")
+    cloud_behind()
     return 0
+
+
+def cloud_behind() -> None:
+    """Не отстало ли ОБЛАКО от собранных словарей.
+
+    ⚠️⚠️ Ради этого и написано. С 0.2.4 скачанный словарь ЗАМЕНЯЕТ встроенный,
+    то есть облако СИЛЬНЕЕ jar. Значит собрать и разложить мало: пока в облаке
+    лежит старая копия, она глушит свежую сборку — и на экране остаётся
+    вчерашний перевод. Игрок дважды прислал одну и ту же удочку, прежде чем
+    это вскрылось.
+
+    ⚠️ Правило записано в CLAUDE.md («три канала доставки, и они не заменяют
+    друг друга»), и я его всё равно нарушил четыре раза за вечер. Поэтому
+    напоминает теперь САМА сборка, а не память.
+
+    Сеть может быть недоступна — тогда молчим: это подсказка, а не сторож,
+    и ронять из-за неё сборку незачем.
+    """
+    try:
+        import publish
+    except Exception:
+        return
+    try:
+        files, _ = publish.collect()
+        manifest = publish.remote_manifest()
+        published = publish.published_hashes(manifest)
+        stale = [e["file"] for e in files if published.get(e["file"]) != e["sha256"]]
+    except Exception:
+        return
+    if not stale:
+        return
+    print()
+    print(f"⚠️  ОБЛАКО ОТСТАЛО на {len(stale)} файлов — у игроков они ПЕРЕКРОЮТ")
+    print("    свежий jar, потому что скачанный словарь заменяет встроенный.")
+    for name in stale[:6]:
+        print(f"      {name}")
+    if len(stale) > 6:
+        print(f"      ... ещё {len(stale) - 6}")
+    print("    Выложить: python tools/publish.py")
 
 
 if __name__ == "__main__":
