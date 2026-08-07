@@ -1057,6 +1057,12 @@ public final class UnknownStrings {
 		}
 		// Ники обобщаем ПЕРВЫМИ: иначе цифра внутри ника («RealW0sh») сначала
 		// станет {n}, и шаблон имени уже не совпадёт.
+		//
+		// ⚠️ Своё имя — раньше прочего, и признак тут ЖЕЛЕЗНЫЙ: клиент знает его
+		// точно. Hypixel обращается к игроку прямо в тексте («[NPC] Terry: Ahoy,
+		// Player_1!»), а RANKED_NAME ловит только ник С РАНГОМ — голое имя
+		// в середине строки оставалось как есть и уезжало с телеметрией.
+		clean = SelfName.mask(clean, selfName());
 		clean = RANKED_NAME.matcher(clean).replaceAll("{s}");
 		java.util.regex.Matcher labelled = NAME_LABEL.matcher(clean);
 		if (labelled.matches()) {
@@ -1177,6 +1183,41 @@ public final class UnknownStrings {
 	/** Подписи, после которых всегда стоит ник — даже без ранга. */
 	private static final java.util.regex.Pattern NAME_LABEL =
 			java.util.regex.Pattern.compile("^(Seller|Buyer|Owner|Bidder|Highest Bidder|Bid by):\\s+\\S.*$");
+
+	/** Ник игрока, как его знает клиент. Пустая строка — «спрашивали, не ответили». */
+	private static volatile String selfName;
+
+	/**
+	 * Имя САМОГО игрока — для обобщения его в {@code {s}} (см. {@link SelfName}).
+	 *
+	 * <p>⚠️ Спрашиваем КЛИЕНТА, а не гадаем по строке: это единственное имя,
+	 * которое мод знает наверняка. Ответ кэшируем — {@link #dumpKey} зовётся
+	 * на каждую строку экрана, а имя за сессию не меняется.
+	 *
+	 * <p>⚠️ Пустой ответ не кэшируем: на раннем старте пользователя ещё нет,
+	 * и запомнить пустоту значило бы не обобщать ник до конца сессии.
+	 */
+	private static String selfName() {
+		String cached = selfName;
+		if (cached != null) {
+			return cached;
+		}
+		String name = null;
+		try {
+			Minecraft client = Minecraft.getInstance();
+			if (client != null && client.getUser() != null) {
+				name = client.getUser().getName();
+			}
+		} catch (Throwable ignored) {
+			// Имя недоступно (ранний старт, чужая сборка) — работаем как раньше.
+			return null;
+		}
+		if (name == null || name.isBlank()) {
+			return null;
+		}
+		selfName = name;
+		return name;
+	}
 
 	/**
 	 * Отсеиваем то, что переводить бессмысленно: числа, ники, разделители.
