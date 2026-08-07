@@ -338,10 +338,38 @@ Settings -> Java -> Download Java.
 """
 
 
+def pack_name(our: pathlib.Path, games: list) -> str:
+    """Имя нашего jar ВНУТРИ архива — по ветке, а не по сборке.
+
+    ⚠️ Беда, из-за которой это написано: в архиве `SkyblockRU-26.1.x.zip`
+    лежал `skyblockru-0.2.8+26.2.jar`, и человек справедливо спрашивал —
+    «я скачал для 26.1.x, а тут 26.2, оно вообще заработает?».
+
+    Заработает: суффикс значит «СОБРАНО в ветке 26.2», а не «работает только
+    на 26.2» — внутри jar объявлено `minecraft: >=26.1 <26.3`. Это уже
+    записанная грабля проекта: на ней однажды ошибся и наш собственный сторож.
+
+    Но объяснять это каждому скачавшему — плохой способ. Имя должно
+    отвечать на вопрос само, поэтому внутри архива файл называется по ветке:
+    `skyblockru-0.2.9+26.1.x.jar`.
+
+    ⚠️ Переименование безопасно: Fabric читает `fabric.mod.json`, а не имя
+    файла, и наши инструменты — тоже (записанное правило «версию берём
+    ИЗ jar, имя врёт»). Инструкция получает то же имя, иначе человек не
+    найдёт, что класть, — за этим следит `verify`.
+    """
+    if len(games) < 2:
+        return our.name
+    branch = name_for(games)          # «26.1.x» — то же, что в имени архива
+    version = our.name.split("+", 1)[0]   # «skyblockru-0.2.9»
+    return f"{version}+{branch}.jar"
+
+
 def write_zip(dst: pathlib.Path, our: pathlib.Path, api: pathlib.Path,
               java: str, games: list, java_name: str, link: str) -> None:
+    inside = pack_name(our, games)
     text = GUIDE.format(games=", ".join(games), java=java,
-                        our=our.name, api=api.name,
+                        our=inside, api=api.name,
                         java_name=java_name, java_link=link,
                         underline="-" * len(java))
     with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zf:
@@ -349,7 +377,7 @@ def write_zip(dst: pathlib.Path, our: pathlib.Path, api: pathlib.Path,
         # кириллицу кракозябрами, и инструкция становится бесполезной.
         zf.writestr("КАК-УСТАНОВИТЬ.txt",
                     b"\xef\xbb\xbf" + text.replace("\n", "\r\n").encode("utf-8"))
-        zf.write(our, "mods/" + our.name)
+        zf.write(our, "mods/" + inside)
         zf.write(api, "mods/" + api.name)
 
 
