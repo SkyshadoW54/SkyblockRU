@@ -59,12 +59,55 @@ public final class TelemetryFilter {
 	/** Слишком длинная строка — не текст интерфейса, а чей-то простыня-разговор. */
 	private static final int MAX_LENGTH = 500;
 
+	/**
+	 * Строка ЧУЖОГО МОДА — не наше дело и не наша работа.
+	 *
+	 * <p><b>Зачем.</b> У игрока рядом с нами стоят SkyHanni, Skyblocker, Odin
+	 * и десятки других: они пишут в чат, рисуют свои экраны и дописывают текст
+	 * в подсказку предмета. Всё это попадает в сбор наравне с текстом Hypixel.
+	 * Замер 07.08 по живым пакетам одного игрока — 10 таких строк:
+	 *
+	 * <pre>
+	 * [SkyHanni] +5 SkyBlock XP (Collections) (3/10)
+	 * Caught a IllegalStateException in at.hannibal2.skyhanni.api.ReforgeApi…
+	 * (From SkyHanni)                    &lt;- приписка соседа к ПРЕДМЕТУ
+	 * block.skyhanni.opaque_water        &lt;- ключ локализации чужого мода
+	 * Odin Update Available
+	 * </pre>
+	 *
+	 * <p>Отсекаем ЗДЕСЬ, а не только у себя при разборе: чужие данные не должны
+	 * покидать машину игрока вовсе. То же правило, по которому не уезжает
+	 * чужая переписка.
+	 *
+	 * <p>⚠️ Имена ищем ПО ГРАНИЦЕ СЛОВА, а не подстрокой: «Odin» сидит внутри
+	 * «expl<b>odin</b>g», и в живом дампе таких строк четыре («Exploding Frog»,
+	 * «and exploding for {n} damage»). Прочие имена в чистой игре не встречаются
+	 * ни разу — проверено по dump/collected.json.
+	 *
+	 * <p>⚠️ Список НЕ полон и полным не будет: модов сотни. Поэтому вторая
+	 * линия — техномусор (стектрейс, исключение), по которому чужой мод виден
+	 * независимо от имени, и третья — порог «строку прислали МНОГИЕ»
+	 * на нашей стороне.
+	 */
+	private static final Pattern FOREIGN_MOD = Pattern.compile(
+			"\\b(?:SkyHanni|Skyblocker|NotEnoughUpdates|Firmament|Odin|Devonian"
+			+ "|ModMenu|Sodium|Lithium|FerriteCore)\\b"
+			+ "|\\bat\\.[a-z0-9_]+\\.[a-z0-9_.]+"
+			+ "|\\w*Exception\\b|\\bError while\\b|\\bstacktrace\\b",
+			Pattern.CASE_INSENSITIVE);
+
 	private TelemetryFilter() {
 	}
 
 	/** Отправлять ли эту строку. */
 	public static boolean worthSending(String source, String line) {
 		if (line == null || line.isBlank() || line.length() > MAX_LENGTH) {
+			return false;
+		}
+		// ⚠️ Чужой мод проверяем во ВСЕХ источниках, а не только в чате:
+		// «(From SkyHanni)» приходит из подсказки предмета, а
+		// «Odin Update Available» — заголовком на пол-экрана.
+		if (FOREIGN_MOD.matcher(line).find()) {
 			return false;
 		}
 		if (!"chat".equals(source)) {

@@ -40,6 +40,18 @@ CASES = [
     ("chat", "Co-op > Masha: я на острове", False, "чат кооператива"),
     ("chat", "x" * 501, False, "слишком длинная"),
     ("chat", "   ", False, "пустая"),
+    # ⚠️ ЧУЖИЕ МОДЫ. У игрока рядом стоят SkyHanni, Skyblocker, Odin: они пишут
+    # в чат, рисуют экраны и дописывают в подсказку предмета. Переводить это
+    # не наше дело, и уезжать с машины игрока оно не должно.
+    ("chat", "[SkyHanni] +5 SkyBlock XP (Collections) (3/10)", False, "чат SkyHanni"),
+    ("chat", "There's a new Skyblocker update available!", False, "чат Skyblocker"),
+    ("chat", "Caught a IllegalStateException in at.hannibal2.skyhanni.api.ReforgeApi",
+     False, "стектрейс чужого мода"),
+    ("chat", "- [Repo - NotEnoughUpdates] Error while posting repo reload event.",
+     False, "ошибка чужого мода"),
+    ("item_lore", "(From SkyHanni)", False, "приписка соседа к ПРЕДМЕТУ"),
+    ("item_name", "block.skyhanni.opaque_water", False, "ключ локализации чужого мода"),
+    ("title", "Odin Update Available", False, "заголовок чужого мода"),
     # то, что отправлять НАДО
     ("chat", "From stash: Dark Oak Log", True, "выдача из хранилища — это сервер"),
     ("chat", "[NPC] Hunter Ava: You can find him past the bridge.", True, "реплика NPC"),
@@ -49,6 +61,11 @@ CASES = [
     ("screen", "Top Items", True, "надпись меню"),
     ("scoreboard", "Кошелёк: 43,855", True, "боковая панель"),
     ("tab", "Combat Stats", True, "таб"),
+    # ⚠️ ОБРАТНЫЙ КРАЙ признака «чужой мод»: «Odin» сидит внутри «exploding»,
+    # и в живом дампе таких строк четыре. Ищем по ГРАНИЦЕ СЛОВА — эти обязаны
+    # уехать как обычно.
+    ("item_lore", "✖ Exploding Frog (3/10)", True, "«exploding», а не мод Odin"),
+    ("item_lore", "and exploding for 5 damage.", True, "«exploding» внутри фразы"),
 ]
 
 
