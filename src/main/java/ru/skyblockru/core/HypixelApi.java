@@ -102,13 +102,35 @@ public final class HypixelApi implements HypixelModAPIImplementation {
 	public static void init() {
 		try {
 			HypixelModAPI api = HypixelModAPI.getInstance();
-			api.setModImplementation(INSTANCE);
 
-			for (String identifier : api.getRegistry().getClientboundIdentifiers()) {
-				register(identifier, true);
-			}
-			for (String identifier : api.getRegistry().getServerboundIdentifiers()) {
-				register(identifier, false);
+			// ⚠️⚠️ ЕСТЬ СОСЕД — ТРАНСПОРТ ЕГО, МЫ ТОЛЬКО СЛУШАЕМ.
+			//
+			// Мод-обёртка `hypixel-mod-api` делает ровно то же самое: ставит
+			// свою реализацию и регистрирует каналы `hypixel:*`. Сделай это
+			// оба — и проигравший упадёт: `PayloadTypeRegistry.register`
+			// и `registerGlobalReceiver` на дубликат бросают исключение.
+			// Наше упало бы в этот `try`, а ЕГО — в entrypoint, то есть
+			// уронило бы игру на старте. Ровно так мы уже ломали чужие
+			// сборки вложенной библиотекой (см. грабли), и повторять эту
+			// беду вторым способом незачем.
+			//
+			// Кто первым инициализируется, зависит от порядка загрузки модов,
+			// то есть от случая — значит полагаться на «мы успеем раньше»
+			// нельзя вовсе. Уступаем всегда: обёртка для того и создана.
+			boolean wrapper = net.fabricmc.loader.api.FabricLoader.getInstance()
+					.isModLoaded("hypixel-mod-api");
+			if (wrapper) {
+				LOG.info("[skyblockru] hypixel-mod-api is present: "
+						+ "using its transport, registering nothing of our own");
+			} else {
+				api.setModImplementation(INSTANCE);
+
+				for (String identifier : api.getRegistry().getClientboundIdentifiers()) {
+					register(identifier, true);
+				}
+				for (String identifier : api.getRegistry().getServerboundIdentifiers()) {
+					register(identifier, false);
+				}
 			}
 
 			// Режим и локация. Обработчик ставим ДО подписки: сервер отвечает

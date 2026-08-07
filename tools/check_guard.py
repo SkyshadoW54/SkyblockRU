@@ -104,6 +104,11 @@ def find(pattern):
 
 
 def main():
+    # ⚠️ Без этого сторож ПАДАЕТ на печати вывода Java: консоль тут cp1251,
+    # а в отчёте есть символы, которых в ней нет. Падение выглядело как
+    # поломка проверки, хотя проверка отработала — та же грабля про кодировку,
+    # что уже записана про `-Dstdout.encoding=UTF-8`.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     javac = find("C:/Program Files/Java/jdk-*/bin/javac.exe") or "javac"
     java = find("C:/Program Files/Java/jdk-*/bin/java.exe") or "java"
 

@@ -25,7 +25,12 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "src" / "main" / "java" / "ru" / "skyblockru" / "core" / "TelemetryFilter.java"
+CORE = ROOT / "src" / "main" / "java" / "ru" / "skyblockru" / "core"
+SRC = CORE / "TelemetryFilter.java"
+# ⚠️ Признак «строка чужого мода» переехал в ForeignMods — компилируем ОБА.
+# Записанная грабля проекта: сторож, собирающий класс в одиночку, краснеет
+# на ровном месте, когда у того появляется зависимость.
+SOURCES = [SRC, CORE / "ForeignMods.java"]
 DUMP = Path("C:/MultiMC/instances/26.2/.minecraft/config/skyblockru/dump/collected.json")
 
 # ⚠️ Заведомые случаи. Слева — что подать, справа — обязан ли уйти на сервер.
@@ -89,7 +94,7 @@ def main() -> int:
 
     work = Path(tempfile.mkdtemp(prefix="sbru-telemetry-"))
     try:
-        done = subprocess.run([javac, "-d", str(work), str(SRC)],
+        done = subprocess.run([javac, "-d", str(work)] + [str(f) for f in SOURCES],
                               capture_output=True, text=True,
                               encoding="utf-8", errors="replace")
         if done.returncode != 0:
