@@ -90,6 +90,12 @@ NOT_NICK = {
 # ⚠️ КОЛИЧЕСТВО, А НЕ НИК: «Dark Oak Log x512», «Gave you: … x32».
 COUNT = re.compile(r"^x\d+$", re.I)
 
+# ⚠️ УРОВЕНЬ, А НЕ НИК: «Bladesoul Lv200», «Wither Spectre Lv70» — так Hypixel
+# подписывает поглощённые души в Soul Eater. Под признак «буквы с цифрой»
+# такое попадает целиком, и сторож объявлял никами Lv25, Lv200, Lv750 —
+# 12 «имён» из 27 в одном заходе.
+LEVEL = re.compile(r"^Lv\d+$", re.I)
+
 # ⚠️ ЧИСТИМ ТОЛЬКО ТО, ЧТО СОБРАНО В ЖИВОЙ ИГРЕ. В остальных словарях ник
 # внутри строки — часть ТЕКСТА HYPIXEL, а не данные игрока: реплики NPC
 # упоминают ютуберов («[NPC] Goon: [YOUTUBE] im_a_squid_kid…»), названия
@@ -160,7 +166,7 @@ def nicks_in(text: str, known: set[str]) -> set[str]:
         low = word.lower()
         if low in known or low in NOT_NICK:
             continue
-        if COUNT.match(word):
+        if COUNT.match(word) or LEVEL.match(word):
             continue
         # «{n}» и «{s}» — наши дырки, а не ники
         if word.startswith("{") or "_" == word or word.isdigit():
