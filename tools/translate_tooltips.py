@@ -712,7 +712,22 @@ def line_covered(line: str) -> bool:
     # не в решении (жаргон весь перечислен в terms.STAT_JARGON), а в том, что
     # фильтр смотрел только в СЛОВАРИ и о списке решений не знал.
     label = LABEL_HEAD.match(probe)
-    return bool(label and label.group(1).strip() in jargon)
+    if not label:
+        return False
+    head = label.group(1).strip()
+    if head in jargon:
+        return True
+    # ⚠️ ПРЕФИКС «Bonus » ЛОМАЛ ПРИЗНАК. Hypixel пишет и «Farming Fortune: +30»,
+    # и «Bonus Farming Fortune: +48» — характеристика одна и та же, решение
+    # по ней одно (остаётся английской), а в списке жаргона лежит короткая
+    # форма. Из-за этого блок «Bonus Defense / Bonus Speed / Bonus Farming
+    # Fortune» считался незакрытым и просился в ПЛАТНУЮ покупку целиком.
+    # Замер 08.08: так в отбор попадало 66 абзацев из 622.
+    # Снимаем только этот префикс: «Bonus Defense» -> «Defense» жаргоном
+    # не станет и переводиться не перестанет.
+    if head.startswith("Bonus "):
+        return head[len("Bonus "):].strip() in jargon
+    return False
 
 
 # Подпись характеристики в начале строки: «Gemstone Fortune: +12 (+3)»
