@@ -186,6 +186,11 @@ NAME_TAIL = re.compile(r"\bPart$")
 
 
 def main():
+    # ⚠️ Консоль тут cp1251, а в находках стоят значки Hypixel из приватной
+    # зоны — без этого сканер ПАДАЕТ на печати, уже успев всё посчитать.
+    # Та же грабля, что у check_guard: «упал» и «ничего не нашёл» со стороны
+    # неотличимы.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--kind", help="только один вид находок")
