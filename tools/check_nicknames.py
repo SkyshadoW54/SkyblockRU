@@ -51,7 +51,18 @@ STRUCTURAL = [
     re.compile(r"^(RARE REWARD! )(\S+)( found )"),
     re.compile(r"^(RNG DROP! )(\S+)( just found )"),
     re.compile(r"^(☠ )(\S+)( (?:was |fell |drowned|died|burned|starved|suffocated))"),
-    re.compile(r"^()(\S+)('s Profile$)"),
+    # ⚠️ ЧЕТЫРЕ ФОРМЫ ОДНОЙ СТРОКИ, и прежний шаблон знал одну. Замер 07.08
+    # по раздаваемому 90-from-game.json: чужих ников там девять, а ловилось
+    # ноль. Расходятся они мелочами, каждая из которых убивает совпадение:
+    #   «Kriptonious' Profile»        апостроф БЕЗ второй «s» — ник на «s»
+    #   «To Elevenzo's Profile»       кнопка перехода, префикс «To »
+    #   «charly1's Profile [GUEST]»   хвост после слова Profile
+    # Отсюда «.*» в хвосте и отдельные варианты префикса: «\S+» пробел
+    # не переходит, значит «To Имя» одним шаблоном с безпрефиксным не собрать.
+    re.compile(r"^(To )(\S+?)('s Profile.*)$"),
+    re.compile(r"^(To )(\S+?s)(' Profile.*)$"),
+    re.compile(r"^()(\S+?)('s Profile.*)$"),
+    re.compile(r"^()(\S+?s)(' Profile.*)$"),
     re.compile(r"^(LOOT SHARE You received loot for assisting )(\S+?)(!?$)"),
     re.compile(r"^()(\S+)( invited .* to visit )"),
     re.compile(r"^(Player: )(\S+)($)"),
