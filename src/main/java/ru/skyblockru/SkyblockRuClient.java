@@ -84,7 +84,22 @@ public class SkyblockRuClient implements ClientModInitializer {
 		// ⚠️ Каналы Hypixel Mod API заявляем ЗДЕСЬ, до подключения к серверу:
 		// PayloadTypeRegistry принимает регистрацию только на этом этапе.
 		// Сам режим придёт позже, пакетом; панель остаётся запасным путём.
-		ru.skyblockru.core.HypixelApi.init();
+		//
+		// ⚠️ ЛОВИМ ЗДЕСЬ, А НЕ ТОЛЬКО ВНУТРИ init(). Библиотеку мы больше
+		// не вкладываем (она ломала чужие сборки — см. грабли), поэтому её
+		// может не быть вовсе либо оказаться версия 1.0.1, где нет
+		// `HypixelModAPIImplementation`. Класс `HypixelApi` этот интерфейс
+		// РЕАЛИЗУЕТ, а значит JVM разрешает его в момент ЗАГРУЗКИ класса —
+		// то есть падение случится на этой строке, снаружи чужого try.
+		try {
+			ru.skyblockru.core.HypixelApi.init();
+		} catch (Throwable problem) {
+			// Не смертельно: режим определяется заголовком боковой панели,
+			// как и до появления Mod API. Но сказать об этом надо громко —
+			// молчаливый откат к худшему способу никто бы не заметил.
+			LOG.warn("[skyblockru] Hypixel Mod API not available ({}), "
+					+ "using sidebar title instead", problem.toString());
+		}
 
 		// Обновление переводов при заходе на сервер — игроку ничего нажимать не надо.
 		ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
