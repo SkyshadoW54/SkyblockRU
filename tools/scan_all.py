@@ -206,6 +206,24 @@ def main():
     dic = status.Dictionaries()
     filters = load_filters()
 
+    # ⚠️ Строки, которые закрывает КОРПУС АБЗАЦЕВ. Спрашиваем очередь, а не
+    # заводим свой признак: у неё он выверен и учитывает списки, которые мод
+    # склеивать не станет. Копия признака в этом проекте расходилась трижды.
+    import make_queue
+    closed_by_paragraph = make_queue.in_paragraphs()
+
+    def unwrapped(line: str) -> str:
+        """Строка без мерцающей обёртки: «a MYTHIC HELMET a» -> «MYTHIC HELMET».
+
+        ⚠️ Снимаем ТОЛЬКО одиночную букву по краям, и только когда она есть
+        с обеих сторон либо строка похожа на редкость. Иначе пострадал бы
+        обычный текст: артикль «a» законно открывает множество фраз.
+        """
+        core = line.strip()
+        if core.startswith("a ") and core.endswith(" a"):
+            return core[2:-2].strip()
+        return core
+
     def paragraph_lookup(text: str):
         """Перевод АБЗАЦА — так же строго, как его ищет мод.
 
@@ -247,6 +265,24 @@ def main():
                 if not line:
                     continue
                 got = status.lookup(generalized(line), dic)
+                if not got and generalized(line) in closed_by_paragraph:
+                    # ⚠️ СТРОКА ЗАКРЫТА АБЗАЦЕМ, пусть и в другой нарезке.
+                    # Лор аукциона разрезан по ширине ЧУЖОГО окна, поэтому
+                    # склейка тут своя, а перевод у мода лежит под ключом
+                    # своей нарезки. «Gain 5 Intelligence for every 5» —
+                    # обрывок, и его закрывает купленный абзац Wisdom V.
+                    # Без этой поправки 77 таких вхождений числились дыркой.
+                    translated += 1
+                    continue
+                if not got:
+                    # ⚠️ МЕРЦАЮЩАЯ ОБЁРТКА §k. Hypixel пишет редкость как
+                    # «§ka§r §lMYTHIC HELMET §ka»: под §k буква бежит глифами
+                    # и выглядит звёздочкой, а в дампе от неё остаётся голая
+                    # «a». В словаре лежит ЯДРО («MYTHIC HELMET»), и мод
+                    # переводит такую строку ПОКУСОЧНО, не трогая мерцание.
+                    # Без этой поправки сканер объявлял лоскутом каждую
+                    # мифическую вещь: 334 находки из 2197 — все ложные.
+                    got = status.lookup(generalized(unwrapped(line)), dic)
                 if got:
                     translated += 1
                 elif still_english(line, filters):

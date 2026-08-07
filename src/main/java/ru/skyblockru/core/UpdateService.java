@@ -6,6 +6,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.toasts.SystemToast;
+import net.minecraft.client.gui.components.toasts.ToastManager;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -534,6 +536,15 @@ public final class UpdateService {
 				newVersionShown.set(false);   // не дождались — скажем в следующий заход
 				return;
 			}
+			// ⚠️ ПЛАШКА В УГЛУ, А НЕ ТОЛЬКО ЧАТ. При входе в SkyBlock чат забит
+			// приветствиями сервера, и одинокая строка про обновление в нём
+			// тонет — ровно та беда, из-за которой приветствие про бету ждёт
+			// восьми секунд. Тост висит поверх и виден, даже если чат закрыт.
+			//
+			// ⚠️ Чат при этом ОСТАЁТСЯ: тост не кликается, а ссылка на скачивание
+			// нужна кликабельной — иначе получится совет, который нельзя
+			// выполнить (эта грабля тут уже записана абзацем выше).
+			toast(client, version);
 			chat(ChatFormatting.AQUA,
 					Component.translatable("skyblockru.update.newversion", version));
 			if (link != null && !link.isBlank()) {
@@ -694,6 +705,54 @@ public final class UpdateService {
 	private static String string(JsonObject json, String key) {
 		JsonElement element = json.get(key);
 		return element != null && element.isJsonPrimitive() ? element.getAsString() : null;
+	}
+
+	/**
+	 * Свой идентификатор плашки.
+	 *
+	 * <p>⚠️ Берём СВОЙ, а не готовый вроде {@code PERIODIC_NOTIFICATION}:
+	 * по идентификатору игра схлопывает одинаковые тосты, и с чужим наша
+	 * плашка вытесняла бы чужие уведомления (или её вытесняли бы они).
+	 */
+	private static final SystemToast.SystemToastId TOAST_ID = new SystemToast.SystemToastId();
+
+	/**
+	 * Плашка в углу экрана — как её показывают соседи по папке модов.
+	 *
+	 * <p>⚠️ Ставим в ИГРОВОМ потоке: сюда мы попадаем из виртуального
+	 * (ждали SkyBlock), а очередь тостов принадлежит клиенту. Правило то же,
+	 * по которому мод не работает в чужом потоке при построении подсказок.
+	 */
+	/** Показать плашку прямо сейчас — {@code /skyblockru toast} (ветка разработки). */
+	public static void showTestToast() {
+		Minecraft client = Minecraft.getInstance();
+		if (client != null) {
+			toast(client, SkyblockRuClient.modVersion());
+		}
+	}
+
+	private static void toast(Minecraft client, String version) {
+		client.execute(() -> {
+			try {
+				// ⚠️ Очередь тостов лежит в РАЗНЫХ местах, и заменой имени это
+				// не развести — расходится сам путь до неё:
+				//   26.x     client.gui.toastManager()
+				//   1.21.x   client.getToastManager()
+				// Проверено javap по обоим jar, а не по памяти.
+				//? if >=26.1 {
+				ToastManager toasts = client.gui.toastManager();
+				//?} else
+				/*ToastManager toasts = client.getToastManager();*/
+				SystemToast.add(toasts, TOAST_ID,
+						Component.translatable("skyblockru.update.toast.title"),
+						Component.translatable("skyblockru.update.toast.text", version));
+			} catch (Throwable problem) {
+				// Не смертельно: сообщение в чат всё равно уйдёт. А вот падение
+				// здесь уронило бы кадр — плашка того не стоит.
+				SkyblockRuClient.LOG.warn("[skyblockru] cannot show update toast: {}",
+						problem.toString());
+			}
+		});
 	}
 
 	private static void chat(ChatFormatting color, Component text) {

@@ -63,6 +63,8 @@
   "skyblockru.telemetry.on": "Sending untranslated lines is on",
   "skyblockru.telemetry.off.done": "Sending is off — the mod sends nothing",
   "skyblockru.update.newversion": "Mod version %s is out",
+  "skyblockru.update.toast.title": "SkyblockRU",
+  "skyblockru.update.toast.text": "Version %s is out — details in chat",
   "skyblockru.update.download": "  Download: %s",
   "skyblockru.update.manual": "  Updates are installed by hand: drop the file into your mods folder",
   "skyblockru.problem.mixed": "⚠ mixed languages in %s line(s) — e.g. «%s». Worse than no translation; written to the dump.",
