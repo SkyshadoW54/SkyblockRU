@@ -40,7 +40,14 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-ARCHIVE = ROOT / "release" / "packs" / "SkyblockRU-все-версии.zip"
+# ⚠️ Имя латиницей — кириллическое «SkyblockRU-все-версии.zip» доехало до
+# релиза 0.2.10 как «SkyblockRU-.-.zip» (см. грабли). Старое имя принимаем
+# запасным вариантом: на дисках могла остаться прежняя сборка.
+ARCHIVE = ROOT / "release" / "packs" / "SkyblockRU-all-versions.zip"
+if not ARCHIVE.exists():
+    LEGACY = ROOT / "release" / "packs" / "SkyblockRU-все-версии.zip"
+    if LEGACY.exists():
+        ARCHIVE = LEGACY
 
 SCOPES = ["https://www.googleapis.com/auth/drive"]
 
