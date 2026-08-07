@@ -66,8 +66,10 @@ dependencies {
     modImplementation("net.fabricmc:fabric-loader:${property("loader_version")}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
 
-    implementation("net.hypixel:mod-api:${property("hypixel_modapi_version")}")
-    include("net.hypixel:mod-api:${property("hypixel_modapi_version")}")
+    // ⚠️ НЕ вкладываем: наша копия библиотеки перебивала ту, под которую
+    // собран сторонний `hypixel-mod-api`, и его падение роняло всю игру.
+    // Подробности — в build-unobfuscated.gradle.kts и в граблях CLAUDE.md.
+    compileOnly("net.hypixel:mod-api:${property("hypixel_modapi_version")}")
 }
 
 tasks.processResources {

@@ -48,9 +48,18 @@ dependencies {
 
     // ⚠️ Библиотека ЧИСТО JAVA: она умеет только собирать и разбирать пакеты,
     // а сеть не трогает вовсе — транспорт пишем сами (core/HypixelApi.java).
-    // include = вшить в наш jar, чтобы игроку не ставить отдельный мод.
-    implementation("net.hypixel:mod-api:${property("hypixel_modapi_version")}")
-    include("net.hypixel:mod-api:${property("hypixel_modapi_version")}")
+    //
+    // ⚠️⚠️ ВКЛАДЫВАТЬ ЕЁ НЕЛЬЗЯ — так мы ломали чужие сборки НАСМЕРТЬ.
+    // Было `include(...)`, и Fabric раздавал нашу 1.0.2 всем: мод-обёртка
+    // `hypixel-mod-api 1.0.1` из сборки игрока собрана под 1.0.1, звала
+    // `setPacketSender(Predicate)` — метод, которого в 1.0.2 больше нет, —
+    // и игра не запускалась вовсе (NoSuchMethodError на старте).
+    // Библиотеку обязан поставлять мод-обёртка, а не мы: у неё обе половины
+    // согласованы по построению.
+    // Отсюда compileOnly: собираемся против неё, но в jar не кладём и в
+    // рантайме её отсутствие переживаем (SkyblockRuClient ловит Throwable,
+    // режим определяется заголовком панели, как до появления Mod API).
+    compileOnly("net.hypixel:mod-api:${property("hypixel_modapi_version")}")
 }
 
 tasks.processResources {
