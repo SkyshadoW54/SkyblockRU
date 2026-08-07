@@ -7,6 +7,10 @@ It rewrites chat, item descriptions, menus, the sidebar and tooltips — and not
 > Hypixel constantly adds and rewrites text, so you *will* run into untranslated
 > descriptions and dialogue. That is expected, not a bug.
 
+### 📺 [Video: how to install it, and how it looks in game](https://www.youtube.com/watch?v=lGsedIysk44)
+
+Step-by-step installation walkthrough (in Russian) plus the translation in action.
+
 ---
 
 ## Data collection disclosure
@@ -103,6 +107,10 @@ MIT. Source code: https://github.com/SkyshadoW54/SkyblockRU
 > Hypixel постоянно добавляет и переписывает тексты, поэтому непереведённые
 > описания и диалоги вы встретите обязательно. Это ожидаемо, а не поломка.
 
+### 📺 [Видеоинструкция: как установить мод и как он выглядит в игре](https://www.youtube.com/watch?v=lGsedIysk44)
+
+Если ставите моды впервые — посмотрите видео, там показан весь порядок действий.
+
 ## Что отправляется разработчику
 
 Мод отправляет **версию мода, версию игры и строки интерфейса, которые не смог
@@ -142,6 +150,8 @@ MIT. Source code: https://github.com/SkyshadoW54/SkyblockRU
 ⚠️ Hypixel не пускает в SkyBlock на версиях ниже 1.21.11.
 
 ## Установка
+
+📺 **Показано на видео:** [пошаговая установка](https://www.youtube.com/watch?v=lGsedIysk44)
 
 1. Поставить **Fabric Loader**
 2. Положить **Fabric API** и **SkyblockRU** в папку `mods`
