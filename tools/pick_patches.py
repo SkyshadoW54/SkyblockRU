@@ -155,8 +155,25 @@ def main() -> int:
 
     if args.out:
         take = buy[:args.limit] if args.limit else buy
+        # ⚠️ ФОРМАТ — РОВНО КАК У КОРПУСА: словарь с ключом «paragraphs»,
+        # у записи поля text/lines/item/count/live/ru. Иначе платный прогон
+        # падает на первой же строке (`data.get("paragraphs")`), а узнать
+        # об этом можно только запустив его.
+        #
+        # ⚠️ `source` обязателен: эти абзацы взяты из лора аукциона, а не из
+        # подсказок игрока, и без пометки сторож контракта объявит их
+        # «недостижимыми» и остановит сборку — записанная грабля проекта.
+        out = {"paragraphs": [{
+            "text": p["en"],
+            "lines": p["lines"],
+            "item": "",
+            "count": 1,
+            "live": 0,
+            "source": "auction-patch",
+            "ru": "",
+        } for p in take]}
         Path(args.out).write_text(
-            json.dumps(take, ensure_ascii=False, indent=1), encoding="utf-8")
+            json.dumps(out, ensure_ascii=False, indent=1), encoding="utf-8")
         print(f"\nзадание: {args.out} ({len(take)} абзацев)")
     return 0
 
