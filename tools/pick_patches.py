@@ -100,12 +100,25 @@ def main() -> int:
     print(f"абзацев-лоскутов: {len(patches)}")
 
     # --- 2. что из них уже лежит в корпусе (значит попадёт в обычный прогон)
+    # ⚠️ КЛЮЧ КОРПУСА ЛЕЖИТ В ПОЛЕ «text», А НЕ «key». Первая версия читала
+    # `p.get("key")`, получала None у всех 7028 записей и бодро объявляла
+    # «нет в корпусе: 1065 из 1065» — то есть предлагала купить заново всё,
+    # включая давно оплаченное. Записанная грабля проекта: посмотри СТРУКТУРУ
+    # файла, а не угадывай поле по имени.
     corpus = json.loads(CORPUS.read_text(encoding="utf-8"))
     items = corpus if isinstance(corpus, list) else list(corpus.values())[0]
-    in_corpus = {p.get("key") for p in items if isinstance(p, dict)}
+    in_corpus: dict[str, str] = {}
+    for p in items:
+        if not isinstance(p, dict):
+            continue
+        text = p.get("text") or " ".join(str(x) for x in (p.get("lines") or []))
+        if text:
+            in_corpus[scan_all.generalized(text.strip())] = p.get("ru") or ""
+    have = {k: v for k, v in patches.items() if k in in_corpus}
+    paid = sum(1 for k in have if in_corpus[k])
     fresh = {k: v for k, v in patches.items() if k not in in_corpus}
-    print(f"   из них НЕТ в корпусе: {len(fresh)}"
-          f"  (остальные {len(patches) - len(fresh)} уже в обычной очереди)")
+    print(f"   уже в корпусе: {len(have)} (из них С ПЕРЕВОДОМ: {paid})")
+    print(f"   нет в корпусе: {len(fresh)}")
 
     # --- 3. фильтры покупки — те же, что в платном прогоне
     # ⚠️ Поле «text» обязательно: mark_nothing читает именно его,
