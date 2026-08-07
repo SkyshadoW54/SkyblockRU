@@ -24,6 +24,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from collections import Counter, defaultdict
@@ -64,6 +65,35 @@ def fetch() -> list[dict]:
     return packets
 
 
+# ⚠️⚠️ СТРОКИ ЧУЖИХ МОДОВ. Игрок с чужой сборкой присылает не только текст
+# Hypixel: соседние моды пишут в чат, рисуют свои экраны и дописывают в лор.
+# Замер 07.08 по живым пакетам: у одного игрока 10 таких строк —
+#
+#     [chat]      [SkyHanni] +{n} SkyBlock XP (Collections) ({n}/{n})
+#     [chat]      Caught a IllegalStateException in at.hannibal2.skyhanni…
+#     [item_lore] (From SkyHanni)
+#     [title]     Odin Update Available
+#
+# Переводить их НЕЛЬЗЯ: это чужая работа, у большинства игроков этих строк нет
+# вовсе, а «(From SkyHanni)» в подсказке — вообще приписка соседа к предмету.
+#
+# ⚠️ Имена ищем ПО ГРАНИЦЕ СЛОВА, а не подстрокой: «Odin» сидит внутри
+# «exploding», и в нашем чистом дампе таких строк три. Прочие имена
+# в чистой игре не встречаются НИ РАЗУ (проверено по dump/collected.json).
+FOREIGN = re.compile(
+    r"\b(?:SkyHanni|Skyblocker|NotEnoughUpdates|Firmament|Odin|Devonian"
+    r"|ModMenu|Sodium|Lithium|FerriteCore|Bazaar\s?Utils)\b"
+    # технический мусор чужого мода: стектрейс, исключение, отчёт об ошибке
+    r"|\bat\.[a-z0-9_]+\.[a-z0-9_.]+"
+    r"|\b\w*Exception\b|\bError while\b|\bstacktrace\b",
+    re.IGNORECASE)
+
+
+def foreign_mod(text: str) -> bool:
+    """Строка принадлежит ЧУЖОМУ моду, а не Hypixel."""
+    return bool(FOREIGN.search(text))
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description="Строки от игроков")
@@ -81,11 +111,17 @@ def main() -> int:
     # (источник, строка) -> в скольких пакетах встретилась
     seen: dict[tuple[str, str], int] = Counter()
     versions = Counter()
+    foreign: list[tuple[str, str]] = []
     for packet in packets:
         versions[(packet.get("mod") or "?", packet.get("game") or "?")] += 1
         here = set()
         for source, rows in (packet.get("lines") or {}).items():
             for row in rows:
+                # ⚠️ Чужой мод отсекаем СРАЗУ, до подсчёта: иначе он попадёт
+                # в очередь и однажды будет переведён за наши деньги.
+                if foreign_mod(row):
+                    foreign.append((source, row))
+                    continue
                 here.add((source, row))
         for key in here:
             seen[key] += 1
@@ -95,6 +131,15 @@ def main() -> int:
         by_source[source].append((row, count))
 
     print(f"пакетов: {len(packets)}, разных строк: {len(seen)}")
+    if foreign:
+        uniq = sorted({row for _src, row in foreign})
+        print(f"⚠️ отсеяно строк ЧУЖИХ МОДОВ: {len(uniq)} "
+              f"(их переводить не наше дело)")
+        for row in uniq[:6]:
+            print(f"     {row[:88]}")
+        if len(uniq) > 6:
+            print(f"     … ещё {len(uniq) - 6}")
+        print()
     print("версии, с которых слали:")
     for (mod, game), count in versions.most_common(5):
         print(f"   мод {mod:12} игра {game:10} — {count} пакетов")
