@@ -570,10 +570,16 @@ def bundle() -> None:
     Fabric API у каждой ветки СВОЙ, это не дубликат одного файла.
     """
     packs = sorted(OUT.glob("SkyblockRU-*.zip"))
-    packs = [p for p in packs if not p.name.startswith("SkyblockRU-все")]
+    packs = [p for p in packs if not p.name.startswith(("SkyblockRU-все", "SkyblockRU-all"))]
     if not packs:
         return
-    target = OUT / "SkyblockRU-все-версии.zip"
+    # ⚠️ ИМЯ ФАЙЛА — ТОЛЬКО ЛАТИНИЦЕЙ. Кириллическое «SkyblockRU-все-версии.zip»
+    # доехало до релиза 0.2.10 как «SkyblockRU-.-.zip»: имя побилось по дороге
+    # через gh, и человек видел файл, о котором нельзя догадаться, что внутри.
+    # В ссылке кириллица всё равно превращается в «%D0%B2%D1%81...», так что
+    # выгоды от неё нет вовсе, а способов испортиться — несколько.
+    # Внутри архива русские имена остаются: там их читает распаковщик, а не URL.
+    target = OUT / "SkyblockRU-all-versions.zip"
     readme = []
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as out:
         for pack in packs:
