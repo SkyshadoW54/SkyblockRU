@@ -1052,6 +1052,13 @@ public final class UnknownStrings {
 		if (TextTranslator.SRC_CHAT.equals(source) && PlayerChat.isPlayerMessage(clean)) {
 			return null;
 		}
+		// ⚠️ Текст СОСЕДА по папке модов — тоже не наше дело. Перевод его уже
+		// не трогает (TextTranslator выходит раньше), но сбор идёт не только
+		// оттуда, а копить чужие строки незачем: они уедут в очередь и попросят
+		// денег за перевод чужого мода. Признак общий — ForeignMods.
+		if (ForeignMods.looksForeign(clean)) {
+			return null;
+		}
 		if (TextTranslator.SRC_NAME_TAG.equals(source) && BARE_TOKEN.matcher(clean).matches()) {
 			return null; // одинокое слово над головой — ник игрока
 		}
