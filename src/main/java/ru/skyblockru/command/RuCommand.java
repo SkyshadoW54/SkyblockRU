@@ -82,6 +82,13 @@ public final class RuCommand {
 							return 1;
 						}))
 						.then(literal("stats").executes(context -> stats(context.getSource())))
+						// ⚠️ Показать плашку обновления НЕ ДОЖИДАЯСЬ обновления.
+						// Иначе проверить её можно только в день выхода новой
+						// версии — то есть ровно тогда, когда чинить поздно.
+						.then(literal("toast").executes(context -> {
+							ru.skyblockru.core.UpdateService.showTestToast();
+							return 1;
+						}))
 						// ⚠️ Переключатели РАСШИРЕННОГО перевода (ванильные названия,
 						// зачарования SkyBlock, характеристики-жаргон). Игроку их больше
 						// не показываем — работа отложена целиком (решение 03.08),
