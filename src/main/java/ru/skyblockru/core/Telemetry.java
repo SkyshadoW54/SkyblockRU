@@ -144,6 +144,36 @@ public final class Telemetry {
 	}
 
 	/** Отправить накопленное. Зовётся при выходе с сервера и при закрытии игры. */
+	/**
+	 * Отметиться при заходе В РЕЖИМ — «эта установка сегодня играла».
+	 *
+	 * <p>⚠️ Считать надо ВХОД В SKYBLOCK, а не подключение к сети Hypixel:
+	 * человек попадает оттуда в лобби и лишь потом на остров, а нас интересуют
+	 * те, кто действительно играет в режим, ради которого мод и написан.
+	 * Ожидание берём общее ({@link Hypixel#awaitSkyBlock}) — своя копия
+	 * разошлась бы шагом, как это уже было с приветствием про бету.
+	 *
+	 * <p>⚠️ Пустой пакет тут необходим. Новые строки кончаются через несколько
+	 * вечеров, и дальше активный игрок молчит — со стороны это неотличимо
+	 * от удалившего мод. Значит «сколько человек играет сейчас» без пинга
+	 * не посчитать вовсе.
+	 */
+	public static void pingOnJoin() {
+		RuConfig config = RuConfig.get();
+		if (!config.telemetry || config.effectiveTelemetryUrl().isBlank()) {
+			return;
+		}
+		Thread.ofVirtual().name("skyblockru-ping").start(() -> {
+			if (Hypixel.awaitSkyBlock() == null) {
+				return;   // до SkyBlock так и не дошли — считать нечего
+			}
+			// ⚠️ Сбрасываем задержку между отправками: игрок мог зайти в режим
+			// через минуту после прошлой, и без этого пинг молча не ушёл бы.
+			lastSend = 0;
+			send();
+		});
+	}
+
 	public static void send() {
 		RuConfig config = RuConfig.get();
 		if (!config.telemetry || config.effectiveTelemetryUrl().isBlank()) {
@@ -177,15 +207,51 @@ public final class Telemetry {
 		});
 	}
 
+	/**
+	 * Метка установки: выдаётся один раз и живёт в конфиге.
+	 *
+	 * <p>⚠️ Считаем ЛЮДЕЙ, а не пакеты. Раньше в пакете не было ничего,
+	 * что отличало бы отправителей, и сорок пакетов от одного человека
+	 * выглядели как сорок игроков — то есть на вопрос «сколькими людьми
+	 * мод пользуется» ответить было нечем.
+	 *
+	 * <p>⚠️ Метка СЛУЧАЙНАЯ и придумана на машине игрока: ни ника, ни UUID,
+	 * ни имени профиля в ней нет. По ней видно только, что два пакета
+	 * пришли с одной установки.
+	 */
+	private static String installId() {
+		RuConfig config = RuConfig.get();
+		if (config.installId == null || config.installId.isBlank()) {
+			config.installId = java.util.UUID.randomUUID().toString();
+			config.save();
+		}
+		return config.installId;
+	}
+
+	/**
+	 * Когда в последний раз отмечались «живы» — чтобы пустой пинг уходил
+	 * не чаще раза в сутки. В памяти: перезапуск игры и есть тот случай,
+	 * который считать надо.
+	 */
+	private static volatile long lastPing;
+
+	private static final long PING_EVERY = 20L * 60 * 60 * 1000;   // 20 часов
+
 	private static void run(String url) throws IOException, InterruptedException {
 		Map<String, List<String>> lines = fresh();
-		if (lines.isEmpty()) {
+		// ⚠️ ПУСТОЙ ПАКЕТ ТОЖЕ НУЖЕН, иначе «сколько человек играет сейчас»
+		// не посчитать вовсе: новые строки кончаются через несколько вечеров,
+		// и дальше активный игрок молчит — неотличимо от удалившего мод.
+		// Поэтому раз в сутки уходит пинг: версия мода, версия игры, метка.
+		boolean ping = lines.isEmpty();
+		if (ping && System.currentTimeMillis() - lastPing < PING_EVERY) {
 			return;
 		}
 
 		JsonObject payload = new JsonObject();
 		payload.addProperty("mod", SkyblockRuClient.modVersion());
 		payload.addProperty("game", gameVersion());
+		payload.addProperty("install", installId());
 		JsonObject sources = new JsonObject();
 		int count = 0;
 		for (var entry : lines.entrySet()) {
@@ -214,7 +280,12 @@ public final class Telemetry {
 		// ⚠️ Помечаем отправленным ТОЛЬКО после успеха. Иначе потерянный
 		// по дороге пакет исчез бы навсегда: строки уже «отправлены».
 		remember(lines);
-		LOG.info("[skyblockru] telemetry: sent {} lines ({} bytes)", count, body.length);
+		lastPing = System.currentTimeMillis();
+		if (ping) {
+			LOG.info("[skyblockru] telemetry: ping ({} bytes)", body.length);
+		} else {
+			LOG.info("[skyblockru] telemetry: sent {} lines ({} bytes)", count, body.length);
+		}
 	}
 
 	private static synchronized void remember(Map<String, List<String>> lines) {
