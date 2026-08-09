@@ -55,6 +55,16 @@ CASES = [
     ("chat", "- [Repo - NotEnoughUpdates] Error while posting repo reload event.",
      False, "ошибка чужого мода"),
     ("item_lore", "(From SkyHanni)", False, "приписка соседа к ПРЕДМЕТУ"),
+    # ⚠️ ИДЕНТИФИКАТОР ПРОФИЛЯ. Hypixel пишет его в чат при каждом входе,
+    # и он уезжал: 22 записи на сервере, пока признака не было. Ловим по
+    # ПОДПИСИ — к моменту отправки числа обобщены в {n}, и от UUID остаётся
+    # огрызок, под шаблон идентификатора не подходящий.
+    ("chat", "Profile ID: 31c58c52-6c0c-466d-8abf-9522fa8c9dc8", False,
+     "идентификатор профиля"),
+    ("chat", "Profile ID: {n}cc{n}-c{n}-{n}bc{n}-{n}b{n}-{n}e{n}a{n}", False,
+     "он же, уже обобщённый числами"),
+    # обратный край: обычная строка со словом «profile» уезжать обязана
+    ("chat", "You are playing on profile: Papaya", True, "имя профиля — не идентификатор"),
     ("item_name", "block.skyhanni.opaque_water", False, "ключ локализации чужого мода"),
     ("title", "Odin Update Available", False, "заголовок чужого мода"),
     # то, что отправлять НАДО

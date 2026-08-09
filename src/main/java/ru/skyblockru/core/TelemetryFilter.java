@@ -43,6 +43,15 @@ public final class TelemetryFilter {
 	private static final Pattern PRIVATE_LINE =
 			Pattern.compile("^(?:Party|Guild|Co-op|Officer)\\s*>|^To\\s+\\S+\\s*:");
 
+	/**
+	 * Идентификатор профиля SkyBlock — личное, наружу не уходит.
+	 *
+	 * <p>Ловим по ПОДПИСИ: к моменту отправки числа уже обобщены в {@code {n}},
+	 * и от UUID остаётся огрызок, под шаблон идентификатора не подходящий.
+	 * Подпись же пишет сам Hypixel, и она неизменна.
+	 */
+	private static final Pattern PROFILE_ID = Pattern.compile("(?i)\\bProfile ID\\s*:");
+
 	/** Личное входящее — но только если пишет ЧЕЛОВЕК, см. {@link #SYSTEM_SENDERS}. */
 	private static final Pattern FROM_LINE = Pattern.compile("^From\\s+(\\S+)\\s*:");
 
@@ -75,6 +84,14 @@ public final class TelemetryFilter {
 		// «(From SkyHanni)» приходит из подсказки предмета, а
 		// «Odin Update Available» — заголовком на пол-экрана.
 		if (ForeignMods.looksForeign(line)) {
+			return false;
+		}
+		// ⚠️ ИДЕНТИФИКАТОР ПРОФИЛЯ — вторая линия к отсеву при сборе.
+		// Мы обещали, что UUID и данные профиля не уходят, а строка
+		// «Profile ID: 31c58c52-…» уезжала: 22 записи на сервере, пока
+		// признака не было. Проверяем во ВСЕХ источниках, а не только
+		// в чате: у старых сборок клиент может прислать её откуда угодно.
+		if (PROFILE_ID.matcher(line).find()) {
 			return false;
 		}
 		if (!"chat".equals(source)) {

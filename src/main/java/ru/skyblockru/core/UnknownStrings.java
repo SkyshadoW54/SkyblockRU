@@ -1002,6 +1002,15 @@ public final class UnknownStrings {
 	 * («Purse: {n}», «Bits: {n}»).
 	 */
 	private static boolean isNoise(String source, String clean) {
+		// ⚠️ ИДЕНТИФИКАТОР ПРОФИЛЯ — ЛИЧНОЕ, и собирать его нельзя ВООБЩЕ.
+		// Hypixel пишет в чат «Profile ID: 31c58c52-6c0c-…» при каждом входе,
+		// и такая строка копилась в дампе (91 показ), уезжала с телеметрией
+		// (22 записи на сервере) и просилась в перевод. Переводить там нечего,
+		// а обещание «UUID и данные профиля не отправляются» она нарушала.
+		// Проверяем ДО источника: приходит она чатом, а не панелью.
+		if (PROFILE_ID.matcher(clean).find()) {
+			return true;
+		}
 		boolean sidebar = TextTranslator.SRC_SCOREBOARD.equals(source);
 		if (!sidebar && !TextTranslator.SRC_TAB.equals(source)) {
 			return false;
@@ -1013,6 +1022,17 @@ public final class UnknownStrings {
 		// настоящего текста среди них нет, а названия мест мы и так не переводим.
 		return sidebar && clean.indexOf(' ') < 0;
 	}
+
+	/**
+	 * Идентификатор профиля SkyBlock: «Profile ID: 31c58c52-6c0c-466d-…».
+	 *
+	 * <p>⚠️ Ловим по ПОДПИСИ, а не по виду UUID: числа к этому месту уже
+	 * обобщены в {@code {n}}, и от идентификатора остаётся огрызок вроде
+	 * «{n}cc{n}-c{n}-…», который ни под один шаблон UUID не подходит.
+	 * Подпись же неизменна — её пишет сам Hypixel.
+	 */
+	private static final java.util.regex.Pattern PROFILE_ID =
+			java.util.regex.Pattern.compile("(?i)\\bProfile ID\\s*:");
 
 	/** Строка игрока в панели: «[123] Ник», «Ник [GUILD]», «{s} [TROUPE]». */
 	private static final java.util.regex.Pattern PLAYER_ROW =
