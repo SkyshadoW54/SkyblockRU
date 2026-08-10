@@ -24,6 +24,7 @@
 from __future__ import annotations
 
 import argparse
+import glob
 import json
 import re
 import sys
@@ -44,6 +45,64 @@ NICK = re.compile(r"^\S+ \(Offline \{n\}[dhm]\)$|\(More\.\.\.\)$")
 # в наборе они считались обрывками (три слова, точки нет) и молча выпадали
 # из покупки — при том, что подпись видна на экране чаще любого описания.
 ENDS = re.compile(r"[.!?:»)\]]\s*$")
+
+
+# ⚠️ Слово, на котором фраза оборвана ТОЧНО. Только строго служебные:
+# предлоги, союзы, артикли, связки, притяжательные.
+#
+# ⚠️ БЕЗ флага IGNORECASE, и это не мелочь. Артикль пишется строчной,
+# а заглавная «A» в конце — БУКВА: «▶ Z to A» это пункт сортировки, и с
+# регистронезависимой проверкой следующий пункт списка («Mob Level»,
+# «Pet Exp») объявлялся хвостом переноса.
+#
+# ⚠️ Слова «all», «every», «more», «than» сюда НЕ ВХОДЯТ: ими фраза законно
+# кончается («▶ Show All»), и признак записывал в хвосты соседний пункт.
+_SERVICE_END = re.compile(
+    r"\b(and|or|but|the|a|an|to|of|for|with|by|from|in|on|per|that|which"
+    r"|while|when|if|is|are|was|were|be|been|this|these|their|its|your|his"
+    r"|her|at|as|into|onto|upon)\s*$")
+
+_CONTEXT: dict[str, list[str]] | None = None
+
+
+def _context() -> dict[str, list[str]]:
+    """Карта «строка -> строки, стоявшие перед ней в подсказке».
+
+    ⚠️ Строится из ЖИВЫХ подсказок (`dump/tooltips.json`): только там видно,
+    что за чем идёт. В очереди строки лежат вразнобой, и соседство по ней
+    не восстановить.
+    """
+    global _CONTEXT
+    if _CONTEXT is not None:
+        return _CONTEXT
+    found: dict[str, set[str]] = {}
+    for path in glob.glob(
+            r"C:\MultiMC\instances\*\.minecraft\config\skyblockru\dump\tooltips.json"):
+        try:
+            doc = json.loads(Path(path).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        for block in doc.get("tooltips") or []:
+            rows = [str(x).strip() for x in (block.get("lines") or [])]
+            for i in range(1, len(rows)):
+                if rows[i] and rows[i - 1]:
+                    found.setdefault(rows[i], set()).add(rows[i - 1])
+    _CONTEXT = {key: sorted(value) for key, value in found.items()}
+    return _CONTEXT
+
+
+def prev_broken(line: str) -> bool:
+    """Предыдущая строка подсказки оборвана на служебном слове?
+
+    ⚠️ ШИРОКИЙ вариант этого признака («предыдущая просто без точки») уже
+    пробовали и ВЫБРОСИЛИ: он задевал 1307 оплаченных строк — обычные пункты
+    списков, у которых предыдущая строка тоже без точки. Замер 10.08:
+    узкий вариант задевает 70, и все 70 — настоящие хвосты переноса.
+
+    ⚠️ Нет дампа — признак молчит. Он уточняющий, и его отсутствие возвращает
+    прежнее поведение, а не ломает отбор.
+    """
+    return any(_SERVICE_END.search(prev) for prev in _context().get(line.strip(), ()))
 
 
 def words_only(text: str) -> list[str]:
@@ -116,6 +175,12 @@ def classify(line: str, enchants: set[str]) -> str:
     # у них меньше трёх слов, и это осознанная граница: метка без точки
     # законченна сама по себе, а «Grants +5 Speed for» — нет.
     if not ENDS.search(text) and len(words_only(text)) >= 3:
+        return "обрывок"
+    # ⚠️ ХВОСТ ВИДЕН ПО СОСЕДУ, а не по себе. «Catacombs Level.» кончается
+    # точкой и начинается с заглавной — по своему виду это законченная фраза.
+    # Но в подсказке перед ней стоит «shield that scales based on your»,
+    # и значит перенос разрезал предложение ровно здесь.
+    if prev_broken(text):
         return "обрывок"
     # ⚠️ У обрывка ДВА края, и раньше проверялся только правый. Хвост переноса
     # кончается точкой и потому выглядел законченной фразой: «loot.», «up!»,
