@@ -90,6 +90,9 @@ NOT_NICK = {
 # ⚠️ КОЛИЧЕСТВО, А НЕ НИК: «Dark Oak Log x512», «Gave you: … x32».
 COUNT = re.compile(r"^x\d+$", re.I)
 
+# Ключ локализации: «@enchantment.minecraft.fire_protection», «@item.minecraft.bow».
+LOCALE_KEY = re.compile(r"@[A-Za-z0-9_.]+")
+
 # ⚠️ УРОВЕНЬ, А НЕ НИК: «Bladesoul Lv200», «Wither Spectre Lv70» — так Hypixel
 # подписывает поглощённые души в Soul Eater. Под признак «буквы с цифрой»
 # такое попадает целиком, и сторож объявлял никами Lv25, Lv200, Lv750 —
@@ -156,6 +159,11 @@ def generalized(text: str) -> str:
 
 def nicks_in(text: str, known: set[str]) -> set[str]:
     out = set()
+    # ⚠️ КЛЮЧ ЛОКАЛИЗАЦИИ — не ник. Ванильные зачарования лежат в переводе
+    # как «@enchantment.minecraft.fire_protection VII»: мод разворачивает
+    # такой ключ через клиент игрока. Признак «буквы с подчёркиванием»
+    # принимал «fire_protection» за имя игрока и 10.08 остановил релиз.
+    text = LOCALE_KEY.sub(" ", text)
     # Структурный признак идёт ПЕРВЫМ: он видит то, чего не видит написание.
     structural = structural_nick(text)
     if structural:
