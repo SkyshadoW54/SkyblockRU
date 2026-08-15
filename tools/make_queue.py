@@ -619,6 +619,38 @@ def looks_like_item(line: str, headers: set[str]) -> bool:
     return bool(ITEM_MARKS.search(head))
 
 
+def menu_button_titles(sources: dict) -> set[str]:
+    """
+    Заголовки, которые мод ПРЯМО назвал кнопками меню.
+
+    ⚠️ Это ответ на самый крупный кусок ложной работы в очереди. Заголовок
+    подсказки приходит источником `item_name` и у вещи, и у кнопки, а решения
+    у них противоположные: имя вещи не переводим, подпись кнопки переводим.
+    Для своих строк вопрос решался блоком подсказки (`real_item_headers`),
+    но от игроков приезжают СТРОКИ, а не блоки — и 1377 заголовков висели
+    неразобранными. Каталог сервера тут почти бесполезен: из них он опознал
+    четыре.
+
+    Теперь признак ставит сам мод (`core/Titles.java`) в момент сбора, когда
+    блок у него на руках, и кладёт заголовок в источник `menu_title`.
+
+    ⚠️ Читаем ОБА канала — свой дамп и присланное игроками. Пустой ответ
+    ничего не ломает: поведение остаётся прежним, пока люди не перейдут
+    на jar с этим признаком.
+    """
+    titles = {s.strip() for s in (sources.get("menu_title") or {}) if s.strip()}
+    players = ROOT / "data" / "work" / "from_players.json"
+    if players.is_file():
+        try:
+            data = json.loads(players.read_text(encoding="utf-8"))
+            box = data.get("sources") or data
+            if isinstance(box, dict):
+                titles |= {s.strip() for s in (box.get("menu_title") or {}) if s.strip()}
+        except Exception:
+            pass
+    return titles
+
+
 def real_item_headers() -> set[str]:
     """
     Заголовки, которые ДЕЙСТВИТЕЛЬНО принадлежат предмету, а не кнопке меню.
@@ -839,6 +871,7 @@ def main() -> int:
     stats = known_stats()
     real_headers = real_item_headers()
     item_names = {s.strip() for s in (sources.get("item_name") or {})}
+    menu_titles = menu_button_titles(sources)
     skipped_known = 0
     # ⚠️ Имя предмета для строк лора: его переводить нельзя НИГДЕ, в том числе
     # внутри собственного описания. Иначе в одной подсказке вещь называется
@@ -891,7 +924,17 @@ def main() -> int:
                 # гадать по виду не нужно.
                 # имя НАСТОЯЩЕГО предмета не переводим, а заголовок кнопки —
                 # переводим: «Green Thumb» в меню Строителя это категория
-                if line.strip() in item_names and looks_like_item(line, real_headers):
+                # ⚠️ КНОПКУ МЕНЮ НЕ ВЫБРАСЫВАЕМ, даже если она похожа на имя.
+                # Мод помечает такие заголовки источником `menu_title`: у вещи
+                # в блоке подсказки есть строка редкости, у кнопки нет.
+                # Для НАШИХ строк это и так учитывал `real_item_headers`
+                # (он читает блоки из tooltips.json), а вот от игроков
+                # приезжают строки без блоков — и «Accept Offer» был
+                # неотличим от «Ant Shard». Теперь признак приезжает вместе
+                # со строкой.
+                if (line.strip() in item_names
+                        and line.strip() not in menu_titles
+                        and looks_like_item(line, real_headers)):
                     continue
                 if ENCHANT_LIST.match(line) or is_stat_line(line, stats, covered):
                     continue

@@ -48,6 +48,16 @@ public final class TextTranslator {
 	public static final String SRC_ACTION_BAR = "action_bar";
 	public static final String SRC_TITLE = "title";
 	public static final String SRC_SCREEN = "screen";
+
+	/**
+	 * Заголовок подсказки, у которой в блоке НЕТ строки редкости, — то есть
+	 * подпись кнопки меню, а не имя вещи. Источник только для СБОРА: перевод
+	 * такой строки идёт обычным путём через {@link #SRC_ITEM_NAME}.
+	 *
+	 * <p>Заведён 16.08, чтобы очередь могла отличить «Accept Offer» (работа)
+	 * от «Ant Shard» (имя, не переводим). Признак ставит {@link Titles}.
+	 */
+	public static final String SRC_MENU_TITLE = "menu_title";
 	public static final String SRC_BOSS_BAR = "boss_bar";
 	public static final String SRC_NAME_TAG = "name_tag";
 

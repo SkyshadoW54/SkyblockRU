@@ -80,7 +80,10 @@ public final class UnknownStrings {
 	 * набьёт 60 «встреч» в секунду и утопит в списке реальные сообщения чата.
 	 */
 	private static final java.util.Set<String> RENDERED_EVERY_FRAME = java.util.Set.of(
-			"item_name", "item_lore", "scoreboard", "tab", "boss_bar", "name_tag", "screen");
+			"item_name", "item_lore", "scoreboard", "tab", "boss_bar", "name_tag", "screen",
+			// подсказка строится заново на каждом кадре, и заголовок кнопки
+			// набил бы 60 «встреч» в секунду — как и остальные отсюда
+			"menu_title");
 
 	private UnknownStrings() {
 	}
@@ -260,6 +263,20 @@ public final class UnknownStrings {
 				TOOLTIP_ITEM.put(key, name);
 			}
 			dirty = true;
+		}
+
+		// ⚠️ ПРЕДМЕТ ИЛИ КНОПКА — решает БЛОК, и знаем это только здесь.
+		//
+		// Заголовок сам по себе уезжает источником `item_name`, и там вперемешку
+		// имена вещей (не переводим) и подписи кнопок (переводим). У игроков
+		// разделить их было НЕЧЕМ: приёмник шлёт строки, а не блоки, и каталог
+		// предметов сервера отстаёт от контента — из 1381 строки он опознал 4.
+		// А блок отвечает прямо: у вещи есть строка редкости, у кнопки нет.
+		//
+		// Пишем ТОЛЬКО кнопки: имена вещей и так лежат в `item_name`, и второй
+		// список из них был бы удвоением тех же данных.
+		if (Titles.isMenuTitle(item, java.util.List.of(lines))) {
+			record(TextTranslator.SRC_MENU_TITLE, LegacyText.strip(item).trim());
 		}
 	}
 
