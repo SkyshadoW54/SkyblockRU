@@ -126,6 +126,10 @@ def foreign_mod(text: str) -> bool:
 CUT_SOURCES = frozenset({"scoreboard"})
 ROMAN_TAIL = re.compile(r"\b[IVXLC]{1,6}$")
 
+# Хвост-СЧЁТЧИК: «Dark Oak Log» -> «Dark Oak Log x{n}». Обе строки законны,
+# и вторая не делает первую обрывком — в отличие от «Collect Acacia Logs».
+TAIL_COUNT = re.compile(r"^ (?:x\{n\}|x\d|\{n\}|\d|\(|\+|-)")
+
 
 DUMP = Path("C:/MultiMC/instances/26.2/.minecraft/config/skyblockru/dump")
 
@@ -167,7 +171,18 @@ def panel_cuts(rows: list[tuple[str, int]], floor: int,
             if len(other) <= len(row) or not other.startswith(row):
                 continue
             rest = other[len(row):]
-            if not rest[0].isalpha() or rest == "s":
+            # ⚠️ ОБРЫВ БЫВАЕТ И ПО ГРАНИЦЕ СЛОВА, не только посреди него.
+            # Панель режет задание по ширине: « Builder's» вместо
+            # « Builder's House», «Collect Acacia» вместо «Collect Acacia Logs».
+            # Признак «продолжение начинается с буквы» такие пропускал —
+            # 90 строк заданий просились в перевод обрывками.
+            #
+            # ⚠️ Хвост-СЧЁТЧИК обрезком не делает: «Dark Oak Log» и «Dark Oak
+            # Log x{n}» законны обе, и без этой оговорки имя предмета уехало бы
+            # в отсев. Замер: с ней 90 находок, все до одной — настоящие
+            # обрывки заданий (просмотрены глазами).
+            word_edge = rest.startswith(" ") and len(rest) > 1 and not TAIL_COUNT.match(rest)
+            if not ((rest[0].isalpha() and rest != "s") or word_edge):
                 continue
             # ⚠️ ЧЕТВЁРТАЯ ПОДПОРКА, и без неё признак начал калечить данные.
             # С ростом числа игроков МУСОР СКЛЕЙКИ тоже проходит порог:

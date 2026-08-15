@@ -144,6 +144,11 @@ ITEM_COUNT = re.compile(r"^[A-Z][A-Za-z' ]+ x\{n\}$")
 NOTHING_TO_TRANSLATE = [
     re.compile(r"^.+ [IVXLC]+ ➡ [IVXLC]+$"),
     re.compile(r"^- \{n\}x [A-Z][A-Za-z' ]*$"),
+    # «Experience ✖», «Cubism ✖» — имя зачарования и отметка «не выполнено».
+    # Имена зачарований оставлены английскими решением игрока (sb_enchants
+    # выключен), значит перевод совпал бы с оригиналом. Замер по ВСЕМ словарям,
+    # корпусу и очереди: строк этой формы с переводом — ноль.
+    re.compile(r"^[A-Z][A-Za-z' ]+ ✖$"),
 ]
 
 
@@ -530,6 +535,93 @@ def tg_closes(rule: TgRule, line: str, probe: str) -> bool:
     return status.latin_words(result) <= status.cyrillic_words(result)
 
 
+def rule_worse_than(line: str, ready: str, covered: list) -> bool:
+    """
+    Даст ли правило ХУЖЕ, чем уже купленный перевод.
+
+    ⚠️ Ради этой проверки заведён отдельный проход, и вот почему. Строку,
+    закрытую правилом, очередь выбрасывает — а вместе с ней уходит и купленный
+    перевод: `export_pack` берёт состав из очереди. Пока правило давало ровно
+    то же самое, это было безвредно (16.08 так выпало 144 перевода, все
+    до одного совпали). Но стоит правилу оказаться шире, и оплаченное
+    качество молча теряется:
+
+        Server: Not loaded    было «Сервер: не загружен» -> стало «Сервер: Not loaded»
+        Selected pet: None    было «Выбранный питомец: нет» -> «… None»
+        Age: {n} hour         было «Возраст: {n} ч» -> «Возраст: {n} hour»
+
+    Причина в том, что правило переносит ЗНАЧЕНИЕ как есть, а у этих строк
+    значение тоже переводимо. Теперь такая строка остаётся в очереди: точную
+    запись движок ищет РАНЬШЕ правил, поэтому на экране победит купленный
+    перевод, а правило подхватит варианты, которых мы не видели.
+    """
+    if not ready:
+        return False
+    probe = line.replace("{n}", HOLE_NUMBER).replace("{s}", HOLE_NAME)
+    try:
+        status, dictionaries = _engine()
+    except Exception:
+        return False
+    for pattern, replacement, translate in covered:
+        match = pattern.fullmatch(line) or pattern.fullmatch(probe)
+        if not match:
+            continue
+        out: list[str] = []
+        text, position = replacement, 0
+        while position < len(text):
+            symbol = text[position]
+            if symbol == "$" and position + 1 < len(text) and text[position + 1].isdigit():
+                number = int(text[position + 1])
+                position += 2
+                if 1 <= number <= match.re.groups and match.group(number) is not None:
+                    piece = match.group(number)
+                    if translate:
+                        piece = status.translate_group(piece, dictionaries)
+                    out.append(piece)
+                continue
+            out.append(symbol)
+            position += 1
+        if unfill_probe("".join(out)) != ready:
+            return True
+    return False
+
+
+def unfill_probe(text: str) -> str:
+    """Вернуть образцы дырок обратно в «{n}»/«{s}» — иначе сравнивать нельзя."""
+    return text.replace(HOLE_NUMBER, "{n}").replace(HOLE_NAME, "{s}")
+
+
+def rule_texts() -> list[tuple]:
+    """
+    Правила ВКЛЮЧЁННЫХ словарей парами «шаблон + замена».
+
+    ⚠️ Отдельно от `already_translated` потому, что там `covered` хранит
+    обычные правила голым шаблоном — замены у них нет, и сравнить результат
+    с купленным переводом нечем. Списка это не дублирует: тут ровно то же
+    чтение, но с сохранением текста замены.
+    """
+    out: list[tuple] = []
+    packs = ROOT / "src" / "main" / "resources" / "assets" / "skyblockru" / "packs"
+    for path in sorted(packs.rglob("*.json")):
+        if path.name == "index.json":
+            continue
+        try:
+            pack = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not isinstance(pack, dict) or pack.get("default") is False:
+            continue
+        for rule in pack.get("regex") or []:
+            if not rule.get("r"):
+                continue
+            try:
+                out.append((re.compile(rule.get("p", "")), rule["r"],
+                            bool(rule.get("tg"))))
+            except re.error:
+                continue
+    return out
+
+
 def covered_by_rule(line: str, covered: list) -> bool:
     """
     Переводится ли строка ПРАВИЛОМ включённого словаря.
@@ -868,6 +960,8 @@ def main() -> int:
     known |= in_paragraphs(known, done)
     skipped_toggle = 0
     skipped_rule = 0
+    kept_better = 0
+    rule_pairs = rule_texts()
     stats = known_stats()
     real_headers = real_item_headers()
     item_names = {s.strip() for s in (sources.get("item_name") or {})}
@@ -916,8 +1010,15 @@ def main() -> int:
             # закрываются одной формой, — но на экране она русская, и платить
             # за неё второй раз незачем.
             if covered_by_rule(line, covered):
-                skipped_rule += 1
-                continue
+                # ⚠️ ...но не тогда, когда купленный перевод ЛУЧШЕ. Правило
+                # переносит захват как есть, а у части строк переводится
+                # и значение: «Server: Not loaded» -> «Сервер: не загружен».
+                # Выбросив такую строку, мы теряем оплаченное качество молча.
+                if rule_worse_than(line, done.get(line, ""), rule_pairs):
+                    kept_better += 1
+                else:
+                    skipped_rule += 1
+                    continue
             if source == "item_lore":
                 # Имя предмета попадает и в лор (первой строкой подсказки),
                 # а имена не переводят. Источник item_name говорит это прямо,
@@ -994,6 +1095,8 @@ def main() -> int:
     print(f"строк в очереди: {len(exact)}")
     print(f"  уже переведено: {ready}")
     print(f"  переводить нечего (_asis): {len(kept_asis)}")
+    if kept_better:
+        print(f"  оставлено: купленный перевод ЛУЧШЕ правила: {kept_better}")
     print(f"  ЖДУТ ПЕРЕВОДА:  {left}")
     print(f"записано: {out_path.relative_to(ROOT)}")
     print("\nсамое ходовое:")
