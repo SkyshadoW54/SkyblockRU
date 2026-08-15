@@ -148,6 +148,39 @@ STAT_JARGON = {
 # ⚠️ Вместе с ней НЕЛЬЗЯ уносить «Mana Cost», «Mana Regen», «Mana Steal»:
 # фильтр по вхождению слова захватывает и их, а это обычные подписи.
 
+# ⚠️ ПЕРКИ ДЕРЕВЬЕВ HotM и HotF — НЕ ПЕРЕВОДИМ (решение игрока 13.08).
+#
+# Случай тот же, что у зачарований: по этим названиям читают гайды и собирают
+# дерево, а перевод сделал бы их неузнаваемыми. Переключателя у них нет —
+# решение принято сразу и целиком.
+#
+# ⚠️ Список ЯВНЫЙ, а не по форме, и каждое имя ПОДТВЕРЖДЕНО СЕРВЕРОМ: оно
+# приходит в источнике `item_name` (в дереве перк — это голова-предмет).
+# Признака по форме тут нет вовсе: «Sky Mall» и «Front Loaded» ничем не
+# отличаются от обычного названия меню.
+#
+# ⚠️ Односложные перки в список НЕ ВХОДЯТ, хотя сервер их и присылает:
+# «Mole», «Professional», «Surveyor», «Fortunate», «Crystallized» — обычные
+# слова, и защита слова целиком задела бы прозу. Это записанная грабля про
+# `protected.AMBIGUOUS` («Mayor», «Museum», «Bank»): двойственное слово
+# защищать нельзя, даже когда оно правда бывает именем.
+#
+# ⚠️ «Mining Speed» и «Mining Fortune» сюда не дублируем — они уже жаргон
+# (STAT_JARGON), а «Treecapitator» это ПРЕДМЕТ, а не перк.
+PERKS = {
+    # Heart of the Mountain
+    "Daily Grind", "Daily Powder", "Dead Man's Chest", "Eager Adventurer",
+    "Efficient Miner", "Front Loaded", "Gem Lover", "Great Explorer",
+    "Lonesome Miner", "Luck of the Cave", "Maniac Miner", "Mineshaft Mayhem",
+    "Mining Speed Boost", "No Stone Unturned", "Powder Buff", "Precision Mining",
+    "Quick Forge", "Rags to Riches", "Seasoned Mineman", "Sky Mall",
+    "Steady Hand", "Strong Arm", "Subterranean Fisher", "Titanium Insanium",
+    # Heart of the Forest
+    "Deep Waters", "Early Bird", "Foraging Madness", "Galatea's Might",
+    "Hunter's Luck", "Iron Lungs", "Precision Cutting", "Tree Whisperer",
+}
+
+
 # Что мы про группу решили. «toggle» — решает игрок переключателем словаря.
 #
 # ⚠️ Это ПОЛИТИКА, а не свойство слова: «Magic Find» останется характеристикой,
@@ -161,6 +194,7 @@ POLICY = {
     "highlight": ("не переводим", "Hypixel подсветил как имя, но род неизвестен"),
     "enchant":     ("переключатель", "зачарования SkyBlock — словарь sb_enchants"),
     "stat_jargon": ("переключатель", "характеристики-жаргон — словарь sb_stats"),
+    "perk":        ("не переводим", "перки деревьев HotM и HotF — по ним читают гайды"),
     "stat":        ("переводим", "характеристики: Health, Defense, Attack Speed"),
     "mob":       ("переводим", "названия мобов в винительном падеже"),
     "material":  ("переводим", "материалы со строчной буквы"),
@@ -233,6 +267,8 @@ def all_groups() -> dict[str, set[str]]:
     # Жаргон вынут из «stat» отдельной группой: запрет на характеристики целиком
     # накрыл бы и «Health», а нужны только эти семь.
     groups["stat_jargon"] = set(STAT_JARGON)
+    # Перки деревьев: список явный и подтверждён сервером (см. PERKS)
+    groups["perk"] = set(PERKS)
     groups["stat"] = (stat_labels | _stats_from_dictionary()) - STAT_JARGON
     groups["mob"] = _from_generator("MOBS")
     groups["material"] = _from_generator("MATERIALS")

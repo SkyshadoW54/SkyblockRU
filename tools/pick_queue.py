@@ -149,6 +149,20 @@ def is_enchant(text: str, enchants: set[str]) -> bool:
     return bool(match) and match.group(1).lower() in enchants
 
 
+_PERKS: frozenset[str] | None = None
+
+
+def perk_names() -> frozenset[str]:
+    """Перки деревьев HotM и HotF — берём у реестра, своей копии не заводим."""
+    global _PERKS
+    if _PERKS is None:
+        try:
+            _PERKS = frozenset(terms.of("perk"))
+        except (ImportError, OSError):
+            _PERKS = frozenset()
+    return _PERKS
+
+
 def classify(line: str, enchants: set[str]) -> str:
     """К какому слою относится строка. Слои не пересекаются — иначе счёт врёт."""
     text = line.strip()
@@ -169,6 +183,12 @@ def classify(line: str, enchants: set[str]) -> str:
         return "техническое"
     if any(word in text for word in terms.STAT_JARGON):
         return "жаргон"
+    # ⚠️ ПЕРК ДЕРЕВА HotM/HotF — решение игрока 13.08: не переводим, как
+    # зачарования. Сверяем строку ЦЕЛИКОМ, а не вхождением: перк «Mole»
+    # в список не входит именно потому, что вхождением задел бы прозу,
+    # а вот заголовок «Quick Forge» — это ровно перк и ничего больше.
+    if text in perk_names():
+        return "решение игрока"
     # ⚠️ Обрывок узнаём по тому, что фраза НЕ ЗАВЕРШЕНА: перенос Hypixel режет
     # предложение посреди, и вторая половина начинается со строчной буквы или
     # служебного слова. Короткие метки («Back», «Diversity») сюда не попадают —

@@ -324,6 +324,25 @@ def hole_samples() -> tuple[str, str] | None:
         return None
 
 
+def nick_generalized(line: str) -> str:
+    """
+    Строка с ЧУЖИМ НИКОМ, обобщённая в `{s}` — тем же признаком, что у очереди.
+
+    ⚠️ Признак берём у `check_nicknames.STRUCTURAL`, а не пишем свой: он ловит
+    ник ПО СТРУКТУРЕ строки («RARE REWARD! X found», «☠ X was killed»,
+    «X's Profile»), а не по написанию самого ника. Своя копия в этом проекте
+    расходилась с оригиналом трижды, и всякий раз молча.
+
+    Нет модуля — возвращаем строку как есть: лучше не обобщить, чем обобщить
+    своей копией признака.
+    """
+    try:
+        from check_nicknames import generalized
+    except (ImportError, OSError):
+        return line
+    return generalized(line)
+
+
 def probes(line: str) -> list[str]:
     """
     Виды строки, которые надо примерить к правилу.
@@ -336,6 +355,13 @@ def probes(line: str) -> list[str]:
     ⚠️ Ровно эта грабля уже записана про `covered_by_rule`, и она повторилась
     потому, что чинили ТО МЕСТО, а не признак. Здесь признак один на оба
     места инструмента (вердикт и колонки полосы).
+
+    ⚠️ ТО ЖЕ САМОЕ С ЧУЖИМ НИКОМ, и это третье повторение той же граблы.
+    В дампе ник ЖИВОЙ («RARE REWARD! sentiences found…»), а очередь собирает
+    ключ ОБОБЩЁННЫМ («RARE REWARD! {s} found…») — и сверка не совпадала
+    никогда. Замер 10.08: 63 строки отчёт звал работой, хотя перевод куплен,
+    и первой по частоте стояла как раз такая. Обобщённый вид идёт ПОСЛЕДНИМ,
+    чтобы из него не строились формы с подставленными образцами.
     """
     seen = [line]
     template = NUMBER.sub("{n}", line)
@@ -348,6 +374,10 @@ def probes(line: str) -> list[str]:
             filled = form.replace("{n}", number).replace("{s}", name)
             if filled not in seen:
                 seen.append(filled)
+    for form in (line, template):
+        wide = nick_generalized(form)
+        if wide not in seen:
+            seen.append(wide)
     return seen
 
 
@@ -435,6 +465,16 @@ def lookup(line: str, dic: Dictionaries, depth: int = 0) -> tuple[str, str] | No
         return dic.templates[template]
     if template in dic.exact:
         return dic.exact[template]
+    # ⚠️ ПРОЧИЕ ВИДЫ СТРОКИ — прежде всего обобщённый по чужому нику: в дампе
+    # он живой, а ключ словаря и очереди собран с `{s}`. Порядок выше НЕ трогаем
+    # (точная запись → шаблон по числам), этот шаг только ДОБАВЛЯЕТ формы.
+    for probe in probes(line):
+        if probe in (line, template):
+            continue
+        if probe in dic.exact:
+            return dic.exact[probe]
+        if probe in dic.templates:
+            return dic.templates[probe]
     # ⚠️ ЗАПИСЬ С ДЫРКОЙ — ЭТО ТОЖЕ ПРАВИЛО. Движок собирает из неё регулярку
     # при загрузке (Translator.templateRule): «…Season of Jerry, {s}!» ловит
     # строку с настоящим ником. Без этого инструмент уверенно отвечал «НЕТ
@@ -516,7 +556,9 @@ def verdict(raw: str, dic: Dictionaries, queue: dict, corpus: dict) -> dict:
         return {"status": OK, "where": "glossary", "result": partial}
 
     # перевода нет: в каком состоянии очередь?
-    for key in (line, template):
+    # ⚠️ Спрашиваем ВСЕМИ видами строки: очередь собирает ключ обобщённым
+    # (числа `{n}`, чужой ник `{s}`), и сверка сырой строкой не совпадёт.
+    for key in probes(line):
         if key in queue["asis"]:
             return {"status": NOTHING, "where": "_asis", "result": ""}
         if key in queue["waiting"]:

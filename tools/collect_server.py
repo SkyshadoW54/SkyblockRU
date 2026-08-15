@@ -82,7 +82,12 @@ def fetch() -> list[dict]:
 # в чистой игре не встречаются НИ РАЗУ (проверено по dump/collected.json).
 FOREIGN = re.compile(
     r"\b(?:SkyHanni|Skyblocker|NotEnoughUpdates|Firmament|Odin|Devonian"
-    r"|ModMenu|Sodium|Lithium|FerriteCore|Bazaar\s?Utils)\b"
+    r"|ModMenu|Sodium|Lithium|FerriteCore|Bazaar\s?Utils"
+    # ⚠️ найдены 13.08 ГЛАЗАМИ при ручном переводе очереди, а не сторожем:
+    # их строки спокойно доехали до списка к покупке
+    r"|RRV|MarketGuard|btrbz|BetterBazaar)\b"
+    # сайт-помощник: строку про него пишет мод, а не Hypixel
+    r"|\beliteskyblock\.com\b"
     # технический мусор чужого мода: стектрейс, исключение, отчёт об ошибке
     r"|\bat\.[a-z0-9_]+\.[a-z0-9_.]+"
     r"|\b\w*Exception\b|\bError while\b|\bstacktrace\b",
@@ -94,11 +99,107 @@ def foreign_mod(text: str) -> bool:
     return bool(FOREIGN.search(text))
 
 
+# ⚠️⚠️ ОБРЕЗКИ БОКОВОЙ ПАНЕЛИ. Панель приходит оборванной ПОСРЕДИ СЛОВА:
+# « Bazaar Al», « Auction H», « The Garde», « Savanna W». Замер 13.08 по
+# 73 установкам: таких строк 94, и все они просились в ПЛАТНУЮ покупку.
+#
+# ⚠️ Сперва я решил, что это SkyHanni перерисовывает панель, — проверка
+# отменила: те же обрывки есть в НАШЕЙ чистой игре (« Combat Se», « Fashion S»),
+# где чужих модов нет вовсе. Значит это шум чтения самой панели, а не сосед.
+# Рядом с ними лежат слипшиеся хвосты — « Coal Minestrict», « Graveyardttlement»,
+# « VillageAA»: старый суффикс плюс новый префикс.
+#
+# ⚠️ ПРИЗНАК «оборвано посреди слова» В ОДИНОЧКУ НЕВЕРЕН, и это замерено:
+# в чистой игре он задевает 39 законных строк — римские уровни («Farmhand VII»
+# против «Farmhand VIII»), множественное число («Upgrade Item» / «Items»),
+# пары предметов («Black Wool» / «Black Woolen Yarn», «[Lvl {n}] Pig» /
+# «Pigman»). Поэтому у признака ТРИ подпорки:
+#   * длинная строка САМА прошла порог — иначе ею окажется мусор склейки,
+#     который приходит от одной установки («VillageAA» прислала 1 против 76);
+#   * продолжение не «s» — это множественное число, а не обрыв;
+#   * строка не кончается римским уровнем.
+#
+# ⚠️ ОБЛАСТЬ — ТОЛЬКО ПАНЕЛЬ. В лоре и именах предметов те же подпорки
+# не спасают: «Grappling Hook» / «Grappling Hooks!» и «Mining Fiesta» /
+# «Mining Fiestas start when…» законны обе. Замер по чистой игре: в панели
+# признак задевает 1 строку из 205, в лоре — 28 из 18329.
+CUT_SOURCES = frozenset({"scoreboard"})
+ROMAN_TAIL = re.compile(r"\b[IVXLC]{1,6}$")
+
+
+DUMP = Path("C:/MultiMC/instances/26.2/.minecraft/config/skyblockru/dump")
+
+
+def our_dump() -> dict[str, set[str]]:
+    """Наш локальный дамп по источникам — чистая игра, без чужих модов."""
+    path = DUMP / "collected.json"
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return {source: set(rows)
+            for source, rows in (data.get("sources") or {}).items()}
+
+
+def panel_cuts(rows: list[tuple[str, int]], floor: int,
+               trusted: set[str] = frozenset()) -> dict[str, str]:
+    """
+    Обрезки панели: {оборванная строка: та же строка целиком}.
+
+    ⚠️ `trusted` — строки, которым верим как ЦЕЛЫМ без порога: это наш
+    локальный дамп. Без него « Your Isla» (49 установок) не отсеивался,
+    потому что целую « Your Island» прислали меньше трёх человек, — а у нас
+    она лежит с самого начала. Замер 13.08: +17 обрезков, ложных 0.
+    """
+    index: dict[str, list[str]] = {}
+    seen: dict[str, int] = {}
+    for row, count in rows:
+        seen[row] = max(seen.get(row, 0), count)
+        if count >= floor:
+            index.setdefault(row[:8], []).append(row)
+    for row in trusted:
+        index.setdefault(row[:8], []).append(row)
+
+    out: dict[str, str] = {}
+    for row, count in rows:
+        if len(row) < 6 or not row[-1].isalpha() or ROMAN_TAIL.search(row):
+            continue
+        for other in index.get(row[:8], ()):
+            if len(other) <= len(row) or not other.startswith(row):
+                continue
+            rest = other[len(row):]
+            if not rest[0].isalpha() or rest == "s":
+                continue
+            # ⚠️ ЧЕТВЁРТАЯ ПОДПОРКА, и без неё признак начал калечить данные.
+            # С ростом числа игроков МУСОР СКЛЕЙКИ тоже проходит порог:
+            # « Villageutpost» прислали 3 установки, и целая « Village»
+            # (121 установка!) была объявлена её обрезком. Замер 13.08:
+            # 4 законные строки панели из 245.
+            #
+            # Длинную строку принимаем, только если она ПОДТВЕРЖДЕНА:
+            # либо есть в нашем чистом дампе, либо встречается НЕ РЕЖЕ
+            # короткой. Мусор склейки не проходит ни то, ни другое —
+            # он приходит в разы реже целой строки.
+            if other not in trusted and seen.get(other, 0) < count:
+                continue
+            out[row] = other
+            break
+    return out
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description="Строки от игроков")
     parser.add_argument("--merge", action="store_true", help="записать в data/work")
-    parser.add_argument("--min", type=int, default=1,
+    # ⚠️ ПОРОГ ПОДНЯТ 1 -> 3 (13.08), когда установок стало 73. При одном
+    # игроке порог 1 был единственно возможным; теперь строка, присланная
+    # ОДНИМ человеком, — это чаще всего его собственная комбинаторика:
+    # цветовые коды красителей «(CRYSTAL - #C{n}A{n}D{n})», колонки полосы
+    # над хотбаром, а то и поисковые запросы «Auctions: "hyperion"».
+    # Замер: порог 1 давал 30994 строки к покупке, порог 3 — 7942, и выпадает
+    # почти исключительно комбинаторика и семьи, закрываемые одним правилом.
+    # ⚠️ Порог НИЧЕГО НЕ ТЕРЯЕТ НАВСЕГДА: пакеты лежат на сервере, и строка
+    # пройдёт при следующем заборе, когда её пришлёт ещё кто-нибудь.
+    parser.add_argument("--min", type=int, default=3,
                         help="сколько РАЗНЫХ пакетов должны прислать строку")
     parser.add_argument("--show", type=int, default=15)
     args = parser.parse_args()
@@ -145,13 +246,35 @@ def main() -> int:
         print(f"   мод {mod:12} игра {game:10} — {count} пакетов")
     print()
 
+    # обрезки считаем ОДИН раз и убираем и из отчёта, и из выгрузки
+    # ⚠️ Наш дамп — чистая игра, его строки считаем целыми без порога:
+    # он подтверждает « Your Island» там, где присланного не хватило.
+    ours = our_dump()
+    cuts: dict[str, dict[str, str]] = {
+        source: panel_cuts(by_source[source], args.min, ours.get(source, frozenset()))
+        for source in by_source if source in CUT_SOURCES}
+    cut_total = sum(len(rows) for rows in cuts.values())
+    if cut_total:
+        print(f"⚠️ отсеяно ОБРЕЗКОВ панели: {cut_total} "
+              f"(строка оборвана посреди слова — покупать её нечего)")
+        shown = [(row, full) for rows in cuts.values() for row, full in rows.items()]
+        for row, full in shown[:5]:
+            print(f"     {row[:40]!r} -> целиком {full[:48]!r}")
+        if len(shown) > 5:
+            print(f"     … ещё {len(shown) - 5}")
+        print()
+
+    def kept(source: str) -> list[str]:
+        drop = cuts.get(source) or {}
+        return [row for row, count in by_source[source]
+                if count >= args.min and row not in drop]
+
     total_keep = 0
     print(f"{'источник':14} {'всего':>6} {'прошли порог ' + str(args.min):>18}")
     for source in sorted(by_source):
-        rows = by_source[source]
-        keep = [row for row, count in rows if count >= args.min]
+        keep = kept(source)
         total_keep += len(keep)
-        print(f"   {source:12} {len(rows):6} {len(keep):18}")
+        print(f"   {source:12} {len(by_source[source]):6} {len(keep):18}")
 
     # ⚠️ Одиночные строки показываем ОТДЕЛЬНО и не прячем: при одном игроке
     # это норма, а при сотне — первый признак, что кто-то шлёт своё.
@@ -167,8 +290,15 @@ def main() -> int:
         print("\nсухой прогон. Записать: --merge")
         return 0
 
-    payload = {source: sorted(row for row, count in rows if count >= args.min)
-               for source, rows in by_source.items()}
+    # ⚠️ Пишем СО СЧЁТЧИКОМ установок, а не голым списком: у дампа формат
+    # такой же ({строка: сколько раз видели}), и очередь читает оба файла
+    # одинаково. Прежний список приходилось бы разбирать особым случаем,
+    # а особый случай однажды забывают.
+    counts: dict[str, dict[str, int]] = {}
+    for (source, row), count in seen.items():
+        counts.setdefault(source, {})[row] = count
+    payload = {source: {row: counts[source][row] for row in sorted(kept(source))}
+               for source in by_source}
     payload = {source: rows for source, rows in payload.items() if rows}
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")

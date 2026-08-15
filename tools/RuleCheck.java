@@ -47,9 +47,18 @@ public final class RuleCheck {
 		}
 		System.out.println("COMPILED\t" + patterns.size() + "\t" + broken);
 
-		// Дальше - строки для примерки, по одной на аргумент
-		for (int i = 1; i < args.length; i++) {
-			String source = args[i];
+		// Строки для примерки лежат ВТОРЫМ ФАЙЛОМ, по строке на строку.
+		//
+		// ⚠️ Раньше они приезжали аргументами командной строки, и это молча
+		// портило каждую строку со значком: Windows кодирует аргументы
+		// системной кодировкой (тут cp1251), где "❣" и "➡" не существуют, -
+		// в Java приходил "?" и правило "не подходило". Проверка отвечала
+		// "ни одно правило не подошло" на совершенно рабочее правило, а таких
+		// строк у Hypixel половина. Файл читается как UTF-8 и не портит ничего.
+		List<String> samples = args.length > 1
+				? Files.readAllLines(Path.of(args[1]), StandardCharsets.UTF_8)
+				: List.of();
+		for (String source : samples) {
 			String hit = null;
 			for (int k = 0; k < patterns.size(); k++) {
 				Matcher matcher = patterns.get(k).matcher(source);

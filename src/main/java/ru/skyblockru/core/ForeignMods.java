@@ -44,6 +44,24 @@ import java.util.regex.Pattern;
  * <p>Замер 08.08 по всем дампам: признак задевает 2 строки, и обе — настоящие
  * сообщения соседей. В наших словарях и очереди — 0 задетых, то есть готовый
  * перевод он не гасит.
+ *
+ * <p>⚠️ 13.08 добавлены RRV, MarketGuard, btrbz/BetterBazaar и сайт
+ * eliteskyblock.com — все четверо нашлись при РУЧНОМ переводе очереди, то есть
+ * глазами, а не сторожем: их строки спокойно доехали до списка к покупке.
+ *
+ * <pre>
+ * RRV cannot request recipes from a server without RRV installed!
+ * RRV Client Settings                          &lt;- экран соседа
+ * [MarketGuard] Update available 3-beta.2 -&gt; 4.
+ * {s} could not refresh Bazaar conversions; ... Run /btrbz conversions status
+ * {s} loaded this year's contests from eliteskyblock.com automatically!
+ * </pre>
+ *
+ * <p>Цена замерена ДО правки по всем данным (наш дамп 28 тысяч строк, 44 тысячи
+ * от игроков, очередь, все словари мода): задето 5 строк, и все пять — чужие.
+ * В наших СЛОВАРЯХ и в готовых ПЕРЕВОДАХ очереди — 0, то есть сделанное
+ * не гасится. Домен пишем целиком (`eliteskyblock\.com`), иначе признак задел бы
+ * слово «SkyBlock», которое есть в каждой второй строке Hypixel.
  */
 public final class ForeignMods {
 
@@ -52,7 +70,11 @@ public final class ForeignMods {
 
 	private static final Pattern FOREIGN = Pattern.compile(
 			"\\b(?:SkyHanni|Skyblocker|NotEnoughUpdates|Firmament|Odin|Devonian"
-			+ "|ModMenu|Sodium|Lithium|FerriteCore)\\b"
+			+ "|ModMenu|Sodium|Lithium|FerriteCore"
+			// найдены 13.08 в строках от 73 игроков — см. замер в комментарии ниже
+			+ "|RRV|MarketGuard|btrbz|BetterBazaar)\\b"
+			// сайт-помощник: строку про него пишет мод, а не Hypixel
+			+ "|\\beliteskyblock\\.com\\b"
 			+ "|\\bat\\.[a-z0-9_]+\\.[a-z0-9_.]+"
 			+ "|\\w*Exception\\b|\\bError while\\b|\\bstacktrace\\b",
 			Pattern.CASE_INSENSITIVE);

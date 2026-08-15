@@ -52,6 +52,8 @@ OUT = ROOT / "data" / "work" / "from_game.json"
 # У корпуса абзацев такая защита есть с самого начала (make_paragraphs
 # переносит `ru` и `nothing` по ключу), у очереди её не было.
 ARCHIVE = ROOT / "data" / "work" / "queue_archive.json"
+# Строки от игроков: их кладёт `collect_server.py --merge`
+PLAYERS = ROOT / "data" / "work" / "from_players.json"
 
 # Что переводим строкой целиком. Порядок = приоритет при равной частоте.
 WORTH = ["chat", "screen", "scoreboard", "tab", "title", "boss_bar", "item_lore"]
@@ -122,6 +124,32 @@ SERVER_LINE = re.compile(r"^\{n\}/\{n\}/\{n\}\s+[a-zA-Z]?\{n\}[A-Z]{0,3}$")
 
 # «Oak Log x{n}» — название предмета со счётчиком. Названия не переводим.
 ITEM_COUNT = re.compile(r"^[A-Z][A-Za-z' ]+ x\{n\}$")
+
+# ⚠️ ПЕРЕВОД СОВПАЛ БЫ С ОРИГИНАЛОМ — переводить нечего, но и выбрасывать
+# нельзя: выброшенная строка становится невидимой для всех отчётов, а такая
+# честно лежит в «_asis» и видна в разделе «переводить нечего».
+#
+# Список НЕ поштучный намеренно. 16.08 в очереди накопилось 317 строк вида
+# «Enderman IV ➡ V» (повышение уровня бестиария) — имя моба плюс римские
+# уровни, и завтра придёт триста восемнадцатая с новым мобом. Имена мобов
+# бестиария мы не переводим: так же оставлены в «BESTIARY FAMILY UNLOCKED
+# Weaver Spider» и в описаниях корпуса.
+#
+# ⚠️ Цена признака замерена: по ВСЕМ словарям, корпусу абзацев и очереди
+# строк этой формы с переводом — НОЛЬ. То есть отнять он ничего не может.
+#
+# ⚠️ «- {n}x Cod Shard» (список предметов со счётчиком) сюда входит, а
+# «- {n}x {s} {n}m ago» НЕТ: там давность, и её переводит правило 48-bazaar.
+# Различает их требование, чтобы после имени НЕ БЫЛО дырок и цифр.
+NOTHING_TO_TRANSLATE = [
+    re.compile(r"^.+ [IVXLC]+ ➡ [IVXLC]+$"),
+    re.compile(r"^- \{n\}x [A-Z][A-Za-z' ]*$"),
+]
+
+
+def nothing_to_translate(line: str) -> bool:
+    """Строка, у которой перевод совпал бы с оригиналом."""
+    return any(rule.match(line) for rule in NOTHING_TO_TRANSLATE)
 
 
 def nick_free(line: str) -> str:
@@ -689,6 +717,32 @@ def load(name: str) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def load_players() -> dict[str, dict[str, int]]:
+    """
+    Строки, присланные ИГРОКАМИ (`collect_server.py --merge`).
+
+    ⚠️ Вскрылось 13.08: файл писался с самого заведения приёмника, а не читал
+    его НИКТО — очередь брала только наш локальный дамп. Пока игрок был один,
+    присланное почти совпадало с его же дампом, и пропажа не замечалась.
+    С 73 установками это уже 66 тысяч строк мимо работы.
+
+    ⚠️ Счётчик тут — СКОЛЬКО УСТАНОВОК прислали строку, а в дампе — сколько
+    раз она показалась. Единицы разные, поэтому не складываем: наш дамп
+    приоритетнее, а от игроков берутся только строки, которых у нас нет.
+    """
+    if not PLAYERS.exists():
+        return {}
+    data = json.loads(PLAYERS.read_text(encoding="utf-8"))
+    out: dict[str, dict[str, int]] = {}
+    for source, rows in (data or {}).items():
+        if isinstance(rows, dict):
+            out[source] = {line: int(count) for line, count in rows.items()}
+        else:
+            # прежний формат — голый список строк
+            out[source] = {line: 1 for line in (rows or [])}
+    return out
+
+
 def archive_read() -> tuple[dict[str, str], set[str]]:
     """Переводы и пометки «нечего», пережившие все прошлые пересборки."""
     if not ARCHIVE.exists():
@@ -725,6 +779,24 @@ def main() -> int:
     if not sources:
         print("дамп пуст — поиграй и попробуй снова")
         return 1
+
+    # ⚠️ Строки ИГРОКОВ подмешиваем к нашему дампу: наш экран — это один
+    # человек и те меню, куда он заходил, а присланное покрывает то, мимо
+    # чего мы не ходили вовсе. Наш дамп приоритетнее (там настоящие частоты
+    # показов), от игроков берутся только НОВЫЕ строки.
+    players = load_players()
+    if players:
+        merged = {source: dict(rows) for source, rows in sources.items()}
+        fresh = 0
+        for source, rows in players.items():
+            target = merged.setdefault(source, {})
+            for line, count in rows.items():
+                if line not in target:
+                    target[line] = count
+                    fresh += 1
+        sources = merged
+        total = sum(len(rows) for rows in players.values())
+        print(f"строк от игроков: {total}, из них новых для нас: {fresh}")
 
     # Уже сделанные переводы не теряем: файл переживает пересборку очереди.
     # ⚠️ Это третье место в проекте, где скрипт мог бы затереть ручную работу,
@@ -843,7 +915,11 @@ def main() -> int:
     contexts = hints
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    kept_asis = sorted(s for s in asis if s in exact and not exact[s])
+    # ⚠️ Пометку ставим ПРИЗНАКОМ, а не списком: строк вида «Enderman IV ➡ V»
+    # ровно столько, сколько мобов в бестиарии, и список устарел бы на первом
+    # же обновлении контента.
+    asis += [line for line in exact if not exact[line] and nothing_to_translate(line)]
+    kept_asis = sorted(set(s for s in asis if s in exact and not exact[s]))
     out_path.write_text(json.dumps({
         "id": "from_game",
         "priority": 10,

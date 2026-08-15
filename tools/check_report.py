@@ -80,6 +80,34 @@ BAR = [
 ]
 
 
+# --- ВИДЫ СТРОКИ: чужой ник в дампе ЖИВОЙ, а ключ словаря обобщён в {s} ---
+#
+# ⚠️ Беда 10.08: отчёт сверял сырую строку дампа с обобщённым ключом очереди
+# и звал работой 63 строки, чей перевод давно куплен — «RARE REWARD! X found…»
+# стояла первой по частоте. Признак «виды строки» (status.probes) знал только
+# ЧИСЛА, а ники — нет.
+#
+# ⚠️ Проверяем МЕХАНИКУ, а не содержимое очереди: ключ подсаживаем свой.
+# Иначе сторож покраснеет в тот день, когда конкретный перевод перепишут, —
+# то есть станет мерить данные вместо кода.
+#
+# Структура строки взята НАСТОЯЩАЯ («RARE REWARD! X found»): обобщение идёт
+# по check_nicknames.STRUCTURAL, и выдуманная форма ему неизвестна.
+HOLE_KEY = "RARE REWARD! {s} found a Selftest Widget {n} in their Test Chest!"
+HOLE_RU = "ПРОВЕРКА! {s} нашёл Selftest Widget {n}"
+HOLES = [
+    # живой ник — так строку видит мод в игре
+    ("RARE REWARD! sentiences found a Selftest Widget 7 in their Test Chest!", True),
+    # ⚠️ так она лежит В ДАМПЕ: число уже обобщено, ник ещё нет
+    ("RARE REWARD! sentiences found a Selftest Widget {n} in their Test Chest!", True),
+    # ⚠️ число обобщилось ВНУТРИ ника — образец «1,234» сюда не подставить,
+    # запятой в нике не бывает; спасает только обобщение самого ника
+    ("RARE REWARD! Bennyq{n} found a Selftest Widget {n} in their Test Chest!", True),
+    # заведомо истинный: ключа нет — обобщение не смеет «закрывать» строку само
+    ("RARE REWARD! sentiences found a Nonexistent Thing in their Test Chest!", False),
+]
+
+
 def main() -> int:
     bad = 0
 
@@ -120,6 +148,21 @@ def main() -> int:
         left = status.uncovered_columns(line, dic, items, source)
         want(f"[{source}] {part!r}", part in left, expect,
              f"вернулось: {left}" if left != [part] else "")
+
+    print("\n=== ВИДЫ СТРОКИ (чужой ник: в дампе живой, в словаре {s}) ===")
+    if not any("{s}" in probe for probe in
+               status.probes("RARE REWARD! somebody found a thing")):
+        bad += 1
+        print("  СЛОМАНО status.probes не обобщает чужой ник —"
+              " отчёт снова будет звать работой купленное")
+    dic.templates[HOLE_KEY] = (HOLE_RU, "check_report")
+    try:
+        for line, expect in HOLES:
+            got = status.lookup(line, dic)
+            want(repr(status.show(line, 62)), bool(got), expect,
+                 f"вернулось: {got[0]!r}" if got else "")
+    finally:
+        dic.templates.pop(HOLE_KEY, None)
 
     print()
     if bad:

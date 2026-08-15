@@ -41,6 +41,17 @@ CASES = [
      True, "стектрейс соседа"),
     ("- [Repo - NotEnoughUpdates] Error while posting repo reload event.",
      True, "ошибка соседа"),
+    # ⚠️ найдены 13.08 ГЛАЗАМИ при ручном переводе очереди: сторож их не знал,
+    # и строки доехали до списка к покупке
+    ("RRV cannot request recipes from a server without RRV installed!",
+     True, "чат RRV"),
+    ("RRV Client Settings", True, "экран RRV"),
+    ("[MarketGuard] Update available 3-beta.2 -> 4. [Click] to open on Modrinth.",
+     True, "чат MarketGuard"),
+    ("Could not refresh Bazaar conversions; using bundled/cache data."
+     " Run /btrbz conversions status for details.", True, "чат btrbz"),
+    ("You loaded this year's contests from eliteskyblock.com automatically!",
+     True, "сайт-помощник, строку пишет мод"),
 
     # --- НАШЕ: обязано переводиться ---
     ("✖ Exploding Frog (3/10)", False, "«exploding», а не мод Odin"),
@@ -50,6 +61,13 @@ CASES = [
     ("[NPC] Terry: Ahoy! Welcome to Terry's Shack!", False, "реплика NPC"),
     ("Mining Speed: +250", False, "характеристика"),
     ("You are playing on profile: Papaya", False, "системное сообщение Hypixel"),
+    # ⚠️ обратный край для имён, добавленных 13.08. Домен eliteskyblock.com
+    # содержит слово SkyBlock, а оно есть в каждой второй строке Hypixel —
+    # поэтому домен и пишется целиком, а не куском.
+    ("Welcome to SkyBlock!", False, "«SkyBlock» — не домен соседа"),
+    ("You are now playing SkyBlock Level 42!", False, "обычная строка Hypixel"),
+    ("Visit the Bazaar to buy materials in bulk.", False, "Bazaar — это Hypixel"),
+    ("Market Price: 1,000 Coins", False, "«Market» — не MarketGuard"),
 ]
 
 

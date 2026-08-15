@@ -99,11 +99,66 @@ LOCALE_KEY = re.compile(r"@[A-Za-z0-9_.]+")
 # 12 «имён» из 27 в одном заходе.
 LEVEL = re.compile(r"^Lv\d+$", re.I)
 
+# ⚠️ КОД ОШИБКИ HYPIXEL, А НЕ НИК: «(INVALID_BID)», «(WRONG_TOKEN)»,
+# «(PLAYER_TRANSFER_COOLDOWN)». Сервер пишет их В СКОБКАХ и ЗАГЛАВНЫМИ, а под
+# признак «латиница с подчёркиванием» они подходят целиком — 13.08 сторож
+# на них остановил круг сборки, объявив никами INVALID_BID и WRONG_TOKEN.
+#
+# ⚠️ Признак узкий НАРОЧНО: требуется И скобка, И сплошные заглавные с
+# подчёркиванием. Ник заглавными существует, но в круглых скобках Hypixel
+# его не печатает — там либо код ошибки, либо пометка вроде «(Offline 5d)».
+ERROR_CODE = re.compile(r"\(([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)\)")
+
 # ⚠️ ЧИСТИМ ТОЛЬКО ТО, ЧТО СОБРАНО В ЖИВОЙ ИГРЕ. В остальных словарях ник
 # внутри строки — часть ТЕКСТА HYPIXEL, а не данные игрока: реплики NPC
-# упоминают ютуберов («[NPC] Goon: [YOUTUBE] im_a_squid_kid…»), названия
-# дисков — композитора. Такие записи законны и нужны всем.
+# упоминают ютуберов, названия дисков — композитора. Такие записи законны.
 FROM_GAME = {"90-from-game.json", "96-paragraphs.json", "95-tooltips.json"}
+
+# ⚠️ НО У ЭТОГО ПРАВИЛА ЕСТЬ ВТОРАЯ ПОЛОВИНА, и она вскрылась 16.08. Реплика
+# «[NPC] Goon: [MVP+] Confused_Goon has betrayed us all by removing Mayor
+# Aura's Work Harder perk» — это не текст про человека, а ШАБЛОН СЕРВЕРА,
+# куда подставляется имя того, кто снял перк. С живым ником запись
+# не совпадёт ни у кого, кроме одного игрока на свете: то есть чужое имя
+# раздаётся вместе с модом, а пользы от записи ноль.
+#
+# Отличает их не словарь, а РОЛЬ имени в строке:
+#   сюжет     «[NPC] Detective Amos: … [YOUTUBE] GDColon: sorry guys…»
+#             имя часть сценки, обобщение сломало бы шутку — НЕ ТРОГАЕМ
+#   подстановка «[MVP+] X has betrayed us all by removing …»
+#             имя переменная — ОБОБЩАЕМ, и запись начинает работать у всех
+#
+# Машинно эти два случая не различить, поэтому раздел ниже НЕ ЧИНИТ и не
+# роняет сборку: он показывает найденное, а решение принимают глаза.
+RANKED = re.compile(r"\[(?:MVP\+*|VIP\+*|YOUTUBE|ADMIN|MOD|HELPER|GM|OWNER|PIG\+*)\]"
+                    r"\s*([A-Za-z][A-Za-z0-9_]{2,15})")
+
+
+def ranked_nicks() -> list[tuple[str, str, str]]:
+    """
+    Ник С РАНГОМ в любом словаре: (файл, ник, ключ).
+
+    Ранг — признак железный: Hypixel печатает его только перед именем
+    игрока. Поэтому смотреть можно ВСЕ словари, не боясь задеть прозу, —
+    в отличие от признака «латиница с подчёркиванием», который однажды
+    записал в ники C418 и код ошибки INVALID_BID.
+    """
+    out: list[tuple[str, str, str]] = []
+    for path in sorted(PACKS.rglob("*.json")):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        if not isinstance(data, dict):
+            continue
+        for section in ("exact", "paragraphs", "glossary"):
+            for key, value in (data.get(section) or {}).items():
+                if not isinstance(value, str):
+                    continue
+                for nick in RANKED.findall(key):
+                    if nick == "{s}" or nick.lower() in ("https", "http", "team"):
+                        continue
+                    out.append((path.name, nick, key))
+    return out
 
 
 def known_names() -> set[str]:
@@ -164,6 +219,9 @@ def nicks_in(text: str, known: set[str]) -> set[str]:
     # такой ключ через клиент игрока. Признак «буквы с подчёркиванием»
     # принимал «fire_protection» за имя игрока и 10.08 остановил релиз.
     text = LOCALE_KEY.sub(" ", text)
+    # ⚠️ КОД ОШИБКИ в скобках — тоже не ник, и снимается ДО поиска, как ключ
+    # локализации выше: иначе «(INVALID_BID)» останавливает сборку.
+    text = ERROR_CODE.sub(" ", text)
     # Структурный признак идёт ПЕРВЫМ: он видит то, чего не видит написание.
     structural = structural_nick(text)
     if structural:
@@ -284,6 +342,17 @@ def main() -> int:
         for section, key, hits in found:
             total_keys.add(key)
             all_nicks |= hits
+
+    ranked = ranked_nicks()
+    if ranked:
+        print()
+        print("=== НИК С РАНГОМ (смотреть глазами: сюжет или подстановка?) ===")
+        for name, nick, key in ranked[:12]:
+            print("  %-24s %-18s %s" % (name, nick, key[:60]))
+        if len(ranked) > 12:
+            print("  ... ещё %d" % (len(ranked) - 12))
+        print("  Шаблон сервера («[MVP+] X has betrayed us all…») — обобщить в {s}:")
+        print("  с живым ником он не совпадёт ни у кого. Сюжетную сценку — оставить.")
 
     if not total_keys:
         print("  чисто — ников не найдено")

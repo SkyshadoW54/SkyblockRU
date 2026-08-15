@@ -110,11 +110,19 @@ def main() -> int:
     with tempfile.TemporaryDirectory() as temp:
         table = Path(temp) / "rules.tsv"
         table.write_text("\n".join(f"{p}\t{s}\t{r}" for p, s, r in found), encoding="utf-8")
+        # ⚠️ Примеряемые строки уходят ФАЙЛОМ, а не аргументами командной
+        # строки. Аргументы Windows кодирует системной кодировкой (cp1251),
+        # и каждый значок Hypixel — «❣», «➡», приватная зона — превращался
+        # в «?». Правило со значком объявлялось несработавшим, хотя работает:
+        # проверка отвечала на СВОЙ вопрос («подходит ли правило к строке
+        # из вопросительных знаков»), а выглядело это как приговор правилу.
+        lines_file = Path(temp) / "lines.txt"
+        lines_file.write_text("\n".join(samples), encoding="utf-8")
         # ⚠️ stdout.encoding задаём явно: иначе Java пишет в кодировке консоли
         # (на этой машине cp1251), и русский перевод приезжает сюда крокозябрами.
         result = subprocess.run(
             [java, "-Dstdout.encoding=UTF-8", "-Dfile.encoding=UTF-8",
-             str(CHECKER), str(table), *samples],
+             str(CHECKER), str(table), str(lines_file)],
             capture_output=True, text=True, encoding="utf-8", errors="replace")
 
     if result.returncode != 0:
