@@ -156,6 +156,20 @@ NOTHING_TO_TRANSLATE = [
     # то есть утечка выключенного vanilla_names, ровно как «Огранка V».
     # Записи сняты, признак ставит пометку впредь.
     re.compile(r"^✖ \{n\}/\{n\} .+$"),
+    # ⚠️ ЖАРГОН плюс имя моба — переводить нечего с обеих сторон.
+    # «+{n} Enderman ✯ Magic Find»: Magic Find оставлен английским решением
+    # игрока (terms.STAT_JARGON), имя моба бестиария мы тоже не переводим.
+    # Замер: переводы этой формы есть ТОЛЬКО в выключенном 78-sb-stats
+    # (16 записей) — то есть там, где английский и решено оставлять.
+    re.compile(r"^\+\{n\} .+ [-] (?:Magic Find|Hunting Fortune|Pet Luck)$"),
+    # «◇ Breaking Power {n}» — жаргонная характеристика со значком.
+    re.compile(r"^\s*[-] (?:Breaking Power|Gemstone Spread|Heat Resistance"
+               r"|Pet Luck|Magic Find|Mining Spread|Sea Creature Chance|Sweep"
+               r"|Ferocity|Pristine) \{n\}$"),
+    # «› Bane Of Arthropods, Champion, Cleave» — перечень зачарований в меню.
+    # Имена зачарований английские по решению игрока (sb_enchants выключен),
+    # значит переводить нечего. Замер: 148 строк, переводов НОЛЬ.
+    re.compile(r"^› [A-Z][A-Za-z' ]+(?:, [A-Z][A-Za-z' ]+)+$"),
 ]
 
 
