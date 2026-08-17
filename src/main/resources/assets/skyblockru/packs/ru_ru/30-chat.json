@@ -13,15 +13,7 @@
   "You have sent a trade request to {s}!": "Ты отправил запрос обмена игроку {s}",
   "Inventory full? Don't forget to check out your Storage inside the SkyBlock Menu!": "Инвентарь забит? Загляни в Хранилище в меню SkyBlock",
   "{s} has accepted your trade request!": "{s} принял твой запрос обмена",
-  "{s} has declined your trade request!": "{s} отклонил твой запрос обмена",
-
-  "[How are perks chosen?]": "[Как выбирают привилегии?]",
-  "[What's the deal with Ministers?]": "[А что там с министрами?]",
-  "[What are Special Mayors?]": "[Кто такие особые мэры?]",
-  "[I'd rather talk about special Mayors.]": "[Лучше расскажи про особых мэров.]",
-  "[I think I'm good.]": "[Пожалуй, хватит.]",
-  "[Sure.]": "[Конечно.]",
-  "[Nah.]": "[Не-а.]"
+  "{s} has declined your trade request!": "{s} отклонил твой запрос обмена"
  },
  "regex": [
   {

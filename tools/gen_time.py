@@ -26,7 +26,28 @@ OUT = ROOT / "src" / "main" / "resources" / "assets" / "skyblockru" / "packs" / 
 MINUTES = range(0, 60, 10)
 
 # Значок рядом со временем: солнце днём, луна ночью. Бывает и без него.
-ICONS = ["", " ☀", " ☽"]
+# ⚠️ ПОГОДА ТОЖЕ РИСУЕТСЯ ЗДЕСЬ, и её не знали: «9:30am ⚡» (гроза)
+# и «9:30am ☔» (дождь) оставались английскими, хотя солнце и луна давно
+# переводились. Замер по данным игроков: обе формы приходят регулярно.
+ICONS = ["", " ☀", " ☽", " ⚡", " ☔"]
+
+# Месяцы: Hypixel пишет дату двумя видами — «21st July 2026» и «3 Aug 2026».
+# Правилом, а не записью: год и число обобщать нельзя (их подставляет движок),
+# а вот название месяца конечно и переводится однозначно.
+MONTHS = [
+    ("January", "Jan", "января"), ("February", "Feb", "февраля"),
+    ("March", "Mar", "марта"), ("April", "Apr", "апреля"),
+    ("May", "May", "мая"), ("June", "Jun", "июня"),
+    ("July", "Jul", "июля"), ("August", "Aug", "августа"),
+    ("September", "Sep", "сентября"), ("October", "Oct", "октября"),
+    ("November", "Nov", "ноября"), ("December", "Dec", "декабря"),
+]
+
+# Давность: «5 hours ago». Единица стоит В ШАБЛОНЕ — правило на строку одно,
+# и захват перевести нечем. То же решение, что в выписке банка (48-bazaar).
+AGO = [("second", "с"), ("seconds", "с"), ("minute", "мин"), ("minutes", "мин"),
+       ("hour", "ч"), ("hours", "ч"), ("day", "д"), ("days", "д"),
+       ("week", "нед"), ("weeks", "нед"), ("month", "мес"), ("months", "мес")]
 
 
 def part_of_day(hour12: int, half: str) -> str:
@@ -60,6 +81,20 @@ def main() -> int:
                     key = f"{hour}:{minute:02d}{half}{icon}"
                     exact[key] = f"{hour}:{minute:02d} {word}{icon}"
 
+    rules = [{
+        "_": "ДАТЫ и ДАВНОСТЬ. Число и год обобщать нельзя — их подставляет"
+             " движок, — поэтому правило с захватом, а название месяца"
+             " и единица времени стоят в шаблоне.",
+    }]
+    for full, short, russian in MONTHS:
+        rules.append({"p": rf"^([\d,]+)(?:st|nd|rd|th) {full} ([\d,]+)$",
+                      "r": f"$1 {russian} $2"})
+        rules.append({"p": rf"^([\d,]+) {short} ([\d,]+)$",
+                      "r": f"$1 {russian[:3]}. $2"})
+    for english, russian in AGO:
+        rules.append({"p": rf"^([\d,]+) {english} ago$",
+                      "r": f"$1 {russian} назад"})
+
     pack = {
         "id": "time",
         # Раньше 25-sidebar: там лежит общий шаблон без части суток,
@@ -69,9 +104,10 @@ def main() -> int:
                      "правь скрипт, а не этот файл. Часть суток зависит от часа "
                      "(2 часа ДНЯ, но 8 ВЕЧЕРА), поэтому запись на каждый час."),
         "exact": exact,
+        "regex": rules,
     }
     OUT.write_text(json.dumps(pack, ensure_ascii=False, indent=1), encoding="utf-8")
-    print(f"{OUT.name}: {len(exact)} записей")
+    print(f"{OUT.name}: {len(exact)} записей, {len([r for r in rules if r.get('p')])} правил")
     print("примеры:")
     for key in ("2:00pm ☀", "8:30pm ☽", "3:10am ☽", "9:30am ☀"):
         print(f"  {key}  ->  {exact[key]}")
