@@ -1,5 +1,6 @@
 package ru.skyblockru.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.PlayerTabOverlay;
 import net.minecraft.network.chat.Component;
@@ -58,6 +59,46 @@ public abstract class PlayerTabOverlayMixin {
 	/** Состояние, при котором посчитан показанный текст. */
 	@Unique
 	private boolean skyblockru$shownActive;
+
+	/**
+	 * Строки внутри списка игроков — у Hypixel это не только ники, но и целые
+	 * панели статистики: «Area: Hub», «Profile: Papaya», «Mining 30: 12.0%».
+	 *
+	 * <p>⚠️ ПЕРЕХВАТЫВАЕМ ВЫЗОВ ВНУТРИ ОТРИСОВКИ, а не сам метод чтения, —
+	 * и это не придирка, а починка живой поломки. Раньше перевод стоял
+	 * на {@code PlayerInfo.getTabListDisplayName}, и его получали ВСЕ, кто
+	 * спрашивает таб, — в том числе соседние моды. SkyHanni читает таб
+	 * именно так ({@code TabListData} зовёт {@code getNameForDisplay},
+	 * а та — {@code getTabListDisplayName}) и ищет там английские заголовки
+	 * виджетов: «Info», «Island», «Area:», «Commissions:». Получая наш
+	 * перевод, он не находил ничего и ругался игроку: «Extra Information
+	 * from Tab list not found». Замер по его же {@code TabWidget}: из 23
+	 * маркеров наш перевод ломал 13.
+	 *
+	 * <p>Здесь же подмена живёт ровно до экрана: значение уходит в состояние
+	 * отрисовки, а всякий, кто спросит игру сам, получит оригинал Hypixel.
+	 * Та же мысль, что у шапки с подвалом выше, только на строку списка.
+	 *
+	 * <p>⚠️ {@code getNameForDisplay} перехватывать НЕЛЬЗЯ: SkyHanni зовёт
+	 * именно её (проверено по байткоду — {@code method_1918} в TabListData),
+	 * и мы снова подменили бы ему данные.
+	 *
+	 * <p>⚠️ ПИНГ ЧИСЛОМ ЗДЕСЬ ПОКАЗЫВАТЬ НЕЛЬЗЯ — пробовали 05.08, убрано.
+	 * Hypixel рисует свои панели через записи игроков-пустышек: у них
+	 * задержка 1 мс, и число повисло на КАЖДОЙ строке экрана, включая
+	 * заголовки колонок. Отличить настоящего игрока в этой точке нечем.
+	 */
+	@ModifyExpressionValue(method = "extractRenderState",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/client/gui/components/PlayerTabOverlay;"
+							+ "getNameForDisplay(Lnet/minecraft/client/multiplayer/PlayerInfo;)"
+							+ "Lnet/minecraft/network/chat/Component;"))
+	private Component skyblockru$tabLine(Component original) {
+		if (original == null || !RuConfig.get().enabled || !RuConfig.get().targets.tabList) {
+			return original;
+		}
+		return TextTranslator.translate(original, TextTranslator.SRC_TAB);
+	}
 
 	@ModifyVariable(method = "setHeader", at = @At("HEAD"), argsOnly = true)
 	private Component skyblockru$header(Component header) {

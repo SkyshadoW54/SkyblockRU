@@ -12,7 +12,6 @@
 		"HudMixin",
 		"ItemStackMixin",
 		"ObjectiveMixin",
-		"PlayerInfoMixin",
 		"PlayerScoreEntryMixin",
 		"PlayerTabOverlayMixin",
 		"PlayerTeamMixin",
