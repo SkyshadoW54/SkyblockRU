@@ -72,9 +72,26 @@ public final class ForeignMods {
 			"\\b(?:SkyHanni|Skyblocker|NotEnoughUpdates|Firmament|Odin|Devonian"
 			+ "|ModMenu|Sodium|Lithium|FerriteCore"
 			// найдены 13.08 в строках от 73 игроков — см. замер в комментарии ниже
-			+ "|RRV|MarketGuard|btrbz|BetterBazaar)\\b"
+			+ "|RRV|MarketGuard|btrbz|BetterBazaar"
+			// найден 26.08 при разборе пачки: «[ScamScreener] Update Available
+			// 1.2 -> 1.3. [click] to open on Modrinth». Замер по всем данным —
+			// задета 1 строка, она чужая; «Chat Abuse/Scam» не тронуто.
+			+ "|ScamScreener"
+			// найдены 25.08 при ручном разборе очереди: помощник аукциона
+			// и мод-компаньон. Замер по всем данным — задето 4 строки,
+			// все четыре чужие, в наших словарях 0.
+			+ "|Coflnet|SkyCofl)\\b"
+			+ "|Aaron(?:'s)? Mod" + "\\b"
+			+ "|/cofl\\b"
+			+ "|\\[Translate\\]"
 			// сайт-помощник: строку про него пишет мод, а не Hypixel
 			+ "|\\beliteskyblock\\.com\\b"
+			// ⚠️ Найден 04.09 при разборе абзацев подсказок: «CTRL+SHIFT click for
+			// price charts & other info — Powered by skyblock.finance» дописывает
+			// в подсказку сосед (NEU/SkyHanni). Домен пишем ЦЕЛИКОМ, как и
+			// eliteskyblock: внутри слово «skyblock», а оно есть в каждой второй
+			// строке Hypixel.
+			+ "|\\bskyblock\\.finance\\b"
 			+ "|\\bat\\.[a-z0-9_]+\\.[a-z0-9_.]+"
 			+ "|\\w*Exception\\b|\\bError while\\b|\\bstacktrace\\b",
 			Pattern.CASE_INSENSITIVE);

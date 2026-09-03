@@ -141,12 +141,56 @@ class Rule(NamedTuple):
     replacement: str
     where: str
     tg: bool
+    # ⚠️ Область пакета («only»). Движок сверяет её с ИСТОЧНИКОМ строки
+    # (`ScopedRule.allows`), и без неё инструмент обещает перевод там, где
+    # его нет: `81-item-names` объявлен только для `item_name`/`item_lore`,
+    # а без области он «переводил» бы и чат. Поле необязательное — вызвавший
+    # может не знать источника, и тогда проверка не делается вовсе.
+    only: frozenset | None = None
+    # ⚠️ Литеральное начало шаблона — дешёвый отказ до дорогой регулярки.
+    # Копия `Translator.anchorOf`: у 60% правил шаблон начинается с литерала
+    # («^Requires », «^Grants »), и строка, которая с него не начинается,
+    # совпасть не может по построению. Замер мода: вдвое быстрее, расхождений
+    # с прежним перебором НОЛЬ на 8000 живых строк.
+    #
+    # Инструменту это нужнее, чем моду: он спрашивает словарь не о десятке
+    # строк на кадр, а о сотне тысяч разом.
+    anchor: str | None = None
+
+
+def anchor_of(pattern: str) -> str | None:
+    """
+    Литеральное начало шаблона либо None. Копия `Translator.anchorOf`.
+
+    ⚠️ Разбор нарочно ТРУСЛИВЫЙ: встретив любой символ с особым смыслом,
+    останавливаемся. Лучше не отсеять правило (проверится как раньше), чем
+    отбросить строку, которая ему подходит.
+
+    ⚠️ Короткий якорь почти ничего не отсекает, а проверку стоит — порог
+    три знака взят у мода, чтобы не разойтись с ним.
+    """
+    if not pattern.startswith("^"):
+        return None
+    literal = []
+    body = pattern[1:]
+    for index, symbol in enumerate(body):
+        if symbol in "\\" "[](){}.*+?|$^":
+            break
+        # ⚠️ Символ ПЕРЕД квантификатором необязателен — в якорь не годится.
+        # У «^Starts? in:» якорь выходил «Starts», и строка «Start in: 2d 3h»
+        # отсеивалась до проверки: правило молча не срабатывало.
+        if index + 1 < len(body) and body[index + 1] in "?*{":
+            break
+        literal.append(symbol)
+    text = "".join(literal)
+    return text if len(text) >= 3 else None
 
 
 class Dictionaries:
     """Словари мода, разложенные так же, как их держит Translator."""
 
-    def __init__(self, without: set[str] | None = None) -> None:
+    def __init__(self, without: set[str] | None = None,
+                 groups: set[str] | None = None) -> None:
         """
         without — имена файлов словарей, которые НЕ учитывать.
 
@@ -159,8 +203,23 @@ class Dictionaries:
         а не признаком — потому она и вернулась.
         """
         without = without or set()
+        # ⚠️ `groups` — «считай эти группы включёнными». Без него нельзя
+        # ответить на вопрос «что увидит игрок в режиме полного перевода»:
+        # его словари помечены default:false и пропускались бы, то есть
+        # инструмент мерил бы ДРУГОЙ режим, чем спрашивают.
+        groups = groups or set()
         self.exact: dict[str, tuple[str, str]] = {}
         self.templates: dict[str, tuple[str, str]] = {}
+        # ⚠️ Область записи держим ОТДЕЛЬНОЙ картой, а не третьим полем пары:
+        # пару `(перевод, где лежит)` распаковывают полдюжины инструментов,
+        # и расширение кортежа сломало бы их разом.
+        #
+        # ⚠️ Карта одна на ключ и перезаписывается ВМЕСТЕ со значением — как
+        # в моде: `EXACT.put` кладёт `Entry(value, only)` целиком, и если
+        # победила запись с областью, то в чужой области перевода НЕТ ВОВСЕ,
+        # а не берётся проигравшая. Иначе инструмент был бы добрее движка.
+        self.exact_only: dict[str, frozenset | None] = {}
+        self.template_only: dict[str, frozenset | None] = {}
         self.rules: list[Rule] = []
         self.glossary: dict[str, str] = {}
         # термины С областью: только они работают при выключенном glossaryPass
@@ -175,9 +234,10 @@ class Dictionaries:
             # через /skyblockru pack <id> on. Учитывать его — значит обещать
             # перевод, которого на экране нет: так «Sugar» из выключенных
             # ванильных названий выглядел рабочим термином глоссария.
-            if pack.get("default") is False:
+            if pack.get("default") is False and pack.get("group") not in groups:
                 self.skipped.append(f"{path.name} (id {pack.get('id')}, выключен)")
                 continue
+            area = frozenset(pack.get("only")) if pack.get("only") else None
             for key, value in (pack.get("exact") or {}).items():
                 if not value:
                     continue
@@ -185,6 +245,7 @@ class Dictionaries:
                     # Ручной шаблон — обычная запись словаря: движок кладёт её
                     # через put, значит побеждает ПОСЛЕДНИЙ пакет.
                     self.templates[key] = (value, path.name)
+                    self.template_only[key] = area
                 else:
                     # ⚠️ ПОБЕЖДАЕТ ПОСЛЕДНИЙ, а не первый. Пакеты идут по priority
                     # ПО УБЫВАНИЮ, а движок раскладывает их через put — значит
@@ -194,17 +255,21 @@ class Dictionaries:
                     # инструмент отвечал ровно наоборот: на вопрос «что покажет
                     # игра» называл проигравший словарь.
                     self.exact[key] = (value, path.name)
+                    self.exact_only[key] = area
                     template = NUMBER.sub("{n}", key)
                     if template != key:
                         # ⚠️ А вот АВТОшаблон собирается через putIfAbsent —
                         # тут побеждает первый, и setdefault верен.
-                        self.templates.setdefault(template, (value, path.name))
+                        if template not in self.templates:
+                            self.templates[template] = (value, path.name)
+                            self.template_only[template] = area
             for rule in pack.get("regex") or []:
                 if not rule.get("r"):
                     continue
                 try:
                     self.rules.append(Rule(re.compile(rule["p"]), rule["r"],
-                                           path.name, bool(rule.get("tg"))))
+                                           path.name, bool(rule.get("tg")), area,
+                                           anchor_of(rule["p"])))
                 except re.error:
                     continue
             # Глоссарий и абзацы движок тоже кладёт через put — тот же порядок,
@@ -254,6 +319,80 @@ def fill_choices(text: str, dic: "Dictionaries") -> str:
         return found[0] if found else match.group()
 
     return CHOICE.sub(one, text)
+
+
+# ⚠️ ВАНИЛЬНЫЙ @КЛЮЧ РАЗВОРАЧИВАЕТ САМ МОД (`Translator.match` ->
+# `VanillaNames.expand`), и делает он это ПОСЛЕ правила: результат
+# `expandGroups` тоже проходит через `match`. Инструмент, который
+# ключ не разворачивает, показывает «@block.minecraft.dark_oak_log»
+# там, где игрок увидит «Дубовое бревно», — и врёт о качестве правила.
+#
+# ⚠️ Признак жил в `check_sections`, то есть в СТОРОЖЕ. Место ему тут:
+# разворачивание — часть ответа «что покажет игра», а сторож должен
+# спрашивать, а не держать свою копию.
+VANILLA_KEY = re.compile(r"@([A-Za-z0-9_.]+)")
+_VANILLA: dict | None = None
+
+
+def vanilla_lang() -> dict[str, str]:
+    """
+    Русская локализация САМОЙ игры: ей мод разворачивает @ключи.
+
+    ⚠️ Без этого проверка врёт в безопасную с виду сторону. Ванильные
+    зачарования лежат в словаре КЛЮЧОМ («Protection V» ->
+    «@enchantment.minecraft.protection V»), потому что перевод берётся
+    у клиента игрока, какой бы язык он ни выбрал. Мод разворачивает ключ
+    сам (Translator.match -> VanillaNames.expand), а проверка сравнивала
+    с сырым ключом — и 17 абзацев из 41 объявляла неразрезаемыми, хотя
+    в игре они режутся.
+
+    Файл лежит не в jar клиента, а в хранилище ресурсов: путь к нему
+    указывает индекс assets по имени «minecraft/lang/ru_ru.json».
+    """
+    global _VANILLA
+    if _VANILLA is not None:
+        return _VANILLA
+    _VANILLA = {}
+    for base in (Path("C:/MultiMC/assets"),
+                 Path("C:/MultiMC/instances/26.2/.minecraft/assets")):
+        indexes = base / "indexes"
+        if not indexes.exists():
+            continue
+        for index in sorted(indexes.glob("*.json"), reverse=True):
+            try:
+                objects = json.loads(index.read_text(encoding="utf-8")).get("objects") or {}
+            except (json.JSONDecodeError, OSError):
+                continue
+            entry = objects.get("minecraft/lang/ru_ru.json")
+            if not entry:
+                continue
+            digest = entry.get("hash") or ""
+            path = base / "objects" / digest[:2] / digest
+            if not path.exists():
+                continue
+            try:
+                _VANILLA = json.loads(path.read_text(encoding="utf-8"))
+                return _VANILLA
+            except (json.JSONDecodeError, OSError):
+                continue
+    return _VANILLA
+
+
+def expand_keys(value: str) -> str | None:
+    """@ключи -> перевод из игры. None, если игра ключа не знает (как в моде)."""
+    lang = vanilla_lang()
+    missing = False
+
+    def swap(match: re.Match) -> str:
+        nonlocal missing
+        found = lang.get(match.group(1))
+        if not found:
+            missing = True
+            return match.group(0)
+        return found
+
+    out = VANILLA_KEY.sub(swap, value)
+    return None if missing else out
 
 
 def clean(text: str) -> str:
@@ -449,7 +588,78 @@ def translate_group(raw: str, dic: Dictionaries, depth: int = 0) -> str:
     return raw
 
 
-def lookup(line: str, dic: Dictionaries, depth: int = 0) -> tuple[str, str] | None:
+def allows(area: "frozenset | None", origin: str | None) -> bool:
+    """
+    Область записи разрешает этот источник? Повторяет `Entry.allows` из мода.
+
+    ⚠️ У мода `origin == null` при заданной области значит ОТКАЗ. Здесь иначе,
+    и нарочно: `origin=None` — это «вызвавший источника не знает», а не «строка
+    ниоткуда». Полдюжины инструментов спрашивают словарь без источника, и
+    отказывать им значило бы поменять их ответы задним числом.
+    """
+    if area is None or origin is None:
+        return True
+    return origin in area
+
+
+def resolved(found: "tuple[str, str] | None") -> "tuple[str, str] | None":
+    """
+    Ответ словаря с развёрнутыми @ключами — ровно как `Translator.match`.
+
+    ⚠️ Мод разворачивает ключ ПОСЛЕ поиска и для ЛЮБОЙ секции, включая
+    результат правила с `tg`. Инструмент этого не делал и показывал
+    «@block.minecraft.dark_oak_log» там, где игрок видит «Бревно тёмного
+    дуба», — то есть врал о качестве правила.
+
+    ⚠️ Игра ключа не знает — перевода НЕТ ВОВСЕ (`match` возвращает null),
+    а не сырой ключ на экране. Повторяем и это.
+    """
+    if found is None:
+        return None
+    value, where = found
+    if "@" not in value:
+        return found
+    expanded = expand_keys(value)
+    return None if expanded is None else (expanded, where)
+
+
+# ⚠️⚠️ КЭШ ЖИВЁТ ЗДЕСЬ, А НЕ В `Dictionaries`, И ЭТО НЕ ПРИДИРКА.
+# Шаблон с дыркой подсаживают НА ХОДУ: `check_report` кладёт свой ключ прямо
+# в `dic.templates` и ждёт, что `lookup` его найдёт. Кэш, собранный ОДИН РАЗ
+# при загрузке словаря, такой подсадки не увидел бы вовсе, и сторож молча
+# позеленел бы, ослепнув, — записанная семья «отсев ослепил сторожа».
+# Ключом служит САМ шаблон, поэтому новый ключ компилируется при первом
+# обращении, а исчезнувший просто перестаёт спрашиваться.
+_HOLE_RULES: dict[str, tuple[str, re.Pattern]] = {}
+
+
+def hole_rule(key: str) -> tuple[str, re.Pattern]:
+    """
+    Регулярка записи с дыркой и её литеральное начало — собранные ОДИН РАЗ.
+
+    ⚠️ Собиралось это заново на КАЖДУЮ строку дампа, и внутренний кэш Python
+    не спасал: он держит 512 регулярок, а шаблонов с `{s}` в словаре уже 544 —
+    то есть кэш вытеснялся на каждом обороте и не работал вовсе. Замер: 377
+    компиляций регулярки на строку, 93% всего времени отчёта, 40 минут прогона.
+
+    ⚠️ Беда тихая по природе: ничего не ломается, ответы верные, инструмент
+    просто перестаёт быть дешёвым — а заметно это только по часам. Порог
+    в 512 перешагнули молча, по мере роста словаря.
+    """
+    cached = _HOLE_RULES.get(key)
+    if cached is None:
+        pattern = re.escape(key)
+        pattern = pattern.replace(re.escape("{s}"), NAME_HOLE)
+        pattern = pattern.replace(re.escape("{n}"), NUMBER_HOLE)
+        cuts = [at for at in (key.find("{s}"), key.find("{n}")) if at >= 0]
+        prefix = key[:min(cuts)] if cuts else key
+        cached = (prefix, re.compile(pattern))
+        _HOLE_RULES[key] = cached
+    return cached
+
+
+def lookup(line: str, dic: Dictionaries, depth: int = 0,
+           origin: str | None = None) -> tuple[str, str] | None:
     """
     Что движок вернёт для этой строки: (перевод, где лежит) либо ничего.
 
@@ -459,22 +669,22 @@ def lookup(line: str, dic: Dictionaries, depth: int = 0) -> tuple[str, str] | No
     """
     template = NUMBER.sub("{n}", line)
 
-    if line in dic.exact:
-        return dic.exact[line]
-    if template in dic.templates:
-        return dic.templates[template]
-    if template in dic.exact:
-        return dic.exact[template]
+    if line in dic.exact and allows(dic.exact_only.get(line), origin):
+        return resolved(dic.exact[line])
+    if template in dic.templates and allows(dic.template_only.get(template), origin):
+        return resolved(dic.templates[template])
+    if template in dic.exact and allows(dic.exact_only.get(template), origin):
+        return resolved(dic.exact[template])
     # ⚠️ ПРОЧИЕ ВИДЫ СТРОКИ — прежде всего обобщённый по чужому нику: в дампе
     # он живой, а ключ словаря и очереди собран с `{s}`. Порядок выше НЕ трогаем
     # (точная запись → шаблон по числам), этот шаг только ДОБАВЛЯЕТ формы.
     for probe in probes(line):
         if probe in (line, template):
             continue
-        if probe in dic.exact:
-            return dic.exact[probe]
-        if probe in dic.templates:
-            return dic.templates[probe]
+        if probe in dic.exact and allows(dic.exact_only.get(probe), origin):
+            return resolved(dic.exact[probe])
+        if probe in dic.templates and allows(dic.template_only.get(probe), origin):
+            return resolved(dic.templates[probe])
     # ⚠️ ЗАПИСЬ С ДЫРКОЙ — ЭТО ТОЖЕ ПРАВИЛО. Движок собирает из неё регулярку
     # при загрузке (Translator.templateRule): «…Season of Jerry, {s}!» ловит
     # строку с настоящим ником. Без этого инструмент уверенно отвечал «НЕТ
@@ -482,23 +692,32 @@ def lookup(line: str, dic: Dictionaries, depth: int = 0) -> tuple[str, str] | No
     for key, (value, where) in dic.templates.items():
         if "{s}" not in key:
             continue
-        pattern = re.escape(key)
-        pattern = pattern.replace(re.escape("{s}"), NAME_HOLE)
-        pattern = pattern.replace(re.escape("{n}"), NUMBER_HOLE)
-        match = re.fullmatch(pattern, line)
+        if not allows(dic.template_only.get(key), origin):
+            continue
+        prefix, pattern = hole_rule(key)
+        # ⚠️ Дешёвый отказ до дорогой регулярки — тот же приём, что у правил
+        # (`rule_hit`, `ScopedRule.maybe` в моде). Здесь он верен ПО ПОСТРОЕНИЮ:
+        # шаблон экранирован ЦЕЛИКОМ, квантификаторов в нём нет, значит
+        # fullmatch требует, чтобы строка НАЧИНАЛАСЬ литералом перед первой
+        # дыркой. Записанная грабля про якорь, съевший букву перед «?», сюда
+        # не относится: там шаблон писал человек, а тут его собирает re.escape.
+        if prefix and not line.startswith(prefix):
+            continue
+        match = pattern.fullmatch(line)
         if match:
             result = value
             for group in match.groups():
                 result = result.replace("{s}", group, 1)
-            return result, where
+            return resolved((result, where))
 
-    rule, match = rule_hit(line, dic)
+    rule, match = rule_hit(line, dic, origin)
     if rule and match:
-        return unfill(expand(rule, match, dic, depth)), rule.where
+        return resolved((unfill(expand(rule, match, dic, depth)), rule.where))
     return None
 
 
-def rule_hit(line: str, dic: Dictionaries) -> tuple[Rule | None, re.Match | None]:
+def rule_hit(line: str, dic: Dictionaries,
+             origin: str | None = None) -> tuple[Rule | None, re.Match | None]:
     """
     Правило, которое возьмёт строку, — в порядке движка.
 
@@ -508,6 +727,13 @@ def rule_hit(line: str, dic: Dictionaries) -> tuple[Rule | None, re.Match | None
     """
     forms = probes(line)
     for rule in dic.rules:
+        if not allows(rule.only, origin):
+            continue
+        # ⚠️ Дешёвый отказ до дорогой регулярки — ровно как в моде
+        # (`ScopedRule.maybe`). Порядок перебора не меняется: правило,
+        # чей якорь не совпал, всё равно не подошло бы.
+        if rule.anchor and not any(probe.startswith(rule.anchor) for probe in forms):
+            continue
         for probe in forms:
             match = rule.pattern.fullmatch(probe)
             if match:
@@ -605,6 +831,34 @@ def jargon_names() -> frozenset[str]:
     return _JARGON
 
 
+_ALL_ASIS: frozenset[str] | None = None
+
+
+def all_asis() -> frozenset[str]:
+    """
+    Решения «переводить нечего» из ВСЕХ рабочих файлов, а не только очереди.
+
+    ⚠️ Раньше читался один `from_game.json`, и пометки в остальных заготовках
+    (кнопки, надписи, имена мобов) были невидимы: отчёты звали работой то,
+    по чему решение уже принято, и следующая сессия разбирала их заново.
+    Замер в день правки: 4066 читалось, 700 терялось.
+    """
+    global _ALL_ASIS
+    if _ALL_ASIS is None:
+        found: set[str] = set()
+        for path in WORK.glob("*.json"):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                continue
+            if isinstance(data, dict):
+                marks = data.get("_asis")
+                if isinstance(marks, list):
+                    found.update(str(x) for x in marks)
+        _ALL_ASIS = frozenset(found)
+    return _ALL_ASIS
+
+
 def load_queue() -> dict:
     """Очередь построчного перевода: кто ждёт, кому «нечего»."""
     path = WORK / "from_game.json"
@@ -616,6 +870,7 @@ def load_queue() -> dict:
     # ⚠️ Три состояния, а не два: помеченные «переводить нечего» лежат в exact
     # с пустым значением, но ЖДУЩИМИ не являются. Сложишь их вместе — и очередь
     # покажет 472 вместо одной строки.
+    asis = asis | all_asis()
     return {
         "waiting": {k for k, v in exact.items() if not v and k not in asis},
         "asis": asis,
@@ -936,8 +1191,16 @@ def show_by_layer(rows: list[tuple[int, str, str]], limit: int) -> int:
     return len(work)
 
 
-def survey(dic: Dictionaries, queue: dict, corpus: dict, limit: int) -> int:
-    """Сводка по живому дампу: чего не хватает, по важности."""
+def survey(dic: Dictionaries, queue: dict, corpus: dict, limit: int,
+           tally: dict[str, int] | None = None) -> int:
+    """
+    Сводка по живому дампу: чего не хватает, по важности.
+
+    ⚠️⚠️ ВОЗВРАТ — ЭТО КОД ВОЗВРАТА ПРОЦЕССА (`raise SystemExit(main())`),
+    а не счётчик. Положить в него размер работы нельзя: 851 по модулю 256
+    даст 83, и сторож прочитал бы это как поломку. Поэтому число уходит
+    отдельным полем `tally` — вызвавшему, а не операционной системе.
+    """
     collected = DUMP / "collected.json"
     if not collected.exists():
         print(f"нет дампа: {collected}")
@@ -985,6 +1248,10 @@ def survey(dic: Dictionaries, queue: dict, corpus: dict, limit: int) -> int:
 
     order = [PARTIAL, QUEUED, MISSING]
     total = 0
+    # ⚠️ Считаем ОТДЕЛЬНО от `total`: в итог отчёта идёт ТОЛЬКО покупка.
+    # `total` включает и «глоссарий откатится», и «ждёт в очереди» — а там
+    # комбинаторика наборов зачарований, то есть размер данных, а не долг.
+    buying = 0
     for status in order:
         rows = sorted(buckets.get(status, []), reverse=True)
         if not rows:
@@ -1002,7 +1269,8 @@ def survey(dic: Dictionaries, queue: dict, corpus: dict, limit: int) -> int:
             print("    Мод показывал это на экране, но ни в очередь, ни в корпус"
                   " строка не попала.")
         if status == MISSING:
-            total += show_by_layer(rows, limit)
+            buying = show_by_layer(rows, limit)
+            total += buying
         else:
             total += len(rows)
             for times, source, line in rows[:limit]:
@@ -1039,6 +1307,8 @@ def survey(dic: Dictionaries, queue: dict, corpus: dict, limit: int) -> int:
 
     if not total:
         print("мод переводит всё, что собрал")
+    if tally is not None:
+        tally["покупка"] = buying
     return 0
 
 

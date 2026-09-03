@@ -80,6 +80,39 @@ public final class TextHooks {
 		for (Component line : lines) {
 			raw.add(line.getString());
 		}
+		// ⚠️⚠️ ХВОСТ ЧУЖИХ МОДОВ ОТРЕЗАЕМ ДО ВСЕГО ОСТАЛЬНОГО.
+		//
+		// REI, EMI и JEI дописывают в конец подсказки строку «Minecraft»
+		// (имя мода-владельца предмета), клиент при F3+H — идентификатор
+		// и число компонентов, NEU — цены. Их обработчики стоят раньше нашего,
+		// и строки уже лежат в списке. Пустой строкой от лора они не отделены,
+		// поэтому `Paragraphs.runs` приклеивал их к последнему куску: ключ
+		// «Left-click to summon! … Right-click to convert to an item! Minecraft»
+		// в словаре не находился, и действия питомца оставались английскими
+		// у всех, у кого стоит REI или EMI. Прислано игроком скриншотом 03.09;
+		// в блоках от игроков таких подсказок 312.
+		//
+		// Граница берётся из ДАННЫХ предмета (компонент лора), а не по виду
+		// строки: список имён соседей отстал бы от первого нового. Хвост
+		// возвращаем на место в `finally` — чужие строки нам не принадлежат,
+		// и пропасть они не должны даже при нашем исключении.
+		int tail = ru.skyblockru.core.TooltipTail.start(raw, ru.skyblockru.core.Items.loreTexts(stack));
+		java.util.List<Component> foreignTail = java.util.List.of();
+		if (tail < lines.size()) {
+			foreignTail = new java.util.ArrayList<>(lines.subList(tail, lines.size()));
+			lines.subList(tail, lines.size()).clear();
+			raw = new java.util.ArrayList<>(raw.subList(0, tail));
+		}
+		try {
+			translateBody(stack, lines, itemName, raw);
+		} finally {
+			lines.addAll(foreignTail);
+		}
+	}
+
+	/** Всё, что мод делает с подсказкой ПОСЛЕ отрезания чужого хвоста. */
+	private static void translateBody(ItemStack stack, List<Component> lines, String itemName,
+			java.util.List<String> raw) {
 		ru.skyblockru.core.UnknownStrings.recordTooltip(itemName, raw);
 
 		// ⚠️ РАЗВЕДКА: есть ли у предмета идентификатор надёжнее текста.
@@ -87,7 +120,12 @@ public final class TextHooks {
 		// может лежать настоящий id в NBT. Пока только записываем найденное
 		// в дамп — решать по фактам, а не по памяти о том, «как обычно
 		// делают моды». Подробности в UnknownStrings.recordItemId.
-		recordItemId(stack, itemName);
+		// ⚠️ NBT читаем ОДИН раз на подсказку и передаём дальше.
+		// `Items.nbt` делает copyTag() — полную копию тега, — и раньше
+		// каждый спрашивающий читал его сам: четыре-пять копий одного
+		// и того же на КАЖДУЮ подсказку.
+		net.minecraft.nbt.CompoundTag nbt = ru.skyblockru.core.Items.nbt(stack);
+		recordItemId(nbt, itemName);
 
 		// Снимок ДО перевода — вместе с цветами. Нужен, чтобы подсказку
 		// можно было посмотреть вне игры: tools/preview.py рисует её
@@ -110,12 +148,39 @@ public final class TextHooks {
 		// Абзац, для которого есть перевод, перекладываем заново; для
 		// остальных всё остаётся как было — сломать нечего.
 		java.util.Set<Component> fromParagraphs = ru.skyblockru.core.Paragraphs.apply(
-				lines, TextTranslator.SRC_ITEM_LORE, itemName, enchantsOf(stack));
+				lines, TextTranslator.SRC_ITEM_LORE, itemName, enchantsOf(stack, nbt));
 		if (!fromParagraphs.isEmpty()) {
 			ru.skyblockru.core.Diagnostics.hit(TextTranslator.SRC_ITEM_LORE,
 					ru.skyblockru.core.Diagnostics.KIND_PARAGRAPH);
 		}
-		translateLines(lines, itemName, fromParagraphs);
+		// ⚠️⚠️ ИМЯ ПРЕДМЕТА ПЕРЕВОДИТСЯ ЗДЕСЬ, А НЕ ПЕРЕХВАТОМ getHoverName.
+		//
+		// Раньше стоял миксин на `ItemStack.getHoverName`, и подменённое имя
+		// доставалось ВСЕМ, кто спрашивает игру. Замер 03.09 по jar соседей:
+		// этот метод зовут 115 классов SkyHanni и 72 Skyblocker. У SkyHanni
+		// из-за этого гасла подсветка нажатых карточек в Superpairs: его
+		// `SuperPairsItemVisibility` ищет в ИМЕНИ английское «?» и «Click any
+		// button!», а получал русский текст. Подробности в core/ItemName.
+		//
+		// ⚠️ ПОСЛЕ `Paragraphs.apply`, а не до: `nameAside` отрезает первую
+		// строку, сравнивая её с именем предмета, и оба должны быть на ОДНОМ
+		// языке. Переведи мы имя раньше — сравнение перестало бы совпадать.
+		java.util.Set<Component> done = fromParagraphs;
+		if (!lines.isEmpty() && itemName != null) {
+			Component first = lines.get(0);
+			// ⚠️ Первая строка не ВСЕГДА имя (замер: 96% блоков из 52 931).
+			// Спрашиваем не порядок, а совпадение с именем предмета.
+			String bare = ru.skyblockru.core.LegacyText.strip(first.getString()).trim();
+			if (bare.equals(ru.skyblockru.core.LegacyText.strip(itemName).trim())) {
+				Component named = ru.skyblockru.core.ItemName.translate(stack, first);
+				if (named != null && named != first) {
+					lines.set(0, named);
+					done = new java.util.HashSet<>(fromParagraphs);
+					done.add(named);
+				}
+			}
+		}
+		translateLines(lines, itemName, done);
 		ru.skyblockru.core.UnknownStrings.recordPreview(itemName, before,
 				ru.skyblockru.core.UnknownStrings.snapshot(lines));
 		// Справка по терминам — ПОСЛЕ снимка: это наша добавка, а не то,
@@ -136,10 +201,10 @@ public final class TextHooks {
 	 * не пуст — иначе предмет, чьи зачарования сервер в NBT не положил,
 	 * перестал бы резаться на секции. Подробности в Paragraphs.enchantHead.
 	 */
-	private static java.util.Set<String> enchantsOf(ItemStack stack) {
+	private static java.util.Set<String> enchantsOf(ItemStack stack, net.minecraft.nbt.CompoundTag nbt) {
 		// Чтение живёт в core/Items — одно на весь мод. Копия здесь разошлась бы
 		// с той, что спрашивает справка, при первой же правке формата.
-		return ru.skyblockru.core.Items.enchantsOf(stack);
+		return ru.skyblockru.core.Items.enchantsOf(stack, nbt);
 	}
 
 	/**
@@ -154,22 +219,28 @@ public final class TextHooks {
 	 * <p>⚠️ Ошибки глушим молча и намеренно: это разведка, и уронить из-за неё
 	 * подсказку предмета было бы обменом важного на любопытное.
 	 */
-	private static void recordItemId(ItemStack stack, String itemName) {
+	private static void recordItemId(CompoundTag tag, String itemName) {
 		try {
-			CompoundTag tag = ru.skyblockru.core.Items.nbt(stack);
 			if (tag == null) {
 				return;
 			}
 			// Разбор — в core/Items: и id, и ключи читаются там же, где их
 			// читает справка. Про то, что id лежит В КОРНЕ custom_data,
 			// а не в «ExtraAttributes», написано в самом Items.idOf.
-			String id = ru.skyblockru.core.Items.idOf(stack);
+			String id = ru.skyblockru.core.Items.idOf(tag);
 			ru.skyblockru.core.UnknownStrings.recordItemId(
-					id, itemName, ru.skyblockru.core.Items.keysOf(stack));
+					id, itemName, ru.skyblockru.core.Items.keysOf(tag));
 			// Образец сырого NBT — чтобы увидеть СТРУКТУРУ, а не только имена
 			// ключей: зачарования, самоцветы и перековка приходят данными,
 			// и по ним строку можно СОБИРАТЬ, а не разбирать обратно.
-			ru.skyblockru.core.UnknownStrings.recordNbtSample(id, tag.toString());
+			// ⚠️⚠️ СТРОКУ СТРОИМ, ТОЛЬКО ЕСЛИ ОНА НУЖНА. Раньше `tag.toString()`
+			// считался ДО вызова, а метод первым делом выходил: образцов уже 400,
+			// потолок упёрся дважды. То есть весь NBT предмета сериализовался
+			// в строку и выбрасывался — на КАЖДОЙ подсказке. Разведка по id
+			// закончена 30.07, и работа эта мёртвая вдвойне.
+			if (ru.skyblockru.core.UnknownStrings.wantsNbtSample()) {
+				ru.skyblockru.core.UnknownStrings.recordNbtSample(id, tag.toString());
+			}
 		} catch (RuntimeException ignored) {
 			// NBT не достали — подсказку это ломать не должно
 		}

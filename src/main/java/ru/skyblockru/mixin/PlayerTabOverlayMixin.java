@@ -134,11 +134,34 @@ public abstract class PlayerTabOverlayMixin {
 		}
 		this.skyblockru$shownActive = active;
 
+		// ⚠️ ПОДМЕНА ЖИВЁТ РОВНО НА ВРЕМЯ ОТРИСОВКИ. Раньше мы клали перевод
+		// в поле и оставляли его там — а поля `header`/`footer` СОСЕДИ ЧИТАЮТ
+		// НАПРЯМУЮ: у SkyHanni это `TabListData`, и в его байткоде стоят
+		// `field_2153`/`field_2154`, то есть ровно эти два поля. Значит наш
+		// перевод доставался ему вместо текста Hypixel — та же беда, что мы
+		// уже чинили на строках таба, только оставшаяся в шапке.
+		//
+		// Теперь на выходе из отрисовки поля возвращаются к оригиналу
+		// (см. skyblockru$restore), и всякий, кто спросит игру сам, получит
+		// текст Hypixel.
 		if (this.skyblockru$shownHeader != null) {
 			this.header = this.skyblockru$shownHeader;
 		}
 		if (this.skyblockru$shownFooter != null) {
 			this.footer = this.skyblockru$shownFooter;
+		}
+	}
+
+	/** Возвращает полям оригинал: подмена нужна была только экрану. */
+	@Inject(method = "extractRenderState", at = @At("RETURN"))
+	private void skyblockru$restore(GuiGraphicsExtractor extractor, int width,
+	                                Scoreboard scoreboard, Objective objective,
+	                                CallbackInfo info) {
+		if (this.skyblockru$rawHeader != null) {
+			this.header = this.skyblockru$rawHeader;
+		}
+		if (this.skyblockru$rawFooter != null) {
+			this.footer = this.skyblockru$rawFooter;
 		}
 	}
 }

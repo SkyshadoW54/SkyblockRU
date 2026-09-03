@@ -44,6 +44,14 @@ OLD_HAND = PACKS / LANG / "75-sb-enchants.json"
 INDEX = PACKS / "index.json"
 SKELETON = WORK / "enchants.json"
 
+# ⚠️ «Имя + УРОВЕНЬ и БОЛЬШЕ НИЧЕГО». Прежний шаблон обрывался на группе
+# уровня и потому ловил ЧУЖИЕ правила с текстом после неё:
+#   ^Tier ([IVXLC]+) Rewards$        -> «Награды $1 ступени»
+#   ^Milestone ([IVXLC]+) in (…)$    -> «До вехи $1 — $2 $3»
+# Их замены уезжали в подпись характеристики («^Tier:$» -> «Награды $1
+# ступени:»), то есть на экран с живым «$1» посреди слова.
+LEVEL_ONLY = re.compile(r"\^(.+?) \(\[IVXLC\][^)]*\)(?:\(,\?\\s\*\))?\$$")
+
 # ⚠️ Бонусы за УРОВЕНЬ НАВЫКА — не зачарования, и в переключаемый словарь
 # им нельзя. Выглядят они одинаково («Warrior XIII» против «Angler VI»),
 # поэтому по форме их не отличить, и все восемь уезжали в sb_enchants —
@@ -83,20 +91,32 @@ SKIP = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic", "Special", 
 
 
 def known_names() -> dict[str, str]:
-    """Что уже переведено — из правил вида ^Name ([IVXLC]+)$ во всех словарях."""
+    """
+    Что уже переведено — из правил вида ^Name ([IVXLC]+)$ во всех словарях.
+
+    ⚠️ ОБА СВОИХ ВЫХОДА пропускаем, а не один. Раньше исключался только `OUT`,
+    а `OUT_EXT` (77-sb-enchants) читался — и генератор кормил сам себя: замена
+    правила «{имя} $1$2» возвращалась сюда, снизу дописывался ещё один хвост,
+    и так каждый прогон. Замер: у «Fishing Speed» накопилось ДЕСЯТЬ «$1»,
+    у «Attack Speed» пять, у «Speed» два. На экране это дало бы
+    «Скорость атаки VI VI VI VI VI».
+    """
     found: dict[str, str] = {}
     for path in sorted(PACKS.rglob("*.json")):
-        if path.name in ("index.json", OUT.name):
+        if path.name in ("index.json", OUT.name, OUT_EXT.name):
             continue
         try:
             pack = json.loads(path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             continue
         for rule in pack.get("regex") or []:
-            match = re.match(r"\^(.+?) \(\[IVXLC\]", rule.get("p", ""))
+            match = LEVEL_ONLY.match(rule.get("p", ""))
             if match:
                 name = match.group(1).replace("\\", "")
-                target = re.sub(r"\s*\$\d\s*$", "", rule.get("r", "")).strip()
+                # ⚠️ Хвостов $N бывает НЕСКОЛЬКО («Шанс $1$2» — уровень
+                # и запятая). Снимаем ВСЕ: снятие одного и было той дырой,
+                # через которую накапливались лишние «$1».
+                target = re.sub(r"(?:\s*\$\d)+\s*$", "", rule.get("r", "")).strip()
                 if target:
                     found[name] = target
         for section in ("exact", "glossary"):
@@ -174,6 +194,15 @@ def previous() -> dict[str, str]:
     if OUT.exists():
         pack = json.loads(OUT.read_text(encoding="utf-8"))
         for source, target in (pack.get("glossary") or {}).items():
+            # ⚠️ Хвост $N снимаем И ЗДЕСЬ, а не только у правил ниже.
+            # Без этого сборка КОРМИЛА САМА СЕБЯ: значение глоссария уходило
+            # в `names`, оттуда в замену правила «{name} $1$2», а на следующем
+            # прогоне возвращалось сюда уже с лишним «$1». Замер: у «Combo»
+            # накопилось ДЕВЯТЬ хвостов, у «Fishing Speed» — девять, и на
+            # экране в полном режиме вышло бы «Комбо VI VI VI VI…».
+            # Прочие имена спасала только заготовка: она перебивает это
+            # значение — а у кого записи в заготовке нет, тот и накапливал.
+            target = re.sub(r"(?:\s*\$\d)+\s*$", "", str(target)).strip()
             if target:
                 done[source] = target
         for rule in pack.get("regex") or []:
@@ -308,9 +337,61 @@ def swallows_longer(name: str, terms: set[str]) -> str | None:
     for term in terms:
         if term == name or len(term) <= len(name):
             continue
-        if re.search(rf"(?<![A-Za-z]){re.escape(name)}(?![A-Za-z])", term):
-            return term
+        if not re.search(rf"(?<![A-Za-z]){re.escape(name)}(?![A-Za-z])", term):
+            continue
+        # ⚠️ ДВИЖОК САМ ЗАЩИЩАЕТ СОСТАВНОЕ ИМЯ, если длинный термин — это
+        # «Заглавное слово + наш термин»: `Translator.insideProperName` видит
+        # слева слово с заглавной и пропускает подстановку. Тогда запрет лишний,
+        # а цена его высока — «Luck» не пускали из-за «Pet Luck», и списки
+        # зачарований «Looting III, Luck V, Scavenger V» оставались английскими
+        # (замер 26.08: 109 живых строк).
+        #
+        # ⚠️ Ослабление держится на ДАННЫХ, а не на доверии: короткий и длинный
+        # не встречаются в ОДНОЙ строке ни разу (проверено по нашему дампу
+        # и по строкам от игроков — 0 совпадений). Иначе сработала бы записанная
+        # грабля: проверку движок делает по ПЕРВОМУ вхождению, а заменяет все.
+        head = term[: -len(name)].rstrip()
+        if head and head[:1].isupper() and " " not in head and not _seen_together(name, term):
+            continue
+        return term
     return None
+
+
+_TOGETHER: dict[tuple[str, str], bool] = {}
+
+
+def _seen_together(short: str, long_term: str) -> bool:
+    """Короткий и длинный термин встречаются в ОДНОЙ живой строке?"""
+    key = (short, long_term)
+    if key in _TOGETHER:
+        return _TOGETHER[key]
+    import json as _json
+    found = False
+    for path in (DUMP / "collected.json", ROOT / "data" / "work" / "from_players.json"):
+        if not Path(path).exists():
+            continue
+        try:
+            data = _json.loads(Path(path).read_text(encoding="utf-8"))
+        except Exception:
+            continue
+        groups = data.get("sources") or data.get("lines") or data
+        if not isinstance(groups, dict):
+            continue
+        for lines in groups.values():
+            if not isinstance(lines, dict):
+                continue
+            for line in lines:
+                if long_term in line and re.search(
+                        rf"(?<![A-Za-z]){re.escape(short)}(?![A-Za-z])",
+                        line.replace(long_term, "")):
+                    found = True
+                    break
+            if found:
+                break
+        if found:
+            break
+    _TOGETHER[key] = found
+    return found
 
 
 _MARKS: dict[str, str] | None = None
@@ -379,8 +460,21 @@ def build_pack() -> int:
         if name in enchants or name in hand_made:
             # необязательная запятая на конце: Hypixel режет список на куски,
             # и в сегмент часто попадает «Growth VI, »
-            rules.append({"p": f"^{re.escape(name)} ([IVXLC]{{1,6}})(,?\\s*)$",
+            # ⚠️ ДО ДЕСЯТИ ЗНАКОВ, а не шести: «XXXVII» — ровно шесть, а уже
+            # «XXXVIII» (38) семь, и бонусы за уровень навыка доходят до 60+.
+            # Прежний предел молча резал всё выше 37-го уровня.
+            rules.append({"p": f"^{re.escape(name)} ([IVXLC]{{1,10}})(,?\\s*)$",
                           "r": f"{as_enchant} $1$2"})
+            # ⚠️ В МЕНЮ ЗАЧАРОВАНИЯ УРОВЕНЬ АРАБСКИЙ: на предмете «Angler VI»,
+            # а на кнопке «Angler 6» и «Big Brain 1-3» (вилка уровней). Правило
+            # под римские цифры туда не достаёт, и заголовок кнопки оставался
+            # английским при готовом переводе имени.
+            # ⚠️ ЧИСЛО В ШАБЛОНЕ — РЕГУЛЯРКОЙ, А НЕ ДЫРКОЙ {n}. Движок гоняет
+            # правила по СЫРОЙ строке (Translator.lookup -> matcher(source)),
+            # а {n} бывает только в обобщённой — такое правило не совпадёт
+            # НИКОГДА. Ловится только check_hole_rules.py.
+            rules.append({"p": f"^{re.escape(name)} ([\\d,]+(?:-[\\d,]+)?)$",
+                          "r": f"{as_enchant} $1"})
             # ⚠️ В глоссарий — ТОЛЬКО то, что ВИДЕЛИ в списке через запятую.
             #
             # Правило на всю строку туда не достаёт, поэтому списку нужен
@@ -448,11 +542,87 @@ def build_pack() -> int:
 
     core_rules = [r for r in rules
                   if is_vanilla(r["r"]) or r["p"].endswith(":(\\s*)$") or is_skill_bonus(r)]
+
+    # ⚠️ ПРЕЖНИЕ ПОДПИСИ СОХРАНЯЕМ, а не выбрасываем.
+    #
+    # Список подписей собирается из того, что встречается в дампе и корпусе
+    # СЕЙЧАС. Часть пришла из источников, которых уже нет: дамп чистился,
+    # корпус пересобирался. Перезапуск такие правила молча стирал — замер
+    # 26.08: «Enchanting:», «Difficulty:», «Dungeon:», «Boss:», «Combat:»
+    # исчезали за один прогон и переставали переводиться ВООБЩЕ (спрошен
+    # движок). В игре эти подписи есть — просто мимо них давно не ходили.
+    #
+    # Так же устроен `gen_stat_forms`: там разово потерялось 428 правил.
+    # ⚠️ Мёртвое не переносим: дырка «{n}» в шаблоне не совпадёт с сырой
+    # строкой НИКОГДА — движок гоняет правила ДО обобщения чисел.
+    # ⚠️ Жаргон не переносим тоже: его перевод живёт в переключаемом
+    # sb_stats, а ядро включено всегда — иначе выключатель снова сломается.
+    kept = 0
+    if OUT.exists():
+        try:
+            was = json.loads(OUT.read_text(encoding="utf-8")).get("regex") or []
+        except (json.JSONDecodeError, OSError):
+            was = []
+        fresh = {r["p"] for r in core_rules}
+        # ⚠️ ОДНА обратная косая: в файле лежит «\s», а json.loads отдаёт «\s».
+        tail = ":(" + chr(92) + "s*)$"
+        for rule in was:
+            pattern = rule.get("p") or ""
+            if not pattern.endswith(tail) or pattern in fresh:
+                continue
+            if chr(92) + "{n" in pattern or chr(92) + "{s" in pattern:
+                continue
+            if any(pattern.startswith("^" + re.escape(name)) for name in jargon):
+                continue
+            core_rules.append(rule)
+            kept += 1
+    if kept:
+        print(f"перенесено прежних подписей: {kept}")
     ext_rules = [r for r in rules if r not in core_rules]
     core_gloss = {k: v for k, v in glossary.items()
                   if is_vanilla(v) or k in SKILL_BONUSES}
     ext_gloss = {k: v for k, v in glossary.items()
                  if not is_vanilla(v) and k not in SKILL_BONUSES}
+
+    # ⚠️ ГОЛОЕ ИМЯ ЗАЧАРОВАНИЯ — ЭТО КНОПКА МЕНЮ, и правила его не ловят:
+    # они писаны под «Имя УРОВЕНЬ» («^Cubism ([IVXLC]+)$»), а в меню Enchant
+    # Item кнопка подписана просто «Cubism». Замер 24.08: 31 такая строка
+    # в `menu_title` и 12 в `item_lore` — все кнопки, ни одной прозы.
+    # Кладём ТОЧНОЙ записью: она срабатывает только на строку целиком,
+    # поэтому «Critical» внутри фразы не тронет.
+    # ⚠️ ГОЛОЕ ИМЯ БЫВАЕТ ЗАНЯТО ИМЕНЕМ ВЕЩИ, и в заголовке победит наше.
+    # «Scuba» — это КРОЛИК Chocolate Factory (проверено по блоку подсказки:
+    # «Grants +N Chocolate… You have not found this rabbit yet!»), а у нас
+    # он же зачарование «Акваланг». Открыв область `item_name`, мы бы
+    # подменили имя кролика: priority 13 против 61 у `81-item-names`,
+    # а у `exact` побеждает МЕНЬШИЙ.
+    # Расхождение считаем ПО ПЕРЕВОДУ, а не по совпадению имени: «Inferno»
+    # и «Breeze» тоже носят и кролики, и зачарования — но переводятся
+    # одинаково, и спорить там не о чем. Замер 25.08: спорных ровно одно.
+    taken = {}
+    names_file = ROOT / "data" / "work" / "item_names_ru.json"
+    if names_file.exists():
+        raw = json.loads(names_file.read_text(encoding="utf-8")).get("names") or {}
+        for key, value in raw.items():
+            text = value.get("ru") if isinstance(value, dict) else value
+            if isinstance(text, str) and text and text != "-":
+                taken[key] = text
+
+    bare_core, bare_ext = {}, {}
+    clashes = []
+    for name, translation in glossary.items():
+        if " " in name and len(name.split()) > 3:
+            continue
+        if name in taken and taken[name] != translation:
+            clashes.append((name, translation, taken[name]))
+            continue
+        target = bare_core if (is_vanilla(translation) or name in SKILL_BONUSES) else bare_ext
+        target[name] = translation
+    if clashes:
+        print(f"  голых имён отдано ВЕЩАМ: {len(clashes)}"
+              f" (в заголовке это имя предмета, а не зачарование)")
+        for name, ours, theirs in clashes:
+            print(f"     {name}: зачарование {ours!r} против имени {theirs!r}")
 
     core = {
         "id": "enchant_names",
@@ -461,7 +631,17 @@ def build_pack() -> int:
                     "берётся у самой игры @ключом). Выключать нельзя: без подписей "
                     "подсказка станет наполовину английской. Собирается скриптом "
                     "tools/gen_enchants.py — правь заготовку data/work/enchants.json.",
-        "only": ["item_lore", "screen"],
+        # ⚠️ `item_name` добавлен 25.08: в меню Enchant Item и в справочниках
+        # имя зачарования стоит ЗАГОЛОВКОМ кнопки. Замер: так не доезжал
+        # 91 готовый перевод. Спорное голое имя отсеяно выше (см. taken).
+        # ⚠️ `chat` добавлен 26.08: БОНУСЫ ЗА УРОВЕНЬ НАВЫКА («Warrior II»,
+        # «Zoologist I», «Farmhand VII») сервер объявляет в чат, а область
+        # туда не пускала — 23 готовых перевода лежали мёртвым грузом.
+        # Замер по 1548 живым строкам чата: новых 23, изменившихся 0.
+        # ⚠️ `tab` добавлен 26.08: подпись виджета «Pet:» приходит строкой ТАБА.
+        # Замер по 168 живым строкам таба: новых 1, изменившихся 0.
+        "only": ["item_lore", "screen", "menu_title", "item_name", "chat", "tab"],
+        "exact": bare_core,
         "regex": core_rules,
         "glossary": core_gloss,
     }
@@ -469,6 +649,12 @@ def build_pack() -> int:
         "id": "sb_enchants",
         "priority": 13,
         "default": False,
+        # ⚠️ ГРУППА ОБЯЗАТЕЛЬНА, иначе словарь выключен НАВСЕГДА. Он был
+        # `default: false` без группы, и `/skyblockru full on` его не включал:
+        # 417 записей лежали мёртвым грузом, а в режиме полного перевода
+        # названия зачарований оставались английскими. Поимённо игрок включить
+        # его может, но режим — не перечень файлов, и помнить он должен режим.
+        "group": "full",
         "about": "Перевод названий зачарований SkyBlock: «Angler VI» -> «Рыболов VI». "
                  "Выключен по умолчанию: по английским названиям ищут вещи на аукционе "
                  "и настраивают фильтры.",
@@ -477,7 +663,11 @@ def build_pack() -> int:
                     "целиком («Angler VI» своей строкой у дрели), glossary — то же имя "
                     "ВНУТРИ списка через запятую («Flash V, Angler VI, Blessing VI» "
                     "у удочки), куда правило на всю строку не достаёт.",
-        "only": ["item_lore", "screen"],
+        # ⚠️ `item_name` добавлен 25.08: в меню Enchant Item и в справочниках
+        # имя зачарования стоит ЗАГОЛОВКОМ кнопки. Замер: так не доезжал
+        # 91 готовый перевод. Спорное голое имя отсеяно выше (см. taken).
+        "only": ["item_lore", "screen", "menu_title", "item_name"],
+        "exact": bare_ext,
         "regex": ext_rules,
         "glossary": ext_gloss,
     }
@@ -491,7 +681,7 @@ def build_pack() -> int:
           f"  (зачарования SkyBlock — ПЕРЕКЛЮЧАЕМЫЕ, по умолчанию выключены)")
     if swallowed:
         print(f"НЕ пущено в глоссарий (кусок более длинного термина): {len(swallowed)}")
-        for name, longer in swallowed[:8]:
+        for name, longer in swallowed:
             print(f"    {name!r} внутри {longer!r}")
 
     index = json.loads(INDEX.read_text(encoding="utf-8"))

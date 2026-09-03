@@ -54,7 +54,12 @@ def is_generated(path: Path) -> bool:
     if path.suffix != ".json" or not path.is_relative_to(PACKS):
         return False
     try:
-        comment = (json.loads(path.read_text(encoding="utf-8")).get("_comment") or "").lower()
+            # ⚠️ `_comment` бывает и СТРОКОЙ, и СПИСКОМ строк (так в
+        # `05-full-rules`), и на списке инструмент падал с AttributeError:
+        # смена термина не работала вовсе, а выглядело это как честный
+        # отказ угадывать падежи.
+        raw = json.loads(path.read_text(encoding="utf-8")).get("_comment") or ""
+        comment = (" ".join(raw) if isinstance(raw, list) else str(raw)).lower()
     except (json.JSONDecodeError, OSError):
         return False
     return any(mark in comment for mark in AUTO_MARKS)

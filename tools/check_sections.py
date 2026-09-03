@@ -111,64 +111,15 @@ _VANILLA: dict[str, str] | None = None
 
 
 def vanilla_lang() -> dict[str, str]:
-    """
-    Русская локализация САМОЙ игры: ей мод разворачивает @ключи.
-
-    ⚠️ Без этого проверка врёт в безопасную с виду сторону. Ванильные
-    зачарования лежат в словаре КЛЮЧОМ («Protection V» ->
-    «@enchantment.minecraft.protection V»), потому что перевод берётся
-    у клиента игрока, какой бы язык он ни выбрал. Мод разворачивает ключ
-    сам (Translator.match -> VanillaNames.expand), а проверка сравнивала
-    с сырым ключом — и 17 абзацев из 41 объявляла неразрезаемыми, хотя
-    в игре они режутся.
-
-    Файл лежит не в jar клиента, а в хранилище ресурсов: путь к нему
-    указывает индекс assets по имени «minecraft/lang/ru_ru.json».
-    """
-    global _VANILLA
-    if _VANILLA is not None:
-        return _VANILLA
-    _VANILLA = {}
-    for base in (Path("C:/MultiMC/assets"),
-                 Path("C:/MultiMC/instances/26.2/.minecraft/assets")):
-        indexes = base / "indexes"
-        if not indexes.exists():
-            continue
-        for index in sorted(indexes.glob("*.json"), reverse=True):
-            try:
-                objects = json.loads(index.read_text(encoding="utf-8")).get("objects") or {}
-            except (json.JSONDecodeError, OSError):
-                continue
-            entry = objects.get("minecraft/lang/ru_ru.json")
-            if not entry:
-                continue
-            digest = entry.get("hash") or ""
-            path = base / "objects" / digest[:2] / digest
-            if not path.exists():
-                continue
-            try:
-                _VANILLA = json.loads(path.read_text(encoding="utf-8"))
-                return _VANILLA
-            except (json.JSONDecodeError, OSError):
-                continue
-    return _VANILLA
+    """Русская локализация игры — спрашиваем status, копии не держим."""
+    import status  # ленивый: status сам импортирует нас, наверху вышел бы круг
+    return status.vanilla_lang()
 
 
 def expand_keys(value: str) -> str | None:
-    """@ключи -> перевод из игры. None, если игра ключа не знает (как в моде)."""
-    lang = vanilla_lang()
-    missing = False
-
-    def swap(match: re.Match) -> str:
-        nonlocal missing
-        found = lang.get(match.group(1))
-        if not found:
-            missing = True
-            return match.group(0)
-        return found
-
-    out = VANILLA_KEY.sub(swap, value)
-    return None if missing else out
+    """@ключи -> перевод из игры. Признак живёт в status.py."""
+    import status  # ленивый: см. vanilla_lang
+    return status.expand_keys(value)
 
 
 def variants_of(head: str, dic) -> list[str]:

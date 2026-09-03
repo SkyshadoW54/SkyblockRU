@@ -42,6 +42,12 @@ MAX_LINES = 20000                    # строк в пакете
 MAX_LINE = 500                       # знаков в строке
 RATE_SECONDS = 60                    # не чаще раза в минуту с одного адреса
 
+# ⚠️ Блоки подсказок — крупнее строк, поэтому у них свои пределы.
+# Замер: 9711 блоков одного игрока это 3.3 МБ (657 КБ в gzip), клиент шлёт
+# порциями по 1200. Берём с запасом вдвое, чтобы порция влезала целиком.
+MAX_BLOCKS = 2500                    # блоков в пакете
+MAX_BLOCK_LINES = 60                 # строк в одном блоке
+
 # ⚠️ СУТОЧНАЯ КВОТА — последняя преграда для «залить диск».
 #
 # Всё остальное ограничивает ОДИН пакет, а слать их можно много и с разных
@@ -100,6 +106,40 @@ JUNK = (
     re.compile(r"\{\s*[\"']\w+[\"']\s*:"),   # вложенный json
     re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]"),  # управляющие символы
 )
+
+
+# ⚠️ ЧУЖОЕ В БЛОКАХ ПОДСКАЗОК — своя граница, и вот почему она понадобилась.
+#
+# `personal()` работает только для чата (там признак — метка уровня в начале
+# строки), а чужие моды приёмник не проверял вовсе: их отсеивала НАША сторона
+# при разборе. Для строк этого хватало. Блок же приходит целой подсказкой,
+# и в ней бывает и ник продавца («Seller: …» у лота аукциона), и приписка
+# соседа («(From SkyHanni)»). Проверка поймала это до выкладки: два случая
+# из пяти проходили насквозь.
+#
+# ⚠️ Признаки УЗКИЕ намеренно. «Player Trading» под них не попадает — нужен
+# ИМЕННО «Player:» с двоеточием; «Source: Moby» тоже цел, потому что
+# перечислены подписи владельца, а не любое двоеточие.
+# ⚠️ «Seller: {s}» ПРОПУСКАЕМ: мод обобщает ники сам, и там уже не имя,
+# а дырка — личного в такой строке нет. Замер по 9711 живым блокам: без этой
+# оговорки признак выбрасывал 1913 блоков (20%), и почти все — лоты аукциона,
+# то есть самый ценный источник абзацев. Ловим только НЕОБОБЩЁННЫЙ ник:
+# он значит, что мод его не распознал, и уезжать такому нельзя.
+OWNER_LINE = re.compile(
+    r"^(?:Seller|Player|Buyer|Owner|Bidder|By)\s*:\s*"
+    r"(?!\{s\}|Refreshing|None\b|\s*$)\S", re.I)
+RANKED_NICK = re.compile(r"\[(?:MVP|VIP|ADMIN|MOD|GM|OWNER|YOUTUBE)[^\]]{0,4}\]\s*\S")
+FOREIGN_MOD = re.compile(
+    r"\b(?:SkyHanni|Skyblocker|NotEnoughUpdates|NEU|Firmament|Odin|Dandelion"
+    r"|MarketGuard|RRV|BetterBazaar|btrbz|Bazaar Utils)\b"
+    r"|\bat\.hannibal2\.|eliteskyblock\.com", re.I)
+
+
+def foreign_or_personal(line: str) -> bool:
+    """Строка блока, которой у нас быть не должно: чужой мод или чужой ник."""
+    return bool(OWNER_LINE.search(line)
+                or RANKED_NICK.search(line)
+                or FOREIGN_MOD.search(line))
 
 
 def gunzip_limited(raw: bytes, limit: int) -> bytes:
@@ -231,7 +271,37 @@ def clean(payload: dict) -> tuple[dict, list[str]]:
         if total > MAX_LINES:
             break
 
-    if not kept:
+    # ⚠️ БЛОКИ ПОДСКАЗОК. Строки порознь не дают собрать абзац: сервер режет
+    # описание по ширине окна, и без порядка склеить его нечем. Замер 17.08:
+    # 13326 присланных строк — обрывки, склейка которых неизвестна навсегда,
+    # то есть больше половины очереди. В блоке порядок есть.
+    #
+    # ⚠️ Блок берём ЦЕЛИКОМ или НИКАК: если хоть одна строка не прошла фильтр
+    # (ник, чужой мод, идентификатор профиля), отбрасываем весь блок. Половина
+    # блока бесполезна — абзац из неё всё равно не собрать, — а риск тот же.
+    blocks_in = payload.get("blocks")
+    blocks: list[list[str]] = []
+    if isinstance(blocks_in, list):
+        for block in blocks_in[:MAX_BLOCKS]:
+            if not isinstance(block, list) or len(block) < 3:
+                continue
+            rows = []
+            ok = True
+            for row in block[:MAX_BLOCK_LINES]:
+                if not isinstance(row, str) or len(row) > MAX_LINE:
+                    ok = False
+                    break
+                row = row.strip()
+                if row and (junk(row) or foreign_or_personal(row)):
+                    ok = False
+                    break
+                rows.append(row)
+            if ok and sum(1 for x in rows[1:] if x) >= 2:
+                blocks.append(rows)
+            elif not ok:
+                notes.append("отброшен блок подсказки с личной строкой")
+
+    if not kept and not blocks:
         raise ValueError("нечего сохранять")
     # ⚠️ Метка УСТАНОВКИ — единственное, что отличает отправителей.
     # Без неё сорок пакетов от одного человека выглядят как сорок игроков,
@@ -248,7 +318,10 @@ def clean(payload: dict) -> tuple[dict, list[str]]:
     if not INSTALL_ID.match(install):
         install = ""
 
-    return {"mod": mod, "game": game, "install": install, "lines": kept}, notes
+    record = {"mod": mod, "game": game, "install": install, "lines": kept}
+    if blocks:
+        record["blocks"] = blocks
+    return record, notes
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -339,7 +412,8 @@ class Handler(BaseHTTPRequestHandler):
 
         self.store.write(record, now)
         kept = sum(len(v) for v in record["lines"].values())
-        self.log_message("принято %d строк, mod=%s game=%s%s", kept,
+        self.log_message("принято %d строк, %d блоков, mod=%s game=%s%s", kept,
+                         len(record.get("blocks") or []),
                          record["mod"] or "?", record["game"] or "?",
                          (" | " + "; ".join(notes)) if notes else "")
         self._answer(200, "thanks")

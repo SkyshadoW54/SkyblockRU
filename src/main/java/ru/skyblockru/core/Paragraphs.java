@@ -120,7 +120,21 @@ public final class Paragraphs {
 	 */
 	public static List<Component> wrap(String translated, int widthPx, Component sample,
 			List<Component> source) {
-		Font font = Minecraft.getInstance().font;
+		return wrapWith(translated, widthPx, sample, source, textWidth());
+	}
+
+	/**
+	 * То же самое, но ширину строки СПРАШИВАЕТ, а не берёт у Minecraft.
+	 *
+	 * <p>⚠️ ЗАЧЕМ ВЫНЕСЕНО. Пока шрифт брался прямо здесь, весь абзацный путь
+	 * нельзя было прогнать без игры: каждая часть по отдельности проверялась
+	 * и давала верный цвет, а на экране цвет выходил чужой — то есть ошибка
+	 * сидела в СВЯЗКЕ, и добраться до неё было нечем. Ровно так же когда-то
+	 * развязали {@link ParagraphColors#wrap}: он принимает {@code ToWidth}
+	 * и потому проверяем.
+	 */
+	public static List<Component> wrapWith(String translated, int widthPx, Component sample,
+			List<Component> source, ParagraphColors.ToWidth widths) {
 		Style style = dropHeadModifiers(styleOf(sample), source);
 
 		// ⚠️ ПЕРЕВОД С РАЗМЕТКОЙ — самый точный путь, и он важнее всей механики ниже.
@@ -136,7 +150,7 @@ public final class Paragraphs {
 		// будут выглядеть новые переводы абзацев, если переводить их с маркерами
 		// цвета — тем же приёмом, каким уже прячутся иконки ({i1}, {i2}).
 		if (LegacyText.hasCodes(translated)) {
-			return wrapMarked(translated, widthPx, style, font);
+			return wrapMarked(translated, widthPx, style, widths);
 		}
 
 		Map<String, Style> palette = new LinkedHashMap<>();
@@ -153,7 +167,7 @@ public final class Paragraphs {
 
 		List<Component> out = new ArrayList<>();
 		for (List<ParagraphColors.Piece> row
-				: ParagraphColors.wrap(laid, widthPx + WIDTH_SLACK, font::width)) {
+				: ParagraphColors.wrap(laid, widthPx + WIDTH_SLACK, widths)) {
 			MutableComponent line = Component.empty().setStyle(bodyStyle);
 			for (ParagraphColors.Piece piece : row) {
 				line.append(Component.literal(piece.text())
@@ -199,7 +213,7 @@ public final class Paragraphs {
 	 * вместе с ним ({@link ParagraphColors#wrap}).
 	 */
 	private static List<Component> wrapMarked(String translated, int widthPx, Style base,
-			Font font) {
+			ParagraphColors.ToWidth widths) {
 		Map<String, Style> palette = new LinkedHashMap<>();
 		List<ParagraphColors.Piece> pieces = new ArrayList<>();
 		LegacyText.parse(translated, base).visit((style, text) -> {
@@ -214,7 +228,7 @@ public final class Paragraphs {
 
 		List<Component> out = new ArrayList<>();
 		for (List<ParagraphColors.Piece> row
-				: ParagraphColors.wrap(pieces, widthPx + WIDTH_SLACK, font::width)) {
+				: ParagraphColors.wrap(pieces, widthPx + WIDTH_SLACK, widths)) {
 			MutableComponent line = Component.empty().setStyle(base);
 			for (ParagraphColors.Piece piece : row) {
 				line.append(Component.literal(piece.text())
@@ -847,14 +861,43 @@ public final class Paragraphs {
 		// пометила приписку своим цветом. Значит граница известна точно:
 		// последний §-код, отличный от цвета тела.
 		if (LegacyText.hasCodes(translated)) {
-			return markedTailStart(translated);
+			return notAfterLabel(translated, markedTailStart(translated));
 		}
 
 		int cut = ParagraphColors.footerCut(leadingColor(last), body, translated, variants);
 		if (cut <= 0 || cut >= translated.strip().length()) {
 			return -1;
 		}
-		return translated.strip().length() - cut;
+		return notAfterLabel(translated, translated.strip().length() - cut);
+	}
+	/**
+	 * Отменяет рез приписки, если перед ним стоит ПОДПИСЬ.
+	 *
+	 * <p>⚠️⚠️ ЗАЧЕМ. Признак приписки — «хвост иного цвета до конца строки», —
+	 * и у пары «подпись: значение» под него подходит САМО ЗНАЧЕНИЕ: Hypixel
+	 * красит его отдельно всегда. Значение отрывалось от своей подписи
+	 * и уезжало вниз:
+	 * <pre>
+	 *   Hypixel:   «Collection: Potato VI»   одной строкой
+	 *   на экране: «Коллекция:» / «Potato VI»
+	 * </pre>
+	 * Подпись без значения не значит ничего, поэтому такой рез отменяем вовсе.
+	 *
+	 * <p>⚠️ Признак берём ТОТ ЖЕ, что уже стоит в переносе строк
+	 * ({@link ParagraphColors#endsWithLabel}): двоеточие в конце слова. Своя
+	 * копия разошлась бы при первой правке — в этом проекте так уже расходились
+	 * знаки списка и алгоритм ключа абзаца.
+	 *
+	 * <p>⚠️ Настоящую приписку это не задевает: перед ней стоит конец
+	 * предложения («…в любое время! §8Питомец должен быть виден»), а не
+	 * двоеточие.
+	 */
+	private static int notAfterLabel(String translated, int at) {
+		if (at <= 0) {
+			return at;
+		}
+		String before = LegacyText.strip(translated.substring(0, at)).stripTrailing();
+		return ParagraphColors.endsWithLabel(before) ? -1 : at;
 	}
 
 	/**
@@ -1450,7 +1493,11 @@ public final class Paragraphs {
 
 	/** Ширина самой длинной строки абзаца — её и держим. */
 	public static int width(List<Component> lines, Run run) {
-		Font font = Minecraft.getInstance().font;
+		return widthWith(lines, run, lineWidth());
+	}
+
+	/** То же, но ширину СПРАШИВАЕТ — чтобы путь проверялся без игры. */
+	public static int widthWith(List<Component> lines, Run run, WidthOf widths) {
 		int widest = 0;
 		// ⚠️ Ширину берём по ВСЕЙ подсказке, а не по одному абзацу.
 		//
@@ -1464,9 +1511,14 @@ public final class Paragraphs {
 		// (эта ширина у него уже есть), но и втискивать русскую фразу в чужие
 		// узкие границы больше не приходится. Ровно ради этого абзацы и делались.
 		for (Component line : lines) {
-			widest = Math.max(widest, font.width(line));
+			widest = Math.max(widest, widths.of(line));
 		}
 		return widest;
+	}
+
+	/** Ширина ГОТОВОЙ строки: у Minecraft это {@code font::width}. */
+	public interface WidthOf {
+		int of(Component line);
 	}
 
 	/**
@@ -1521,7 +1573,66 @@ public final class Paragraphs {
 	 */
 	private static final ThreadLocal<Set<String>> ENCHANTS = new ThreadLocal<>();
 
+	/**
+	 * Чем мерить ширину. {@code null} — брать у Minecraft, как в игре.
+	 *
+	 * <p>⚠️ ЗАЧЕМ. Абзацный путь нельзя было прогнать без игры: шрифт брался
+	 * прямо внутри. Каждая часть по отдельности проверялась и давала верный
+	 * цвет, а на экране он выходил чужой — значит ошибка сидела в СВЯЗКЕ,
+	 * и увидеть её было нечем. Через это поле путь гоняется целиком
+	 * настоящей Java: {@code tools/check_paragraph_path.py}.
+	 *
+	 * <p>Приём тот же, что у {@link #ENCHANTS}: ThreadLocal вместо протаскивания
+	 * параметра через десяток вызовов.
+	 */
+	private static final ThreadLocal<Widths> WIDTHS = new ThreadLocal<>();
+
+	/** Пара мерок: готовой строки и голого текста. */
+	public record Widths(WidthOf line, ParagraphColors.ToWidth text) {
+	}
+
 	private static Set<Component> applyInner(List<Component> lines, String origin, String item) {
+		return applyWith(lines, origin, item);
+	}
+
+	/** Прогнать путь со СВОЕЙ меркой ширины — для проверки без игры. */
+	public static Set<Component> applyWith(List<Component> lines, String origin, String item,
+			Widths widths) {
+		WIDTHS.set(widths);
+		try {
+			return applyWith(lines, origin, item);
+		} finally {
+			WIDTHS.remove();
+		}
+	}
+
+	private static WidthOf lineWidth() {
+		Widths w = WIDTHS.get();
+		if (w != null) {
+			return w.line();
+		}
+		Font font = Minecraft.getInstance().font;
+		return font::width;
+	}
+
+	private static ParagraphColors.ToWidth textWidth() {
+		Widths w = WIDTHS.get();
+		if (w != null) {
+			return w.text();
+		}
+		Font font = Minecraft.getInstance().font;
+		return font::width;
+	}
+
+	/**
+	 * Весь абзацный путь, но ширину он СПРАШИВАЕТ, а не берёт у Minecraft.
+	 *
+	 * <p>⚠️ Ради этого и вынесено: каждая часть пути по отдельности давала
+	 * верный цвет, а на экране он выходил чужой — значит ошибка в связке,
+	 * и увидеть её можно только прогнав путь ЦЕЛИКОМ. Теперь это делается
+	 * настоящей Java без игры.
+	 */
+	private static Set<Component> applyWith(List<Component> lines, String origin, String item) {
 		Set<Component> made = Collections.newSetFromMap(new IdentityHashMap<>());
 
 		// ⚠️ Выключатель и «только на Hypixel/в SkyBlock» проверяем ЗДЕСЬ ТОЖЕ.
@@ -1662,10 +1773,27 @@ public final class Paragraphs {
 			// от последнего слова — на экране получалось «время! Пи» отдельной
 			// строкой, а следом полная приписка.
 			int tailAt = footerStart(lines, run, text, origin, item);
-			Component footLine = null;
+			List<Component> footLines = null;
 			if (tailAt > 0 && tailAt < text.length()) {
-				footLine = LegacyText.parse(text.substring(tailAt),
-						lines.get(run.to() - 1).getStyle());
+				// ⚠️⚠️ ПРИПИСКУ СОБИРАЕМ ТЕМИ ЖЕ КУСКАМИ, что и остальной абзац.
+				//
+				// Раньше стояло `LegacyText.parse(хвост, lines.get(to-1).getStyle())`,
+				// и это МОЛЧА ТЕРЯЛО ЦВЕТ: `getStyle()` отдаёт стиль КОРНЯ
+				// компонента, а цвета лежат на КУСКАХ. У строки
+				// «[green Green Candy][dark_gray x16]» корень пуст, и два цветных
+				// куска схлопывались в один — цвета корня, то есть цвета РЕДКОСТИ
+				// предмета. На экране «Green Candy x16» выходило фиолетовым;
+				// замер сканером — 14 подсказок.
+				//
+				// ⚠️ Это записанная грабля проекта, всплывшая в ТРЕТИЙ раз: та же
+				// ошибка была в `piecesOf` («getString() склеивает текст без стилей,
+				// getStyle() отдаёт стиль корня»). Тогда починили ОДНО МЕСТО.
+				//
+				// Заодно это снимает цену ошибки признака: даже если строку
+				// приняли за приписку зря, свои цвета она сохранит.
+				footLines = wrap(text.substring(tailAt), widthPx,
+						lines.get(run.to() - 1),
+						new ArrayList<>(lines.subList(run.to() - 1, run.to())));
 				text = text.substring(0, tailAt).strip();
 			}
 			// ⚠️ Абзац из НЕСКОЛЬКИХ зачарований раскладываем ПО СЕКЦИЯМ, а не
@@ -1681,8 +1809,8 @@ public final class Paragraphs {
 			} else {
 				wrapped.addAll(wrap(text, widthPx, lines.get(run.from()), original));
 			}
-			if (footLine != null) {
-				wrapped.add(footLine);
+			if (footLines != null) {
+				wrapped.addAll(footLines);
 			}
 			if (wrapped.isEmpty()) {
 				continue;

@@ -16,6 +16,9 @@ put, поэтому побеждает пакет с МЕНЬШИМ priority: к
 from __future__ import annotations
 
 import json
+import sys as _sys
+_sys.path.insert(0, str(__import__('pathlib').Path(__file__).resolve().parent))
+from merge_paragraphs import EXACT_MAX
 import sys
 from pathlib import Path
 
@@ -50,6 +53,14 @@ def main() -> int:
                     "репозитория NEU — там они лежат С §-КОДАМИ, поэтому перевод "
                     "размечен точно, а не догадкой. Править надо ЗАГОТОВКУ "
                     "data/work/menu_paragraphs.json, этот файл пересобирается.",
+        # ⚠️ ДУБЛЬ КОРОТКИХ АБЗАЦЕВ В `exact` — тот же приём и тот же порог,
+        # что у merge_paragraphs (порог спрашиваем у соседа, своя копия числа
+        # разошлась бы). Абзац из ОДНОЙ строки мод не собирает, а у игрока
+        # с широким окном строка приходит целиком — тогда спасает только
+        # точная запись. Нашёл это check_disabled_wins: две записи меню были
+        # закрыты лишь ВЫКЛЮЧЕННЫМ 04-full-strings, то есть у игрока без
+        # режима оставались английскими.
+        "exact": {k: v for k, v in ready.items() if len(k) <= EXACT_MAX},
         "paragraphs": ready,
     }, ensure_ascii=False, indent=1), encoding="utf-8")
 

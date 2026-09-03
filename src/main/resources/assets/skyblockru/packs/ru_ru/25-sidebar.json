@@ -8,7 +8,7 @@
   "Objective": "Задание",
   "Objectives": "Задания",
   "Slayer Quest": "Задание истребителя",
-  "Combat XP": "Опыт боя",
+  "Combat XP": "Опыт Combat",
   "Time Left": "Осталось времени",
   "Server closing soon!": "Сервер скоро закроется",
   "Bits: {n}": "Bits: §b{n}",
@@ -145,6 +145,10 @@
   {
    "p": "^([\\d,]+x .+ [IVXLC]+) \\[ACTIVE\\]$",
    "r": "§f$1 §a[АКТИВЕН]"
+  },
+  {
+   "p": "^([\\d,]+x .+ [IVXLC]+) \\[SLOW\\]$",
+   "r": "§f$1 §e[МЕДЛЕННО]"
   }
  ]
 }

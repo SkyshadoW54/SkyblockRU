@@ -50,7 +50,7 @@ NICK = re.compile(r"\b(?=[A-Za-z0-9_]{3,16}\b)(?=[A-Za-z0-9_]*[0-9_])[A-Za-z_][A
 STRUCTURAL = [
     re.compile(r"^(RARE REWARD! )(\S+)( found )"),
     re.compile(r"^(RNG DROP! )(\S+)( just found )"),
-    re.compile(r"^(☠ )(\S+)( (?:was |fell |drowned|died|burned|starved|suffocated))"),
+    re.compile(r"^(☠ )(\S+)( (?:was |fell |drowned|died|burned|starved|suffocated|fainted))"),
     # ⚠️ ЧЕТЫРЕ ФОРМЫ ОДНОЙ СТРОКИ, и прежний шаблон знал одну. Замер 07.08
     # по раздаваемому 90-from-game.json: чужих ников там девять, а ловилось
     # ноль. Расходятся они мелочами, каждая из которых убивает совпадение:
@@ -78,6 +78,33 @@ STRUCTURAL = [
     # на свете и вдобавок раздаёт его имя.
     re.compile(r"^(You have sent a trade request to )(\S+?)(\.?$)"),
     re.compile(r"^()(\S+?)( has sent you a trade request)"),
+    # ⚠️ КОМАНДА С НИКОМ: «Players can find your auctions using the
+    # Auctions Browser or typing /ah KysKa9!». Ник стоит после команды, и
+    # признак «буквы с цифрой» его не берёт — у половины игроков ник просто
+    # слово. Нашлось 25.08 при ручном переводе абзацев: перевод с чужим
+    # именем уже лежал в корпусе и уехал бы в раздачу.
+    # ⚠️ У СТРОКИ это чинится обобщением («/ah {s}» полезен всем), а у АБЗАЦА
+    # нет: lookupParagraph знает только числа — такой абзац помечаем «нечего».
+    re.compile(r"^(.*typing /ah )(\S+?)(!?$)"),
+    # ⚠️ ЕЩЁ ОДИННАДЦАТЬ ФОРМ, найденных 26.08 замером по строкам от игроков:
+    # из 10 933 строк чата ник виден в 32, а обобщался НИ ОДИН. Каждая —
+    # шаблон СЕРВЕРА, где на этом месте стоит только ник игрока, поэтому
+    # обобщение безопасно: NPC не заходит в пати и не побеждает в гонке.
+    # Без них строки уходили в ПЛАТНУЮ покупку вместе с чужим именем —
+    # `pick_queue` звал работой три из них.
+    re.compile(r"^()(\S+)( launched a )"),
+    re.compile(r"^()(\S+)( is now ready!)"),
+    re.compile(r"^()(\S+)( has obtained )"),
+    re.compile(r"^()(\S+)( has spawned the )"),
+    re.compile(r"^()(\S+)( (?:joined|left) (?:SkyBlock|the party))"),
+    re.compile(r"^(» )(\S+)( is traveling to )"),
+    re.compile(r"^(☬ )(\S+)( (?:destroyed|placed) )"),
+    re.compile(r"^(DUNGEON BUFF! )(\S+)( found )"),
+    re.compile(r"^(Party Finder > )(\S+)( joined )"),
+    re.compile(r"^(Trade completed with )(\S+?)(!?$)"),
+    re.compile(r"^(\{n\}(?:st|nd|rd|th) Place - )(\S+)( - )"),
+    # второй ник в приглашении: первый уже обобщён модом
+    re.compile(r"^(.*\{s\} invited )(\S+)( to the party)"),
 ]
 
 # служебные слова, которые под признак попадают, но ником не являются
@@ -120,7 +147,16 @@ ERROR_CODE = re.compile(r"\(([A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+)\)")
 # ⚠️ ЧИСТИМ ТОЛЬКО ТО, ЧТО СОБРАНО В ЖИВОЙ ИГРЕ. В остальных словарях ник
 # внутри строки — часть ТЕКСТА HYPIXEL, а не данные игрока: реплики NPC
 # упоминают ютуберов, названия дисков — композитора. Такие записи законны.
-FROM_GAME = {"90-from-game.json", "96-paragraphs.json", "95-tooltips.json"}
+FROM_GAME = {"90-from-game.json", "96-paragraphs.json", "95-tooltips.json",
+             # ⚠️ РЕЖИМНЫЕ СЛОВАРИ ЗАВЕЛИ ПОЗЖЕ, а список не пополнили —
+             # и сторож печатал «чисто» при восьми чужих никах внутри.
+             # Это записанная семья: список наблюдаемых не ломается,
+             # он просто перестаёт покрывать то, что правят сегодня.
+             # Условие для списка одно: словарь собран из ЖИВОЙ ИГРЫ.
+             # `81-item-names` сюда НЕ берём — он из каталога сервера,
+             # и признак даёт там ложное («Mithril Drill SX-R326»).
+             "01-full-icons.json", "02-full-names.json",
+             "03-full-jargon.json", "04-full-strings.json"}
 
 # ⚠️ НО У ЭТОГО ПРАВИЛА ЕСТЬ ВТОРАЯ ПОЛОВИНА, и она вскрылась 16.08. Реплика
 # «[NPC] Goon: [MVP+] Confused_Goon has betrayed us all by removing Mayor
@@ -211,12 +247,23 @@ def structural_nick(text: str) -> str | None:
 
 
 def generalized(text: str) -> str:
-    """Строка с ником, заменённым на дырку «{s}»."""
+    """Строка с ником, заменённым на дырку «{s}».
+
+    ⚠️ NOT_NICK СПРАШИВАЕМ И ЗДЕСЬ. Признак структурный, то есть слепой
+    к написанию: «☠ You fainted from pressure.» подходит под форму смерти,
+    а «You» — это САМ ИГРОК, и обобщать его нельзя. `nicks_in` этот список
+    спрашивал, а `generalized` — нет, и расхождение вылезло 26.08 при
+    расширении форм: строка про свою смерть превращалась в чужую.
+    """
     for rule in STRUCTURAL:
         match = rule.match(text)
-        if match and "{s}" not in match.group(2):
-            start, end = match.span(2)
-            return text[:start] + "{s}" + text[end:]
+        name = match.group(2) if match else None
+        if not name or "{s}" in name:
+            continue
+        if name.lower() in NOT_NICK:
+            continue
+        start, end = match.span(2)
+        return text[:start] + "{s}" + text[end:]
     return text
 
 
@@ -247,6 +294,31 @@ def nicks_in(text: str, known: set[str]) -> set[str]:
             continue
         out.add(word)
     return out
+
+
+def safe_key(line: str, translated: str, known: set[str]) -> str | None:
+    """Ключ для словаря из ЖИВОЙ строки — обобщённый и без чужого ника.
+
+    ⚠️ ЗАЧЕМ ОДНА ФУНКЦИЯ НА ВСЕХ. Режимные генераторы (`gen_full_names`,
+    `gen_full_icons`, `gen_full_jargon`) строят точную запись ИЗ СТРОКИ ДАМПА,
+    то есть из того, что игрок реально видел. А видел он и чужие ники:
+    «☠ Omega_Dynasty was killed by Old Wolf.» Перевод при этом пришёл ПРАВИЛОМ
+    и годится всем, а точная запись замораживает его на одном человеке —
+    совпадения не будет ни у кого, зато чужое имя уедет в раздачу.
+
+    Чиним ОБОБЩЕНИЕМ, а не пропуском (записанное правило проекта): обобщённая
+    запись работает у всех и никого не называет. Не обобщилось — не берём.
+
+    Возвращает ключ либо None, если строку брать нельзя.
+    """
+    key = generalized(line)
+    if nicks_in(key, known):
+        return None
+    # дырок должно быть поровну: `fillNumbers` подставляет их ПО ПОРЯДКУ,
+    # и лишняя дырка в ключе получила бы чужое значение
+    if any(key.count(hole) != translated.count(hole) for hole in ("{s}", "{n}")):
+        return None
+    return key
 
 
 def scan_pack(path: Path, known: set[str]) -> list[tuple[str, str, set[str]]]:

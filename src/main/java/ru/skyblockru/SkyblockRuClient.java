@@ -155,6 +155,9 @@ public class SkyblockRuClient implements ClientModInitializer {
 		// Проверка — сравнение двух строк, поэтому её не жалко делать часто;
 		// перезагрузка идёт ТОЛЬКО когда язык действительно другой.
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			// ⚠️ Разбор собранного — НЕ В КАДРЕ. Он вдвое дороже самого
+			// перевода и игроку не нужен вовсе (см. UnknownStrings.PENDING).
+			UnknownStrings.drainPending();
 			if (++languageTick < LANGUAGE_CHECK_TICKS) {
 				return;
 			}

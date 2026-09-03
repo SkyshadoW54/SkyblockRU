@@ -83,6 +83,23 @@ public final class TranslationPack {
 	public String about = "";
 
 	/**
+	 * Группа словарей, которые включаются ОДНОЙ командой. Задаётся полем
+	 * {@code "group": "full"}; пусто — словарь сам по себе.
+	 *
+	 * <p>Зачем. Режим «переведено всё» — это не один словарь, а несколько:
+	 * названия предметов, имена NPC, локации, зачарования, характеристики.
+	 * Заставлять игрока включать их поштучно значит требовать от него знать,
+	 * чем они отличаются, — а это ровно та ошибка, которую проект уже делал
+	 * с форматами раздачи: инструкция дешевле выбора. Поэтому команда одна,
+	 * а сколько за ней файлов — его не касается.
+	 *
+	 * <p>⚠️ Группа НЕ отменяет поштучный переключатель: {@code /skyblockru pack
+	 * <id> on|off} по-прежнему работает и лежит в ветке разработчика. Группа
+	 * просто ставит выбор сразу всем своим словарям.
+	 */
+	public String group = "";
+
+	/**
 	 * Тождественная запись («Immolate» -> «Immolate») здесь ОСОЗНАННА.
 	 *
 	 * <p>Обычно такая запись бесполезна: движок и так оставит строку как есть,
@@ -133,11 +150,58 @@ public final class TranslationPack {
 	 * обрывок «each.» у разных предметов продолжает разные фразы. Здесь можно
 	 * задать перевод отдельно для предмета — он побеждает общий.
 	 */
+	/**
+	 * Формы перековок: английское написание → четыре рода
+	 * ({@code [м, ж, с, мн]}), как их подставляет {@link Reforge}.
+	 *
+	 * <p>Четыре формы, а не одна, потому что префикс по-русски согласуется
+	 * с названием: «Удачлив<b>ая</b> кирка», но «Удачлив<b>ый</b> меч».
+	 * Род машинно из английского не выводится — это записанное решение
+	 * проекта, тем же способом устроены редкости ({@code gen_rarity}).
+	 */
+	public final Map<String, String[]> reforges = new HashMap<>();
+
+	/**
+	 * Исключения рода: слово названия → {@code m|f|n|p}.
+	 *
+	 * <p>Нужны там, где окончание рода не выдаёт: «дрель» женского рода,
+	 * «трюфель» мужского. Список явный и короткий — перечислены только те
+	 * слова, где мужской род по умолчанию неверен.
+	 */
+	public final Map<String, String> genders = new HashMap<>();
+
 	public final Map<String, Map<String, String>> byItem = new HashMap<>();
 
 	private TranslationPack(String id, int priority) {
 		this.id = id;
 		this.priority = priority;
+	}
+
+	/**
+	 * Включён ли необязательный словарь.
+	 *
+	 * <p>Чистое решение: ни конфига, ни Minecraft — поэтому его гоняет
+	 * {@code check_full_mode.py} настоящей Java, без запуска игры.
+	 *
+	 * <p>⚠️ ПОРЯДОК ЗДЕСЬ И ЕСТЬ СМЫСЛ. Поштучный выбор сильнее группы:
+	 * выключил словарь руками — он останется выключенным, сколько ни включай
+	 * режим. А вот отсутствие записи о словаре НЕ значит «выключен»: если
+	 * включена его группа, работает группа. Пока это было наоборот, добавленный
+	 * в режим словарь оставался выключенным у всех, кто режим уже включил, —
+	 * молча, до переключения команды туда-обратно.
+	 *
+	 * @param own    выбор игрока по этому словарю либо {@code null}
+	 * @param group  состояние его группы либо {@code null}
+	 * @param byDefault умолчание самого словаря
+	 */
+	public static boolean enabledBy(Boolean own, Boolean group, boolean byDefault) {
+		if (own != null) {
+			return own;
+		}
+		if (group != null) {
+			return group;
+		}
+		return byDefault;
 	}
 
 	public int size() {
@@ -158,6 +222,10 @@ public final class TranslationPack {
 		if (json.has("about")) {
 			String about = asString(json.get("about"));
 			pack.about = about == null ? "" : about;
+		}
+		if (json.has("group")) {
+			String group = asString(json.get("group"));
+			pack.group = group == null ? "" : group;
 		}
 		// ⚠️ Поле принимает ДВА вида: true на весь файл либо СПИСОК ключей.
 		// Список нужен обычным словарям, где тождественных записей единицы:
@@ -213,6 +281,39 @@ public final class TranslationPack {
 				if (!lines.isEmpty()) {
 					pack.byItem.put(itemEntry.getKey(), lines);
 				}
+			}
+		}
+
+		if (json.has("genders") && json.get("genders").isJsonObject()) {
+			for (Map.Entry<String, JsonElement> entry
+					: json.getAsJsonObject("genders").entrySet()) {
+				String value = asString(entry.getValue());
+				if (value != null && !value.isBlank()) {
+					pack.genders.put(entry.getKey(), value);
+				}
+			}
+		}
+
+		if (json.has("reforges") && json.get("reforges").isJsonObject()) {
+			for (Map.Entry<String, JsonElement> entry
+					: json.getAsJsonObject("reforges").entrySet()) {
+				if (!entry.getValue().isJsonArray()) {
+					problems.add("reforges \"" + entry.getKey() + "\": ждали четыре формы");
+					continue;
+				}
+				var array = entry.getValue().getAsJsonArray();
+				if (array.size() != 4) {
+					// ⚠️ Молчаливый пропуск тут недопустим: неполный набор форм
+					// значит, что род однажды не совпадёт, а увидит это игрок.
+					problems.add("reforges \"" + entry.getKey() + "\": форм "
+							+ array.size() + ", а нужно 4 (м, ж, с, мн)");
+					continue;
+				}
+				String[] forms = new String[4];
+				for (int i = 0; i < 4; i++) {
+					forms[i] = array.get(i).getAsString();
+				}
+				pack.reforges.put(entry.getKey(), forms);
 			}
 		}
 

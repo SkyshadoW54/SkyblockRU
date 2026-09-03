@@ -43,6 +43,14 @@ import argparse
 import json
 from pathlib import Path
 
+import sys
+# ⚠️ Консоль Windows — cp1251, и `print` со значком «⚠️» роняет скрипт
+# на первой же находке. Записанная грабля проекта: инструмент, падающий
+# на печати, ВРЁТ О СВОЕЙ РАБОТЕ — вывод оборван, а выглядит как поломка
+# того, что он проверял. У сторожа это хуже вдвое: он молчит, пока всё
+# хорошо, и ломается ровно тогда, когда нашёл беду.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = Path(__file__).resolve().parent.parent
 LANG = "ru_ru"
 OUT = ROOT / "src" / "main" / "resources" / "assets" / "skyblockru" / "packs" / LANG / "48-bazaar.json"

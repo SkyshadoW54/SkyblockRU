@@ -268,6 +268,29 @@ def glossary() -> str:
     return "ГЛОССАРИЙ:\n" + "\n".join(f"{k} = {v}" for k, v in sorted(terms.items()))
 
 
+# Письменности, которых у Hypixel в значках не бывает: их появление в переводе
+# значит промах переводчика, а не иконку.
+ALIEN_SCRIPTS = ("CJK", "HIRAGANA", "KATAKANA", "HANGUL", "ARABIC", "HEBREW",
+                 "THAI", "BENGALI", "TAMIL", "TELUGU", "KANNADA", "MALAYALAM")
+
+
+def foreign_script(russian: str, source: str) -> list[str]:
+    """Знаки чужой письменности, которых НЕ БЫЛО в оригинале."""
+    import unicodedata
+
+    bad = []
+    for ch in russian:
+        if ch in source:
+            continue
+        try:
+            name = unicodedata.name(ch)
+        except ValueError:
+            continue
+        if name.startswith(ALIEN_SCRIPTS):
+            bad.append(ch)
+    return bad
+
+
 def accept(para: dict, russian: str, guarded: set[str]) -> tuple[str | None, str]:
     """
     Проверяет перевод одного абзаца механически. Возвращает (перевод, причина).
@@ -315,6 +338,18 @@ def accept(para: dict, russian: str, guarded: set[str]) -> tuple[str | None, str
     if russian == source:
         # «переводить нечего» — записывать тождество в словарь незачем
         return None, "перевод совпал с оригиналом"
+
+    # ⚠️ ЧУЖАЯ ПИСЬМЕННОСТЬ. Записанная грабля проекта: иероглиф посреди
+    # русской фразы читается нормально, глаз скользит мимо, а на экране это
+    # мусор. Проверка стояла в ручном прогоне СТРОК (pick_queue) и не стояла
+    # в абзацах — наступил снова («сейчас活 активен»).
+    # ⚠️ Значки Hypixel из ЧУЖИХ АЛФАВИТОВ (армянская «ﬗ», сингальская «ථ»)
+    # законны: он берёт под иконки что угодно. Поэтому ловим только те
+    # письменности, которых в значках не бывает, и только если знака НЕТ
+    # в оригинале.
+    alien = foreign_script(russian, source)
+    if alien:
+        return None, "чужая письменность: " + " ".join(alien)
 
     # Дырок должно остаться столько же: мод подставляет числа по порядку,
     # и лишняя дырка получит пустоту, а недостающая потеряет число.

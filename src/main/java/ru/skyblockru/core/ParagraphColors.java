@@ -81,11 +81,43 @@ public final class ParagraphColors {
 			return false;
 		}
 		for (int i = 0; i < core.length(); i++) {
-			if (Character.isLetter(core.charAt(i))) {
+			char c = core.charAt(i);
+			if (Character.isLetter(c) && !isRoman(c) && !isMarkerLetter(c)) {
 				return false;
 			}
 		}
 		return true;
+	}
+
+	/**
+	 * Римская цифра заглавной буквой.
+	 *
+	 * <p>⚠️ ЗАЧЕМ. Значение подписи бывает ровно одной буквой: «Island tier: I»,
+	 * «Slayer V». Порог «короче двух знаков» отбрасывал его, и жёлтая единица
+	 * выходила серой — при том, что двузначная «II» красилась. Замер по живым
+	 * раскладкам: одиночными кусками стоят X (271), V (33), I (29), D (1).
+	 *
+	 * <p>⚠️ Признак УЗКИЙ — только заглавные и только римские. Разрешать любую
+	 * букву нельзя: одиночная «a» встречается 1881 раз, и это не текст,
+	 * а мерцающая обёртка Hypixel («§k» плюс буква рисуется звёздочкой).
+	 */
+	private static boolean isRoman(char c) {
+		return "IVXLCDM".indexOf(c) >= 0;
+	}
+
+	/**
+	 * Буква ЧУЖОГО алфавита — у Hypixel это значок, а не текст.
+	 *
+	 * <p>⚠️ Записанная грабля проекта: «Hypixel берёт под значки БУКВЫ чужих
+	 * алфавитов» — сингальская «ථ» у удочки, чамская «ꨃ», «ℏ» у тактик.
+	 * В живых раскладках такие куски стоят по одному символу, и порог длины
+	 * съедал их цвет так же, как цифры.
+	 */
+	private static boolean isMarkerLetter(char c) {
+		Character.UnicodeScript script = Character.UnicodeScript.of(c);
+		return script != Character.UnicodeScript.LATIN
+				&& script != Character.UnicodeScript.CYRILLIC
+				&& script != Character.UnicodeScript.COMMON;
 	}
 
 	/**

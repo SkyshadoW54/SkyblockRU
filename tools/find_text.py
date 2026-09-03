@@ -107,7 +107,13 @@ class Report:
 
 
 def pack_advice(path: Path, pack: dict) -> str:
-    comment = (pack.get("_comment") or "").strip()
+    # ⚠️ «_comment» бывает СПИСКОМ строк, а не строкой: у части словарей
+    # пояснение расписано по пунктам. Инструмент первой линии падал на этом
+    # целиком — записанная грабля про чужой формат поля, третье повторение.
+    raw = pack.get("_comment") or ""
+    if isinstance(raw, (list, tuple)):
+        raw = " ".join(str(x) for x in raw)
+    comment = str(raw).strip()
     if any(mark in comment.lower() for mark in AUTO_MARKS):
         first = comment.split(".")[0]
         return f"АВТОсловарь, править бесполезно. {first}"

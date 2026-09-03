@@ -143,6 +143,38 @@ public final class Telemetry {
 		return Integer.toHexString((source + "\0" + line).hashCode());
 	}
 
+	/**
+	 * Сколько блоков подсказок брать за одну отправку.
+	 *
+	 * <p>⚠️ Порция нужна: у нашего игрока накопилось 9711 блоков, и разом
+	 * это 3.3 МБ (657 КБ в gzip). Приёмник держит 2 МБ ТЕЛА, то есть влезло
+	 * бы, — но первый же пакет нового игрока упирался бы в предел, а отказ
+	 * там молчаливый для него и заметный только по логу. Порциями то же
+	 * доедет за несколько вечеров и без риска.
+	 */
+	private static final int BLOCKS_PER_SEND = 1200;
+
+	/** Что нового среди БЛОКОВ подсказок. */
+	private static List<String[]> freshBlocks() {
+		Set<String> already = sentSet();
+		List<String[]> out = new ArrayList<>();
+		for (String[] block : UnknownStrings.forTelemetryBlocks(BLOCKS_PER_SEND * 3,
+				line -> TelemetryFilter.worthSending(TextTranslator.SRC_ITEM_LORE, line))) {
+			if (already.contains(blockKey(block))) {
+				continue;
+			}
+			out.add(block);
+			if (out.size() >= BLOCKS_PER_SEND) {
+				break;
+			}
+		}
+		return out;
+	}
+
+	private static String blockKey(String[] block) {
+		return "b" + Integer.toHexString(String.join("\n", block).hashCode());
+	}
+
 	/** Отправить накопленное. Зовётся при выходе с сервера и при закрытии игры. */
 	/**
 	 * Отметиться при заходе В РЕЖИМ — «эта установка сегодня играла».
@@ -239,11 +271,12 @@ public final class Telemetry {
 
 	private static void run(String url) throws IOException, InterruptedException {
 		Map<String, List<String>> lines = fresh();
+		List<String[]> blocks = freshBlocks();
 		// ⚠️ ПУСТОЙ ПАКЕТ ТОЖЕ НУЖЕН, иначе «сколько человек играет сейчас»
 		// не посчитать вовсе: новые строки кончаются через несколько вечеров,
 		// и дальше активный игрок молчит — неотличимо от удалившего мод.
 		// Поэтому раз в сутки уходит пинг: версия мода, версия игры, метка.
-		boolean ping = lines.isEmpty();
+		boolean ping = lines.isEmpty() && blocks.isEmpty();
 		if (ping && System.currentTimeMillis() - lastPing < PING_EVERY) {
 			return;
 		}
@@ -264,6 +297,22 @@ public final class Telemetry {
 		}
 		payload.add("lines", sources);
 
+		// ⚠️ БЛОКИ ПОДСКАЗОК — то, чего не хватало приёмнику. Строки порознь
+		// не дают собрать абзац: сервер режет описание по ширине окна, и без
+		// порядка склеить его нечем. В блоке порядок есть.
+		// Формат: первый элемент — имя предмета, дальше строки как они идут.
+		if (!blocks.isEmpty()) {
+			JsonArray packed = new JsonArray();
+			for (String[] block : blocks) {
+				JsonArray one = new JsonArray();
+				for (String line : block) {
+					one.add(line == null ? "" : line);
+				}
+				packed.add(one);
+			}
+			payload.add("blocks", packed);
+		}
+
 		byte[] body = gzip(payload.toString().getBytes(StandardCharsets.UTF_8));
 		HttpRequest request = HttpRequest.newBuilder(URI.create(url))
 				.timeout(TIMEOUT)
@@ -280,11 +329,13 @@ public final class Telemetry {
 		// ⚠️ Помечаем отправленным ТОЛЬКО после успеха. Иначе потерянный
 		// по дороге пакет исчез бы навсегда: строки уже «отправлены».
 		remember(lines);
+		rememberBlocks(blocks);
 		lastPing = System.currentTimeMillis();
 		if (ping) {
 			LOG.info("[skyblockru] telemetry: ping ({} bytes)", body.length);
 		} else {
-			LOG.info("[skyblockru] telemetry: sent {} lines ({} bytes)", count, body.length);
+			LOG.info("[skyblockru] telemetry: sent {} lines, {} blocks ({} bytes)",
+					count, blocks.size(), body.length);
 		}
 	}
 
@@ -308,6 +359,33 @@ public final class Telemetry {
 					java.nio.file.StandardOpenOption.APPEND);
 		} catch (IOException exception) {
 			Diagnostics.error("telemetry: writing sent list", exception);
+		}
+	}
+
+	/** То же для блоков: помним отправленное, чтобы не слать одно дважды. */
+	private static synchronized void rememberBlocks(List<String[]> blocks) {
+		if (blocks.isEmpty()) {
+			return;
+		}
+		Set<String> already = sentSet();
+		List<String> added = new ArrayList<>();
+		for (String[] block : blocks) {
+			String key = blockKey(block);
+			if (already.add(key)) {
+				added.add(key);
+			}
+		}
+		if (added.isEmpty()) {
+			return;
+		}
+		try {
+			Path path = sentFile();
+			Files.createDirectories(path.getParent());
+			Files.write(path, added, StandardCharsets.UTF_8,
+					java.nio.file.StandardOpenOption.CREATE,
+					java.nio.file.StandardOpenOption.APPEND);
+		} catch (IOException exception) {
+			Diagnostics.error("telemetry: writing sent blocks", exception);
 		}
 	}
 

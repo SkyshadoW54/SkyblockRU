@@ -32,6 +32,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "data" / "work" / "from_players.json"
+BLOCKS_OUT = ROOT / "data" / "work" / "blocks_from_players.json"
 
 # ⚠️ Адрес сервера НЕ ЗАШИВАЕМ: репозиторий публичный, а это боевая машина.
 # Задаётся переменной окружения SKYBLOCKRU_SERVER (например `root@1.2.3.4`
@@ -85,7 +86,7 @@ FOREIGN = re.compile(
     r"|ModMenu|Sodium|Lithium|FerriteCore|Bazaar\s?Utils"
     # ⚠️ найдены 13.08 ГЛАЗАМИ при ручном переводе очереди, а не сторожем:
     # их строки спокойно доехали до списка к покупке
-    r"|RRV|MarketGuard|btrbz|BetterBazaar)\b"
+    r"|RRV|MarketGuard|btrbz|BetterBazaar|ScamScreener)\b"
     # сайт-помощник: строку про него пишет мод, а не Hypixel
     r"|\beliteskyblock\.com\b"
     # технический мусор чужого мода: стектрейс, исключение, отчёт об ошибке
@@ -301,9 +302,47 @@ def main() -> int:
         for source, row in lonely[:args.show]:
             print(f"      [{source}] {row[:80]}")
 
+    # ⚠️ БЛОКИ ПОДСКАЗОК — то, ради чего затевалась правка 17.08. Строки
+    # порознь не дают собрать абзац: сервер режет описание по ширине окна,
+    # и без порядка склеить его нечем. Замер того дня: 13326 присланных строк
+    # были обрывками с неизвестной склейкой — больше половины очереди, и среди
+    # них все описания кнопок меню, которые игрок видел английскими.
+    #
+    # ⚠️ Порог тут ОДИН пакет, в отличие от строк. У блока структура, а не
+    # текст: выдумать его сложнее, сервер уже отсеял мусор и личное, а редкий
+    # предмет по природе приходит от одного человека — порог 3 выбросил бы
+    # ровно то, чего у нас нет. Строки из блоков всё равно проходят обычные
+    # фильтры покупки, когда корпус превращается в очередь.
+    blocks: dict[str, list[str]] = {}
+    for packet in packets:
+        for block in packet.get("blocks") or []:
+            if not isinstance(block, list) or len(block) < 3:
+                continue
+            rows = [x if isinstance(x, str) else "" for x in block]
+            if any(foreign_mod(x) for x in rows):
+                continue
+            key = "\n".join(rows)
+            blocks.setdefault(key, rows)
+    print(f"\nблоков подсказок: {len(blocks)}")
+
     if not args.merge:
         print("\nсухой прогон. Записать: --merge")
         return 0
+
+    if blocks:
+        # формат тот же, что у dump/tooltips.json, — чтобы make_paragraphs
+        # читал его тем же кодом, без особого случая
+        packed = [{"item": rows[0], "lines": rows[1:], "ru": []}
+                  for rows in blocks.values()]
+        BLOCKS_OUT.parent.mkdir(parents=True, exist_ok=True)
+        BLOCKS_OUT.write_text(json.dumps(
+            {"id": "tooltips_from_players",
+             "_comment": "Блоки подсказок, присланные игроками. Формат как "
+                         "у dump/tooltips.json: сюда смотрит make_paragraphs "
+                         "через --live.",
+             "tooltips": packed}, ensure_ascii=False, indent=1),
+            encoding="utf-8")
+        print(f"записано: {BLOCKS_OUT}  ({len(packed)} блоков)")
 
     # ⚠️ Пишем СО СЧЁТЧИКОМ установок, а не голым списком: у дампа формат
     # такой же ({строка: сколько раз видели}), и очередь читает оба файла
@@ -319,6 +358,10 @@ def main() -> int:
     OUT.write_text(json.dumps(payload, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"\nзаписано: {OUT}  ({total_keep} строк)")
     print("дальше — обычным путём: make_queue.py -> pick_queue.py")
+    if blocks:
+        print("а блоки — в корпус абзацев:")
+        print("   python tools/make_paragraphs.py data/work/lore_tooltips.json"
+              " --live <дамп>/tooltips.json data/work/blocks_from_players.json")
     return 0
 
 

@@ -140,8 +140,65 @@ public final class RuCommand {
 										telemetry(context.getSource(), true)))
 								.then(literal("off").executes(context ->
 										telemetry(context.getSource(), false))))
+						// ПОЛНЫЙ ПЕРЕВОД — одна команда на группу словарей.
+						// Выключен по умолчанию: имена предметов, NPC и локаций
+						// нужны английскими тем, кто ищет вещи на аукционе
+						// и читает гайды. Кому важнее русский экран — включает.
+						.then(literal("full")
+								.executes(context -> full(context.getSource(), null))
+								.then(literal("on").executes(context ->
+										full(context.getSource(), true)))
+								.then(literal("off").executes(context ->
+										full(context.getSource(), false))))
 						.then(literal("on").executes(context -> toggle(context.getSource(), true)))
 						.then(literal("off").executes(context -> toggle(context.getSource(), false)));
+	}
+
+	/**
+	 * Показать или переключить ПОЛНЫЙ перевод.
+	 *
+	 * <p>За командой стоит группа словарей, а не один файл: названия предметов,
+	 * имена NPC и локаций, зачарования, характеристики. Игроку про это знать
+	 * незачем — выбор из пяти переключателей он всё равно сделать не сможет,
+	 * не зная, чем они отличаются.
+	 *
+	 * @param on {@code null} — только показать состояние
+	 */
+	private static int full(FabricClientCommandSource source, Boolean on) {
+		java.util.Set<String> ids = Translator.packsOfGroup(Translator.FULL_GROUP);
+		// ⚠️ Группа бывает ПУСТОЙ — словари могли не попасть в jar или в
+		// index.json. Молчать тут нельзя: команда есть, а действия нет,
+		// и человек решит, что мод сломан.
+		if (ids.isEmpty()) {
+			reply(source, ChatFormatting.YELLOW, Component.translatable("skyblockru.full.none"));
+			return 0;
+		}
+		if (on != null) {
+			// ⚠️ Запоминаем состояние ГРУППЫ, а не список её файлов. Пока выбор
+			// хранился поимённо, добавленный позже словарь оставался выключенным
+			// у всех, кто режим уже включил: в конфиге про него записи нет,
+			// а умолчание «выкл». Понять это можно было только переключив
+			// команду туда-обратно — что игрок и обнаружил на экране.
+			Translator.setGroup(Translator.FULL_GROUP, on);
+			RuConfig.save();
+			Translator.reload(SkyblockRuClient.packsDir());
+			TextTranslator.clearCache();
+		}
+		boolean now = Translator.groupEnabled(Translator.FULL_GROUP);
+		reply(source, now ? ChatFormatting.GREEN : ChatFormatting.GRAY,
+				Component.translatable(now ? "skyblockru.full.on" : "skyblockru.full.off"));
+		if (now) {
+			// ⚠️ Сказать про клавишу ОБЯЗАТЕЛЬНО. Включив полный перевод,
+			// игрок теряет английские названия, по которым ищут на аукционе
+			// и в гайдах, — и без этой строки решит, что мод сломал ему поиск.
+			// Имя клавиши берём текущее: её можно переназначить в настройках.
+			reply(source, ChatFormatting.YELLOW, Component.translatable("skyblockru.full.warn",
+					ru.skyblockru.core.Keys.label(ru.skyblockru.core.Keys.ORIGINAL)));
+		}
+		if (on == null) {
+			reply(source, ChatFormatting.GRAY, Component.translatable("skyblockru.full.howto"));
+		}
+		return 1;
 	}
 
 	/**
@@ -321,6 +378,17 @@ public final class RuCommand {
 		// переназначить её в «Настройки → Управление».
 		reply(source, ChatFormatting.GRAY, Component.translatable("skyblockru.stats.keys",
 				ru.skyblockru.core.Keys.label(ru.skyblockru.core.Keys.ORIGINAL)));
+
+		// ⚠️ Про полный перевод говорим ЗДЕСЬ по тому же правилу, что про
+		// клавиши: возможность, о которой не сказано, — невидимая. Строку
+		// показываем, только если группа вообще есть: обещать команду,
+		// которой нечего включать, хуже, чем промолчать.
+		if (!Translator.packsOfGroup(Translator.FULL_GROUP).isEmpty()) {
+			boolean full = Translator.groupEnabled(Translator.FULL_GROUP);
+			reply(source, ChatFormatting.GRAY, Component.translatable("skyblockru.stats.full",
+					Component.translatable(full
+							? "skyblockru.word.on" : "skyblockru.word.off")));
+		}
 
 		reply(source, ChatFormatting.GRAY, Component.translatable("skyblockru.stats.packs",
 				Translator.packCount(), Translator.exactCount(),

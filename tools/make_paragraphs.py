@@ -87,8 +87,72 @@ def has_foreign_hole(text: str) -> bool:
     return any(hole not in ("{n}", "{s}") for hole in HOLE.findall(text))
 
 
+# ⚠️ СТРОКА, КОТОРАЯ ЯВНО ПРОДОЛЖАЕТСЯ, ХАРАКТЕРИСТИКОЙ НЕ БЫВАЕТ.
+#
+# Перенос режет фразу по ширине окна, и середина предложения запросто
+# начинается с «+{n}»: «...Grants +12 Farming Fortune and / +6 Bonus Pest
+# Chance, which / increases your chance...». Шаблон видел «+{n}» в начале,
+# объявлял строку таблицей — и ВЕСЬ КУСОК не попадал в корпус.
+#
+# Цена была не в потерянном абзаце, а в СМЕСИ ЯЗЫКОВ на экране: раз абзаца
+# нет, мод переводит построчно, первая строка находится («Даёт +12 Farming
+# Fortune и»), остальные нет. Игрок прислал скриншотом ровно это.
+#
+# Признак тот же, что уже записан в проекте для хвостов переноса: фраза
+# кончается СЛУЖЕБНЫМ словом или запятой. Замер по 29 429 строкам, которые
+# шаблон зовёт характеристиками: продолжаются 91 (0.3%), и все до одной —
+# настоящая середина предложения.
+CONTINUES = re.compile(
+    r"(?:,|\b(?:and|which|that|for|per|to|of|in|on|when|while|the|a|an|by|with|from))\s*$",
+    re.IGNORECASE)
+
+
+# ⚠️ СТРОКА «+{n} … ПРЕДЛОГ … .» — ПРОДОЛЖЕНИЕ ФРАЗЫ, А НЕ ТАБЛИЦА (04.09).
+#
+# Предыдущий признак ловил только КОНЕЦ строки (служебное слово или запятая).
+# А перенос режет и так: «Grants +86☘ Farming Fortune and / +30✿ Overbloom on
+# ൠ Pests.» — вторая строка начинается с «+{n}», кончается точкой, и шаблон
+# звал её характеристикой. Весь кусок не попадал в корпус, мод переводил
+# построчно, и игрок видел «+30.1✿ Overbloom on Pests» — смесь языков.
+# Прислано скриншотом 03.09 (питомец Hedgehog).
+#
+# Признак: строка с «+{n}» в начале, служебным словом ПОСРЕДИ и знаком конца
+# предложения в хвосте. У таблицы характеристик посреди строки предлогов
+# не бывает. Замер по 157 тысячам живых подсказок: признак отпускает
+# 30 разных кусков, все 30 — проза («Each stack grants +5⚡ Swing Range,
+# +3❁ Ferocity and +5% Damage.», «Deposit it in any Chum Bucket to earn
+# +100 Coins and +25 Fishing XP!»), настоящих таблиц среди них ноль.
+PROSE_TAIL = re.compile(r"^[+\-]\s*\{n\}.*\S\s+(?:on|against|for|per|to|in|with|from|when"
+                        r"|while|by|and|of)\s+\S.*[.!]$")
+
+
 def is_structural(line: str) -> bool:
-    return bool(STRUCTURAL.match(line.strip()))
+    text = line.strip()
+    if CONTINUES.search(text):
+        return False
+    if PROSE_TAIL.match(text):
+        return False
+    return bool(STRUCTURAL.match(text))
+
+
+# ⚠️ ХВОСТ ЧУЖИХ МОДОВ В БЛОКЕ (04.09). REI/EMI дописывают в конец подсказки
+# «Minecraft», клиент при F3+H — «minecraft:player_head» и число компонентов,
+# Skyblocker — «skyblock:JAWBREAKER». Мод с 0.2.30 отрезает их ПО ЛОРУ
+# предмета (core/TooltipTail) до сбора, и в новых блоках их нет. А в старых
+# блоках от игроков они лежат (312 штук), и ключ «… Right-click to convert
+# to an item! Minecraft» мод не спросит никогда. Здесь лора нет — только
+# текст, поэтому режем по ФОРМЕ, и только то, что видели в данных.
+FOREIGN_TAIL = re.compile(
+    r"^(?:Minecraft|minecraft:[a-z0-9_/.]+|skyblock:[A-Za-z0-9_:.-]+"
+    r"|(?:\{n\}|\d+) (?:компонент(?:ов|а)?|components?)|NBT: (?:\{n\}|\d+) tag\(s\))$")
+
+
+def strip_foreign_tail(lines: list[str]) -> list[str]:
+    """Снимает с конца блока строки чужих модов — см. FOREIGN_TAIL."""
+    out = list(lines)
+    while out and FOREIGN_TAIL.match(out[-1].strip()):
+        out.pop()
+    return out
 
 
 # «Sharpness VII», «Bane of Arthropods VII», «Ultimate Wise V» — название и римская цифра
@@ -190,7 +254,7 @@ def without_name(lines: list[str], item: str) -> list[str]:
 def paragraphs_of(block: dict) -> tuple[list[dict], int]:
     """Абзацы одного блока и число кусков, отброшенных из-за характеристик."""
     out, skipped = [], 0
-    for run in runs_of(without_name(block["lines"], block.get("item", ""))):
+    for run in runs_of(without_name(strip_foreign_tail(block["lines"]), block.get("item", ""))):
         if any(is_structural(line) for line in run):
             # Мод склеит характеристику с прозой, и переложить такой кусок
             # значило бы размазать таблицу в текст. Честно не берём.
@@ -265,6 +329,18 @@ def main() -> int:
         except (json.JSONDecodeError, OSError, KeyError):
             print("! старый корпус не прочитался — переводы перенести не смогу")
 
+    # ⚠️ Абзац с полем `source` создан НАМЕРЕННО (варианты со значками сервера,
+    # лор аукциона, возвращённое из словаря) — в источниках его нет и быть
+    # не может. Пересборка молча выбрасывала такие записи: это пятое
+    # повторение потери «корпус отстал от словаря». Переносим целиком.
+    deliberate: list[dict] = []
+    if out.exists():
+        try:
+            deliberate = [p for p in json.loads(out.read_text(encoding="utf-8")).get("paragraphs") or []
+                          if p.get("source") and p.get("text")]
+        except (json.JSONDecodeError, OSError, KeyError):
+            deliberate = []
+
     seen: dict[str, dict] = {}
     skipped_total = 0
     blocks_total = 0
@@ -297,9 +373,17 @@ def main() -> int:
                 if is_live:
                     entry["live"] += 1
 
+    carried_deliberate = 0
+    for para in deliberate:
+        if para["text"] not in seen:
+            seen[para["text"]] = para
+            carried_deliberate += 1
+    if carried_deliberate:
+        print(f"перенесено абзацев с полем source (сделаны намеренно): {carried_deliberate}")
+
     # Сперва то, что игрок видел своими глазами, потом всё остальное по частоте.
     # На этом порядке держится --limit у переводчика: деньги идут сверху списка.
-    ordered = sorted(seen.values(), key=lambda p: (-p["live"], -p["count"]))
+    ordered = sorted(seen.values(), key=lambda p: (-p.get("live", 0), -p.get("count", 0)))
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps({"paragraphs": ordered}, ensure_ascii=False, indent=1),
                    encoding="utf-8")

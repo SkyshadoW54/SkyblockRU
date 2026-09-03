@@ -43,6 +43,28 @@ TRANSLATIONS = [
     "enchants.json",
     "election_perks.json",
     "enchant_articles.json",
+    # ⚠️⚠️ ЗАГОТОВКИ РЕЖИМА FULL — их тут НЕ БЫЛО, а это тысячи переводов
+    # руками. Замер 03.09: копия несла 7 файлов из 15, и вне её остались
+    # 2601 режимный абзац, 7313 имён предметов, 2009 строк режима и 9300
+    # реплик NPC. Записанная грабля этого же файла — «список ИМЕНОВАННЫЙ,
+    # появился новый файл с переводами — впиши руками» — и она сработала:
+    # заготовки режима завели в августе, а в список не внесли.
+    "full_strings.json",         # источник 04-full-strings (gen_full_strings)
+    "full_paragraphs_ru.json",   # режимные абзацы (gen_full_paragraphs)
+    "item_names_ru.json",        # имена предметов (gen_item_names)
+    "npc_places_ru.json",        # NPC и локации (gen_npc_places)
+    "mob_names_ru.json",         # имена существ (gen_mob_names)
+    "npc_dialogues.json",        # реплики NPC (merge_dialogues)
+    # ⚠️ Эти два собираются `export_pack`, и ИМЯ ФАЙЛА идёт ему АРГУМЕНТОМ —
+    # поэтому поиск «кто читает файл» по коду их не находит. Признак искать
+    # незачем, список именной: смотреть надо вызовы export_pack.
+    "buttons.json",              # 31-buttons
+    "nametags.json",             # 29-nametags
+    # ⚠️ Эти два нашлись только взглядом на `data/work/*_ru.json`: признак
+    # «кто читает файл» их пропустил. В самом `reforges_ru.json` написано
+    # прямым текстом «ИСТОЧНИК ПРАВДЫ — этот файл».
+    "reforges_ru.json",          # 144 перековки в 4 формах рода (gen_reforges)
+    "_jargon_ru.json",           # русские формы жаргона характеристик
 ]
 
 

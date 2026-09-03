@@ -29,7 +29,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from make_paragraphs import MIN_LINES, is_structural, without_name  # noqa: E402
+from make_paragraphs import MIN_LINES, is_structural, strip_foreign_tail, without_name  # noqa: E402
 
 CORPUS = ROOT / "data" / "work" / "paragraphs.json"
 
@@ -86,6 +86,12 @@ SOURCES = [
     ROOT / "data" / "work" / "lore_tooltips.json",
     Path("C:/MultiMC/instances/26.2/.minecraft/config/skyblockru/dump/tooltips.json"),
     ROOT / "data" / "work" / "tooltips.json",
+    # ⚠️ ТРЕТИЙ ИСТОЧНИК, появившийся 22.08: блоки подсказок ОТ ИГРОКОВ.
+    # Мод шлёт их с 0.2.20, и это ровно то, ради чего механику заводили —
+    # без них абзац не собрать, а строки приходят обрывками. Забыть его
+    # здесь значит объявить недостижимыми тысячи законных абзацев и
+    # заблокировать круг сборки ложной тревогой.
+    ROOT / "data" / "work" / "blocks_from_players.json",
 ]
 
 # Кусок исходника Paragraphs.java, по которому писались копии ниже.
@@ -216,7 +222,9 @@ def main() -> int:
             continue
         used.append(f"{source.name} ({len(blocks)})")
         for block in blocks:
-            lines = without_name(block["lines"], block.get("item", ""))
+            # хвост чужих модов мод отрезает по лору ДО runs (TooltipTail);
+            # здесь лора нет — режем по форме, как make_paragraphs
+            lines = without_name(strip_foreign_tail(block["lines"]), block.get("item", ""))
             for run in java_runs(lines):
                 mod_keys.add(java_key(lines, run))
     mod_keys |= from_auction(used)

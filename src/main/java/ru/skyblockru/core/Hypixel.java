@@ -38,6 +38,29 @@ public final class Hypixel {
 	private static volatile String sidebarTitle = "";
 
 	/**
+	 * Когда панель рисовалась в последний раз. Ноль — не рисовалась ни разу.
+	 *
+	 * <p><b>Зачем время у признака.</b> Панель отрисовывается каждый кадр, пока
+	 * она есть; при переходе на другой сервер Hypixel она пропадает на несколько
+	 * секунд, а поле {@link #sidebarTitle} продолжает держать ПРЕЖНИЙ режим —
+	 * лоббийный. В это окно мод считал, что мы не в SkyBlock, и молчал: первые
+	 * сообщения после входа (проценты банка, «You are playing on profile»,
+	 * «Welcome to Hypixel SkyBlock!») выходили английскими, причём даже не
+	 * попадая в дамп — сбор стоит ниже тех же ворот. Замер по логам: 64 строки
+	 * с готовым переводом на 86 входов.
+	 *
+	 * <p>Отсюда признак: панели давно нет — значит запомненный режим устарел,
+	 * и мы его НЕ ЗНАЕМ. А незнание в этом моде перевод не выключает.
+	 */
+	private static volatile long sidebarSeenAt;
+
+	/**
+	 * Сколько панель считается свежей. При 60 кадрах в секунду секунда без
+	 * панели — это уже «панели нет», а не пропущенный кадр.
+	 */
+	static final long SIDEBAR_FRESH_MS = 1_000;
+
+	/**
 	 * Что сказал ОФИЦИАЛЬНЫЙ Hypixel Mod API: {@code null} — не сказал ничего.
 	 *
 	 * <p>Три состояния, а не два, и это важно. Заголовок панели — догадка по
@@ -73,6 +96,9 @@ public final class Hypixel {
 			return;
 		}
 		String plain = LegacyText.strip(title.getString()).trim();
+		// ⚠️ Время ставим ВСЕГДА, а не только при смене заголовка: нам важно
+		// «панель сейчас рисуется», а она обычно рисуется с тем же текстом.
+		sidebarSeenAt = System.currentTimeMillis();
 		if (!plain.equals(sidebarTitle)) {
 			sidebarTitle = plain;
 		}
@@ -81,6 +107,7 @@ public final class Hypixel {
 	/** Сброс при выходе с сервера: иначе в лобби мы бы помнили старый режим. */
 	public static void forgetMode() {
 		sidebarTitle = "";
+		sidebarSeenAt = 0;
 		apiSkyBlock = null;
 		apiServerType = "";
 	}
@@ -157,15 +184,44 @@ public final class Hypixel {
 		if (!config.onlySkyBlock) {
 			return true;
 		}
-		// ⚠️ Режим ещё НЕ ИЗВЕСТЕН (панель не отрисовалась, признак не пришёл) —
-		// работаем как раньше, а не молчим. Сегодня перевод уже умирал целиком
-		// из-за проверки, которая тихо вернула false: в игре ни ошибки, ни
-		// предупреждения, просто английский текст. Незнание не должно
-		// выключать мод — выключать его вправе только явное «мы в лобби».
-		if (apiSkyBlock == null && sidebarTitle.isEmpty()) {
+		return mayTranslate(apiSkyBlock, sidebarTitle,
+				sidebarSeenAt == 0 ? Long.MAX_VALUE
+						: System.currentTimeMillis() - sidebarSeenAt);
+	}
+
+	/**
+	 * Переводить ли, когда включено «только SkyBlock». Чистое решение: ни
+	 * Minecraft, ни времени внутри — поэтому его гоняет {@code check_mode_gate.py}
+	 * настоящей Java без игры.
+	 *
+	 * <p>⚠️ ЭТО ДРУГОЙ ВОПРОС, ЧЕМ {@link #isSkyBlock()}, и путать их дорого.
+	 * Там спрашивают «точно ли мы в SkyBlock» — и ответ нужен строгий: по нему
+	 * шлют приветствие про бету, и сказать его в лобби хуже, чем промолчать.
+	 * Здесь спрашивают «можно ли переводить», и цена ошибок несимметрична:
+	 * лишний перевод в лобби — это несколько строк в дампе, а недостача —
+	 * английский текст у игрока, которого он не может объяснить.
+	 *
+	 * @param fromApi      ответ Hypixel Mod API либо {@code null}, если он молчал
+	 * @param title        заголовок панели, каким его прислал сервер
+	 * @param sidebarAgeMs сколько прошло с последней отрисовки панели
+	 */
+	static boolean mayTranslate(Boolean fromApi, String title, long sidebarAgeMs) {
+		// Официальный ответ сервера — данные, а не догадка по тексту. Он не
+		// протухает по времени: его забывает forgetMode при выходе с сервера.
+		if (fromApi != null) {
+			return fromApi;
+		}
+		// Режим неизвестен — работаем как раньше, а не молчим. Перевод уже
+		// умирал целиком из-за проверки, тихо вернувшей false.
+		if (title == null || title.isEmpty()) {
 			return true;
 		}
-		return isSkyBlock();
+		// ⚠️ Панели давно нет — запомненный режим устарел. Так выглядит переход
+		// между серверами Hypixel: сервер уже новый, а заголовок ещё старый.
+		if (sidebarAgeMs > SIDEBAR_FRESH_MS) {
+			return true;
+		}
+		return title.toLowerCase(Locale.ROOT).contains("skyblock");
 	}
 
 	public static boolean isOnHypixel() {

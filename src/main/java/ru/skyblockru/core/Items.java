@@ -60,7 +60,19 @@ public final class Items {
 	 * @return идентификатор либо пустая строка
 	 */
 	public static String idOf(ItemStack stack) {
-		CompoundTag tag = nbt(stack);
+		return idOf(nbt(stack));
+	}
+
+	/**
+	 * То же, но по УЖЕ ПРОЧИТАННОМУ NBT.
+	 *
+	 * <p>⚠️ {@link #nbt} делает `copyTag()` — ПОЛНУЮ копию тега. Пока каждый
+	 * метод читал его сам, одна подсказка стоила четырёх-пяти копий одного
+	 * и того же, а у вещи с аукциона NBT большой. Заметно это стало только
+	 * в чужой сборке из 88 модов: там подсказки строят соседи, и наш путь
+	 * проходится по каждому предмету экрана разом.
+	 */
+	public static String idOf(CompoundTag tag) {
 		if (tag == null) {
 			return "";
 		}
@@ -69,6 +81,44 @@ public final class Items {
 			return id;
 		}
 		return string(nested(tag, "ExtraAttributes"), "id");
+	}
+
+	/**
+	 * Перековка предмета: {@code fortunate}, {@code ancient}, {@code wise}…
+	 *
+	 * <p>Нужна ровно для одного: подтвердить, что первое слово в названии —
+	 * это ПЕРЕКОВКА, а не часть имени. Само написание берётся из названия,
+	 * поэтому сверять ключ NBT с префиксом не приходится: у «Fortunate Lapis
+	 * Pickaxe» перековка написана прямо там, где её видит игрок.
+	 *
+	 * <p>⚠️ Отсюда и граница: пустой ответ значит «резать нельзя», а не
+	 * «перековки нет». Предмет в чужом меню, старый формат, отсутствующий
+	 * тег — во всех случаях имя остаётся как есть, и это дешёвая ошибка.
+	 *
+	 * @return ключ перековки либо пустая строка
+	 */
+	public static String modifierOf(ItemStack stack) {
+		return modifierOf(nbt(stack));
+	}
+
+	/**
+	 * То же, но по УЖЕ ПРОЧИТАННОМУ NBT.
+	 *
+	 * <p>⚠️ {@link #nbt} делает `copyTag()` — ПОЛНУЮ копию тега. Пока каждый
+	 * метод читал его сам, одна подсказка стоила четырёх-пяти копий одного
+	 * и того же, а у вещи с аукциона NBT большой. Заметно это стало только
+	 * в чужой сборке из 88 модов: там подсказки строят соседи, и наш путь
+	 * проходится по каждому предмету экрана разом.
+	 */
+	public static String modifierOf(CompoundTag tag) {
+		if (tag == null) {
+			return "";
+		}
+		String modifier = string(tag, "modifier");
+		if (!modifier.isBlank()) {
+			return modifier;
+		}
+		return string(nested(tag, "ExtraAttributes"), "modifier");
 	}
 
 	/**
@@ -87,7 +137,19 @@ public final class Items {
 	 * уровни навыков, истребители, эссенции. Признак по форме их не отличает.
 	 */
 	public static Set<String> enchantsOf(ItemStack stack) {
-		CompoundTag tag = nbt(stack);
+		return enchantsOf(stack, nbt(stack));
+	}
+
+	/**
+	 * То же, но по УЖЕ ПРОЧИТАННОМУ NBT.
+	 *
+	 * <p>⚠️ {@link #nbt} делает `copyTag()` — ПОЛНУЮ копию тега. Пока каждый
+	 * метод читал его сам, одна подсказка стоила четырёх-пяти копий одного
+	 * и того же, а у вещи с аукциона NBT большой. Заметно это стало только
+	 * в чужой сборке из 88 модов: там подсказки строят соседи, и наш путь
+	 * проходится по каждому предмету экрана разом.
+	 */
+	public static Set<String> enchantsOf(ItemStack stack, CompoundTag tag) {
 		if (tag == null) {
 			return null;
 		}
@@ -144,7 +206,19 @@ public final class Items {
 
 	/** Ключи верхнего уровня — для разведки: что сервер вообще присылает. */
 	public static Set<String> keysOf(ItemStack stack) {
-		CompoundTag tag = nbt(stack);
+		return keysOf(nbt(stack));
+	}
+
+	/**
+	 * То же, но по УЖЕ ПРОЧИТАННОМУ NBT.
+	 *
+	 * <p>⚠️ {@link #nbt} делает `copyTag()` — ПОЛНУЮ копию тега. Пока каждый
+	 * метод читал его сам, одна подсказка стоила четырёх-пяти копий одного
+	 * и того же, а у вещи с аукциона NBT большой. Заметно это стало только
+	 * в чужой сборке из 88 модов: там подсказки строят соседи, и наш путь
+	 * проходится по каждому предмету экрана разом.
+	 */
+	public static Set<String> keysOf(CompoundTag tag) {
 		if (tag == null) {
 			return Set.of();
 		}
@@ -192,5 +266,34 @@ public final class Items {
 	/** Ключи вложенного тега — то, что нужно почти всем вызовам разом. */
 	private static Set<String> compound(CompoundTag tag, String key) {
 		return keys(nested(tag, key));
+	}
+
+	/**
+	 * Строки ЛОРА предмета текстом — ровно то, что прислал сервер.
+	 *
+	 * <p>⚠️ Это граница между текстом Hypixel и чужими строками в подсказке:
+	 * REI/EMI дописывают в конец «Minecraft», клиент при F3+H — идентификатор,
+	 * NEU — цены. Всё, что стоит ПОСЛЕ последней строки лора, прислал не
+	 * Hypixel, и приклеивать это к абзацу нельзя — см. {@link TooltipTail}.
+	 *
+	 * <p>{@code DataComponents.LORE} и {@code ItemLore.lines()} есть и в 26.2,
+	 * и в 1.21.11 — проверено javap по обоим jar, а не взято из примеров.
+	 * Ошибки глушим: нет лора — нет и границы, режем ничего не будем.
+	 */
+	public static java.util.List<String> loreTexts(ItemStack stack) {
+		try {
+			net.minecraft.world.item.component.ItemLore lore =
+					stack == null ? null : stack.get(DataComponents.LORE);
+			if (lore == null || lore.lines().isEmpty()) {
+				return java.util.List.of();
+			}
+			java.util.List<String> out = new java.util.ArrayList<>(lore.lines().size());
+			for (net.minecraft.network.chat.Component line : lore.lines()) {
+				out.add(line.getString());
+			}
+			return out;
+		} catch (RuntimeException ignored) {
+			return java.util.List.of();
+		}
 	}
 }

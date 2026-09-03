@@ -98,7 +98,14 @@ def main() -> int:
         if not jar.exists():
             # версию могли поднять, а собрать ещё нет — ищем что есть
             libs = ROOT / "versions" / version / "build" / "libs"
-            found = sorted(libs.glob("skyblockru-*.jar")) if libs.exists() else []
+            # ⚠️ ПО ВРЕМЕНИ, А НЕ ПО ИМЕНИ: рядом лежат десятки сборок, и по
+            # алфавиту «0.2.9» идёт ПОСЛЕ «0.2.28» — инструмент показывал
+            # месячный jar как свежий. Записанная грабля проекта («имя файла
+            # врёт»), всплывшая с новой стороны: тут врёт не суффикс, а
+            # ПОРЯДОК СТРОК.
+            found = (sorted(libs.glob("skyblockru-*.jar"),
+                            key=lambda f: f.stat().st_mtime)
+                     if libs.exists() else [])
             jar = found[-1] if found else None
         if jar is None:
             print(f"  {version:9} не собрано")

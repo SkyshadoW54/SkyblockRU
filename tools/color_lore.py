@@ -381,26 +381,81 @@ def unmark(text: str, codes: dict[int, str], body: str) -> str:
     return body + text
 
 
+def locate(ru: str, piece: str, cursor: int,
+           taken: list[tuple[int, int, str]], want: int | None) -> int:
+    """
+    Где в переводе стоит этот кусок. -1, если места нет.
+
+    ⚠️ ПОЗИЦИЯ, А НЕ ПРОСТО ПОИСК. Прежде кусок искался всегда с начала
+    строки, и одинаковые куски были неразрешимы: у «{n}/{n}k {n}/{n}k»
+    оба цвета садились на первое вхождение, поэтому такие абзацы приходилось
+    пропускать ЦЕЛИКОМ — в живом остатке это 47 заданий из 58.
+
+    Порядок поиска:
+      1. явно названное вхождение (`["кусок", 2]`) — когда порядок в русской
+         фразе не совпадает с оригиналом и решать должен человек;
+      2. ПОСЛЕ предыдущего куска — цвета идут в порядке оригинала, и у таблиц
+         («{n}/{n}k с обычных … {n}/{n}k с редких») перевод сохраняет порядок;
+      3. первое СВОБОДНОЕ вхождение с начала — на случай, когда перевод
+         переставил слова местами.
+
+    Пересечения не допускаются ни на одном шаге: лучше не покрасить кусок,
+    чем покрасить внахлёст.
+    """
+    def free(at: int) -> bool:
+        return at >= 0 and not any(at < end and start < at + len(piece)
+                                   for start, end, _ in taken)
+
+    if want is not None:
+        at, seen = -1, 0
+        while True:
+            at = ru.find(piece, at + 1)
+            if at < 0:
+                return -1
+            seen += 1
+            if seen == want:
+                return at if free(at) else -1
+
+    at = ru.find(piece, cursor)
+    if free(at):
+        return at
+    at = ru.find(piece)
+    while at >= 0 and not free(at):
+        at = ru.find(piece, at + 1)
+    return at
+
+
 def wrap_spans(ru: str, spans: list[tuple[int, str]], marks: list[tuple[str, str]],
                body: str) -> str | None:
     """
     Оборачивает найденные куски перевода их §-кодами.
 
-    Куски ищем в тексте и вставляем коды по позициям, от конца к началу — так
-    ранние позиции не съезжают. Пересечения отбрасываем: лучше не покрасить,
-    чем покрасить внахлёст.
+    Коды вставляются по позициям, от конца к началу — так ранние позиции
+    не съезжают.
+
+    ⚠️ Куски перебираются В ПОРЯДКЕ ЦВЕТА, а не в порядке словаря ответа:
+    поиск «после предыдущего» имеет смысл только при обходе слева направо,
+    а порядок ключей в json — случайность.
+
+    Ответ может быть либо строкой («кусок»), либо парой («кусок», номер
+    вхождения) — второе нужно там, где перевод переставил слова и порядок
+    не спасает.
     """
     places: list[tuple[int, int, str]] = []
-    for number, text in spans:
+    cursor = 0
+    for number, text in sorted(spans, key=lambda pair: pair[0]):
+        want = None
+        if isinstance(text, (list, tuple)):
+            text, want = (list(text) + [None])[0], (list(text) + [None])[1]
+            want = int(want) if want else None
         piece = (text or "").strip()
         if not piece or not (1 <= number <= len(marks)):
             continue
-        at = ru.find(piece)
+        at = locate(ru, piece, cursor, places, want)
         if at < 0:
             continue
-        if any(at < end and start < at + len(piece) for start, end, _ in places):
-            continue
         places.append((at, at + len(piece), marks[number - 1][0]))
+        cursor = at + len(piece)
     if not places:
         return None
     out = ru

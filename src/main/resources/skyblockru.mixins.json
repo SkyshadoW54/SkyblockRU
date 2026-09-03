@@ -10,7 +10,6 @@
 		"EntityMixin",
 		"GuiMixin",
 		"HudMixin",
-		"ItemStackMixin",
 		"ObjectiveMixin",
 		"PlayerScoreEntryMixin",
 		"PlayerTabOverlayMixin",

@@ -64,6 +64,9 @@ ALLOW_LATIN = {"exp", "xp", "hp", "mvp", "vip", "npc", "gg", "coop", "co-op"}
 DECLINED = re.compile(r"[A-Za-z]{2,}['’ʼ]?[А-яЁё]+")
 
 
+# Файл по умолчанию: сторожа зовут и без аргумента.
+DEFAULT_FILE = ROOT / "data" / "work" / "paragraphs.json"
+
 def icon_counts(text: str) -> Counter:
     return Counter(icons_of(text))
 
@@ -247,10 +250,20 @@ def check_pair(src: str, ru: str, guarded: set[str],
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description="Проверка качества перевода")
-    parser.add_argument("file")
+    # ⚠️ БЕЗ АРГУМЕНТА БЕРЁМ ФАЙЛ ПО УМОЛЧАНИЮ, а не падаем.
+    #
+    # argparse на пропущенный обязательный аргумент выходит с кодом 2,
+    # и всякий, кто прогоняет «всех сторожей разом», получал ложный
+    # красный. Отличить «сторож нашёл беду» от «сторожа не так позвали»
+    # по коду возврата было нельзя — а именно по нему круг сборки
+    # и решает, собирать ли jar.
+    parser.add_argument("file", nargs="?", default=str(DEFAULT_FILE))
     parser.add_argument("--show", type=int, default=6,
                         help="сколько примеров на каждую беду (0 — все)")
     args = parser.parse_args()
+    if not Path(args.file).exists():
+        print(f"нет файла {args.file} — проверять нечего, пропускаю")
+        return 0
 
     path = Path(args.file)
     if not path.is_absolute():

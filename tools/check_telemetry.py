@@ -84,6 +84,68 @@ CASES = [
 ]
 
 
+# ⚠️ ПАКЕТНЫЙ ПРОГОН, а не запуск JVM на каждую строку.
+#
+# До 27.08 сторож звал `java` отдельно на КАЖДУЮ строку: чат целиком плюс
+# по 40 на источник — около 1900 запусков, 233 с из 316 с всего круга сборки
+# (74%). Дороговизну знали и лечили ВЫБОРКОЙ, то есть сузили проверку вместо
+# того, чтобы удешевить прогон. Приём взят у соседей (`check_rule_cache`,
+# `check_prefilter`): данные уходят ФАЙЛОМ, ответ приходит файлом.
+#
+# ⚠️⚠️ ФАЙЛ ЗДЕСЬ НЕ ТОЛЬКО РАДИ СКОРОСТИ. Строки уходили АРГУМЕНТАМИ
+# командной строки, а Windows кодирует их системной cp1251: каждый значок
+# Hypixel и каждая стрелка превращались в «?». Записанная грабля проекта
+# (так `check_rules --line` объявлял рабочее правило несработавшим), и здесь
+# она означала, что часть живых строк проверялась в искажённом виде.
+BATCH_SRC = r"""
+import ru.skyblockru.core.TelemetryFilter;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.*;
+import java.util.*;
+
+public class TelemetryBatch {
+    public static void main(String[] args) throws Exception {
+        List<String> rows = Files.readAllLines(Path.of(args[0]), StandardCharsets.UTF_8);
+        StringBuilder out = new StringBuilder();
+        for (String row : rows) {
+            int tab = row.indexOf('\t');
+            if (tab < 0) { continue; }
+            String source = row.substring(0, tab);
+            String line = unescape(row.substring(tab + 1));
+            out.append(TelemetryFilter.worthSending(source, line) ? "SEND" : "SKIP");
+            out.append('\n');
+        }
+        Files.writeString(Path.of(args[1]), out.toString(), StandardCharsets.UTF_8);
+    }
+
+    /** Обратно к настоящему тексту: перенос и табуляция пришли экранированными. */
+    private static String unescape(String text) {
+        StringBuilder made = new StringBuilder(text.length());
+        for (int i = 0; i < text.length(); i++) {
+            char ch = text.charAt(i);
+            if (ch == '\\' && i + 1 < text.length()) {
+                char next = text.charAt(++i);
+                if (next == 'n') { made.append('\n'); }
+                else if (next == 't') { made.append('\t'); }
+                else if (next == '\\') { made.append('\\'); }
+                else { made.append('\\').append(next); }
+            } else {
+                made.append(ch);
+            }
+        }
+        return made.toString();
+    }
+}
+"""
+
+
+def escape(line: str) -> str:
+    """Перенос и табуляция — служебные знаки формата, их надо спрятать."""
+    return (line.replace("\\", "\\\\")
+            .replace("\n", "\\n")
+            .replace("\t", "\\t"))
+
+
 def find_java(name: str) -> str | None:
     found = shutil.which(name)
     if found:
@@ -104,7 +166,10 @@ def main() -> int:
 
     work = Path(tempfile.mkdtemp(prefix="sbru-telemetry-"))
     try:
-        done = subprocess.run([javac, "-d", str(work)] + [str(f) for f in SOURCES],
+        batch = work / "TelemetryBatch.java"
+        batch.write_text(BATCH_SRC, encoding="utf-8")
+        done = subprocess.run([javac, "-encoding", "UTF-8", "-d", str(work)]
+                              + [str(f) for f in SOURCES] + [str(batch)],
                               capture_output=True, text=True,
                               encoding="utf-8", errors="replace")
         if done.returncode != 0:
@@ -112,16 +177,41 @@ def main() -> int:
             print(done.stderr[:2000])
             return 1
 
-        def ask(source: str, line: str) -> bool:
+        def ask_many(pairs: list[tuple[str, str]]) -> list[bool]:
+            """Один запуск JVM на всю пачку. Ответ построчно, в том же порядке."""
+            if not pairs:
+                return []
+            src = work / "in.tsv"
+            dst = work / "out.txt"
+            src.write_text("".join(f"{source}\t{escape(line)}\n"
+                                   for source, line in pairs), encoding="utf-8")
             answer = subprocess.run(
-                [java, "-cp", str(work), "ru.skyblockru.core.TelemetryFilter", source, line],
+                [java, "-Dfile.encoding=UTF-8", "-cp", str(work), "TelemetryBatch",
+                 str(src), str(dst)],
                 capture_output=True, text=True, encoding="utf-8", errors="replace")
-            return answer.stdout.strip() == "SEND"
+            if answer.returncode != 0 or not dst.exists():
+                print("СЛОМАНО: пакетный прогон не отработал")
+                print((answer.stderr or "")[:1000])
+                return []
+            got = dst.read_text(encoding="utf-8").splitlines()
+            # ⚠️ Ответов обязано быть столько же, сколько вопросов. Разошлись —
+            # значит формат съел строку, и молча сдвинутые ответы будут врать
+            # про КАЖДУЮ строку после сдвига.
+            if len(got) != len(pairs):
+                print(f"СЛОМАНО: спросили {len(pairs)}, ответов {len(got)}")
+                return []
+            return [row == "SEND" for row in got]
+
+        def ask(source: str, line: str) -> bool:
+            got = ask_many([(source, line)])
+            return bool(got) and got[0]
 
         print("=== заведомые случаи ===")
         bad = 0
-        for source, line, expected, why in CASES:
-            got = ask(source, line)
+        verdicts = ask_many([(source, line) for source, line, _, _ in CASES])
+        if len(verdicts) != len(CASES):
+            return 1
+        for (source, line, expected, why), got in zip(CASES, verdicts):
             mark = "ок " if got == expected else "СЛОМАНО"
             if got != expected:
                 bad += 1
@@ -137,15 +227,24 @@ def main() -> int:
             print("=== живой дамп ===")
             data = json.loads(DUMP.read_text(encoding="utf-8"))
             sources = data.get("sources") or {}
-            # ⚠️ Чат проверяем ЦЕЛИКОМ (там и риск), остальное — выборкой:
-            # запуск java на каждую из 27 тысяч строк занял бы часы.
+            # ⚠️ ВЕСЬ ДАМП, а не выборка. Прежняя оговорка «по 40 на источник,
+            # иначе часы» отвалилась вместе с запуском JVM на строку: пачкой
+            # весь дамп проходит за один прогон. Выборка тут была не осторожностью,
+            # а платой за дороговизну — и молчала ровно там, куда не дотянулась.
+            pairs = [(source, line) for source, rows in sorted(sources.items())
+                     for line in rows]
+            verdicts = ask_many(pairs)
+            if len(verdicts) != len(pairs):
+                return 1
+            by_source: dict[str, list[str]] = {}
+            for (source, line), sent in zip(pairs, verdicts):
+                if not sent:
+                    by_source.setdefault(source, []).append(line)
             for source, rows in sorted(sources.items()):
                 lines = list(rows)
-                sample = lines if source == "chat" else lines[:40]
-                skipped = [line for line in sample if not ask(source, line)]
-                note = "" if source == "chat" else " (выборка 40)"
-                print("   %-12s строк %5d, не отправим %3d%s"
-                      % (source, len(lines), len(skipped), note))
+                skipped = by_source.get(source, [])
+                print("   %-12s строк %5d, не отправим %3d"
+                      % (source, len(lines), len(skipped)))
                 for line in skipped[:3]:
                     print("        %s" % line[:80])
         else:

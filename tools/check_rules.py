@@ -83,6 +83,46 @@ def dump_samples(limit: int) -> list[str]:
     return lines[:limit]
 
 
+def anchors_are_safe() -> list[str]:
+    """
+    Якорь-прифильтр не смеет отбрасывать строку, которая правилу ПОДХОДИТ.
+
+    ⚠️⚠️ ЭТО НЕ ТЕОРИЯ. `Translator.anchorOf` брал литеральное начало шаблона
+    и останавливался на первом особом символе — но букву ПЕРЕД `?` успевал
+    добавить. У «^Starts? in:» якорь выходил «Starts», и строка «Start in: 2d
+    3h» отсеивалась ДО проверки: правило молча не срабатывало. Замер 23.08 —
+    задето 5 правил, 4 из них живые (таймеры событий) плюс надпись миньона.
+
+    ⚠️ Беда тихая по построению: правило компилируется, словарь грузится,
+    счётчики растут — просто перевода нет. Компиляция такого не ловит, потому
+    проверка и стоит отдельным разделом.
+
+    Свойство проверяется на ЖИВЫХ строках дампа: `pattern.match(line)`
+    истинно -> `line.startswith(anchor)` обязано быть истинным тоже.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import status
+    try:
+        import make_queue
+        rows = make_queue.load("collected.json").get("sources") or {}
+    except Exception:
+        rows = {}
+    lines: set[str] = set()
+    for items in rows.values():
+        lines.update(list(items)[:3000])
+    dictionaries = status.Dictionaries(groups={"full"})
+    bad = []
+    for rule in dictionaries.rules:
+        if not rule.anchor:
+            continue
+        for line in lines:
+            if rule.pattern.match(line) and not line.startswith(rule.anchor):
+                bad.append("%s: якорь %r отбрасывает %r"
+                           % (rule.pattern.pattern[:44], rule.anchor, line[:44]))
+                break
+    return bad
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser()
@@ -162,8 +202,35 @@ def main() -> int:
     elif args.dump:
         print(f"\nиз дампа: правило нашлось для {len(hits)} строк из {len(hits) + len(misses)}")
 
-    print(f"\nитого замечаний: {len(broken)}")
-    return 1 if broken else 0
+    # ⚠️ ДВОЙНАЯ ОБРАТНАЯ КОСАЯ В ШАБЛОНЕ — правило мертво по построению.
+    # В json косая записывается ОДНА (json.dumps удвоит её сам); написав
+    # две, получаешь буквальное «\\d» вместо класса цифр, и правило
+    # не совпадёт НИКОГДА. Записанная грабля проекта про \uXXXX,
+    # всплывшая 25.08 в правиле статуса миньона «[SLOW]»: словарь
+    # грузится, Java шаблон принимает, ошибок нет — просто перевода нет.
+    doubled = []
+    for pack, pattern, _replacement in rules():
+        if "\\\\" in pattern:
+            doubled.append(f"{pack}: {pattern[:70]}")
+    print("\n=== ДВОЙНАЯ КОСАЯ В ШАБЛОНЕ ===")
+    if doubled:
+        print(f"  правил, где косая удвоена и класс мёртв: {len(doubled)}")
+        for note in doubled[:8]:
+            print(f"    {note}")
+    else:
+        print("  ни одного правила с удвоенной косой")
+
+    unsafe = anchors_are_safe()
+    print("\n=== ЯКОРЬ-ПРИФИЛЬТР ===")
+    if unsafe:
+        print(f"  правил, у которых якорь режет своё же: {len(unsafe)}")
+        for note in unsafe[:8]:
+            print(f"    {note}")
+    else:
+        print("  ни одно правило не теряет подходящую строку")
+
+    print(f"\nитого замечаний: {len(broken) + len(unsafe) + len(doubled)}")
+    return 1 if broken or unsafe or doubled else 0
 
 
 if __name__ == "__main__":

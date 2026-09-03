@@ -41,7 +41,11 @@ PRIVATE = re.compile(r"[-]")
 # ⚠️ Геометрические фигуры (25A0-25FF) СЮДА НЕ БЕРЁМ: «▶» и «○» — это
 # МАРКЕРЫ СПИСКА, а не значки характеристик. С ними замена задела бы
 # 187 ключей и сломала резку списков — проверено сухим прогоном.
-ICON = re.compile(r"[\u2190-\u2bff\ue000-\uf8ff]")
+# ⚠️ Те же шесть символов, что в AFTER: этот класс служит охраной
+# «в тексте вообще есть значок» и подменой значков В ПЕРЕВОДЕ. Разойдись
+# они — замена молча не сработает (04.09: так не переносились ༕ Undead,
+# 🦴 Skeletal, ⸙ Woodland).
+ICON = re.compile(r"[\u2190-\u2bff\ue000-\uf8ff༕࿉\U0001f9b4⸙⸕⫽]")
 SPACE = re.compile(r"\s+")
 
 
@@ -96,7 +100,15 @@ def server_lines() -> list[str]:
 
 
 # значок, необязательный пробел, слово — по слову и опознаём характеристику
-AFTER = re.compile(r"([∀-⋿☀-➿⬀-⯿-])(\s*)([A-Za-z][A-Za-z\']*(?:\s+[A-Z][A-Za-z\']*)?)")
+# ⚠️ ШЕСТЬ СИМВОЛОВ ДОБАВЛЕНЫ ПОИМЁННО (04.09), а не расширением диапазона.
+# Замер по корпусу: перед словом стоят и «▶» (5725 раз), и «›» (3093) — это
+# МАРКЕРЫ СПИСКА и вёрстка, а не характеристики; расширение по КАТЕГОРИИ
+# Unicode задело бы их и сломало резку списков (в проекте это уже стоило
+# 187 ключей). Берём ровно те, что реально помечают характеристику или
+# категорию мобов в наших данных: тибетские «༕» и «࿉», «🦴» (Skeletal),
+# «⸙» (Foraging Wisdom), «⸕» (Mining Speed), «⫽» (Ferocity). Даёт 50 ключей,
+# из них 28 с готовым переводом; ложных срабатываний нет.
+AFTER = re.compile(r"([∀-⋿☀-➿⬀-⯿-༕࿉🦴⸙⸕⫽])(\s*)([A-Za-z][A-Za-z\']*(?:\s+[A-Z][A-Za-z\']*)?)")
 
 # во сколько раз главный значок слова должен превосходить остальные
 STEADY = 3
@@ -129,6 +141,29 @@ def by_word(lines: list[str]) -> dict[str, str]:
         if rest == 0 or top >= STEADY * rest:
             table[word] = best
     return table
+
+
+def swapped_ru(russian: str, key: str) -> str:
+    """
+    Перевод с ТЕМИ ЖЕ значками, что в серверном ключе.
+
+    ⚠️ Перевод выкладывается на экран как есть: оставь в нём «☘» из выгрузки
+    NEU — и игрок увидит обычный клевер вместо иконки Hypixel. Слово рядом
+    по-русски другое, поэтому идём ПО ПОЗИЦИЯМ: набор значков ключа и перевода
+    совпадает по порядку. Не совпал — перевод не трогаем вовсе.
+    """
+    want = ICON.findall(key)
+    have = ICON.findall(russian)
+    if len(want) != len(have):
+        return russian
+    out, at = [], 0
+    for char in russian:
+        if ICON.match(char):
+            out.append(want[at])
+            at += 1
+        else:
+            out.append(char)
+    return "".join(out)
 
 
 def fixed_text(row: dict, table: dict[str, str]) -> str | None:
@@ -165,15 +200,27 @@ def main() -> int:
     rows = doc["paragraphs"]
     keys = {r.get("text") for r in rows}
 
+    by_key = {r.get("text"): r for r in rows}
     changes: list[tuple[dict, str]] = []
+    carry: list[tuple[dict, dict, str]] = []
     collide = 0
     for row in rows:
         new = fixed_text(row, table)
         if not new or new == row.get("text"):
             continue
         if new in keys:
-            # такой ключ уже есть — сливать записи не наше дело
-            collide += 1
+            # ⚠️ КЛЮЧ ЕСТЬ, А ПЕРЕВОДА У НЕГО НЕТ — это не «сливать записи»,
+            # а ровно та беда, ради которой инструмент писался (04.09).
+            # Серверные ключи приезжают в корпус из блоков игроков сами
+            # («Drops sometimes from  Undead mobs…»), а перевод лежит
+            # на ключе с вики-значком («༕ Undead»), собранном из NEU. Мод
+            # видит на экране первый и перевода не находит. Перенос ничего
+            # не отнимает: старый ключ остаётся со своим переводом.
+            twin = by_key.get(new)
+            if row.get("ru") and twin is not None and not twin.get("ru"):
+                carry.append((row, twin, new))
+            else:
+                collide += 1
             continue
         changes.append((row, new))
 
@@ -181,6 +228,11 @@ def main() -> int:
     print(f"абзацев с чужими значками: {len(changes)}  (из них с переводом: {with_ru})")
     if collide:
         print(f"пропущено — правильный ключ уже есть: {collide}")
+    if carry:
+        print(f"перенести перевод на СУЩЕСТВУЮЩИЙ серверный ключ: {len(carry)}")
+        for row, _, new_key in carry[:4]:
+            print("   с : " + row["text"][:86])
+            print("   на: " + PRIVATE.sub("◇", new_key)[:86])
 
     kinds: collections.Counter = collections.Counter()
     for row, new in changes:
@@ -220,18 +272,8 @@ def main() -> int:
         # увидит обычный клевер вместо иконки Hypixel. Слово рядом ищем то же,
         # но по-русски его нет, поэтому идём по ПОЗИЦИЯМ: набор значков ключа
         # и перевода совпадает по порядку, а если не совпал — перевод не трогаем.
-        ru = row["ru"]
-        want = ICON.findall(new)
-        have = ICON.findall(ru)
-        if len(want) == len(have):
-            out, at = [], 0
-            for char in ru:
-                if ICON.match(char):
-                    out.append(want[at])
-                    at += 1
-                else:
-                    out.append(char)
-            ru = "".join(out)
+        ru = swapped_ru(row["ru"], new)
+
         rows.append({
             "text": new,
             "lines": row.get("lines") or [],
@@ -240,8 +282,14 @@ def main() -> int:
             "source": "server-icons",
         })
         added += 1
+    moved = 0
+    for row, twin, new in carry:
+        twin["ru"] = swapped_ru(row["ru"], new)
+        moved += 1
     CORPUS.write_text(json.dumps(doc, ensure_ascii=False, indent=1), encoding="utf-8")
     print(f"добавлено ключей: {added} (абзацев было {before}, стало {len(rows)})")
+    if moved:
+        print(f"перенесено переводов на существующие серверные ключи: {moved}")
     return 0
 
 

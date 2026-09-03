@@ -46,12 +46,24 @@ CASES = [
     ("RRV cannot request recipes from a server without RRV installed!",
      True, "чат RRV"),
     ("RRV Client Settings", True, "экран RRV"),
+    # ⚠️ найдены 25.08 тем же способом — при ручном разборе очереди.
+    ("[Coflnet]: do /cofl nologin to stop receiving this (or click this message)",
+     True, "чат помощника аукциона Coflnet"),
+    ("[Aaron's Mod] Failed to refresh your Aaron Mod API token!",
+     True, "чат мода-компаньона"),
+    # ⚠️ обратный край: голое имя «Aaron» — НАША строка (в дампе их две),
+    # признак по одному слову задел бы её. Та же грабля, что «Odin»
+    # внутри «exploding».
+    ("Aaron", False, "голое имя — не мод"),
     ("[MarketGuard] Update available 3-beta.2 -> 4. [Click] to open on Modrinth.",
      True, "чат MarketGuard"),
     ("Could not refresh Bazaar conversions; using bundled/cache data."
      " Run /btrbz conversions status for details.", True, "чат btrbz"),
     ("You loaded this year's contests from eliteskyblock.com automatically!",
      True, "сайт-помощник, строку пишет мод"),
+    # ⚠️ найден 04.09 при разборе абзацев подсказок
+    ("CTRL+SHIFT click for price charts & other info Powered by skyblock.finance",
+     True, "приписка соседа к подсказке: сайт-помощник"),
 
     # --- НАШЕ: обязано переводиться ---
     ("✖ Exploding Frog (3/10)", False, "«exploding», а не мод Odin"),
@@ -67,6 +79,7 @@ CASES = [
     ("Welcome to SkyBlock!", False, "«SkyBlock» — не домен соседа"),
     ("You are now playing SkyBlock Level 42!", False, "обычная строка Hypixel"),
     ("Visit the Bazaar to buy materials in bulk.", False, "Bazaar — это Hypixel"),
+    ("Your SkyBlock finance is in order!", False, "«skyblock finance» без домена — наша строка"),
     ("Market Price: 1,000 Coins", False, "«Market» — не MarketGuard"),
 ]
 

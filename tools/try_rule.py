@@ -41,6 +41,11 @@ import re
 import sys
 from pathlib import Path
 
+# ⚠️ Консоль Windows — cp1251, и печать «≠» роняла инструмент с
+# UnicodeEncodeError ПОСРЕДИ отчёта: правило проверено, а вывод оборван,
+# и выглядит это как поломка правила. Записанная грабля проекта.
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import make_queue  # noqa: E402  (образцы дырок и разбор словарей)

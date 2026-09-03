@@ -37,6 +37,9 @@ CYRILLIC = re.compile(r"[А-Яа-яЁё]")
 HALF = re.compile(r"[А-Яа-яЁё]\s+([a-z]{3,})\s+[А-Яа-яЁё]")
 
 
+# Файл по умолчанию: сторожа зовут и без аргумента.
+DEFAULT_FILE = ROOT / "data" / "work" / "npc_dialogues.json"
+
 def strip_codes(text: str) -> str:
     return re.sub(r"[&§].", "", text)
 
@@ -96,9 +99,19 @@ def check(key: str, meta: dict, guarded: set[str]) -> list[tuple[str, str]]:
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description="Проверка переведённых реплик NPC")
-    parser.add_argument("file")
+    # ⚠️ БЕЗ АРГУМЕНТА БЕРЁМ ФАЙЛ ПО УМОЛЧАНИЮ, а не падаем.
+    #
+    # argparse на пропущенный обязательный аргумент выходит с кодом 2,
+    # и всякий, кто прогоняет «всех сторожей разом», получал ложный
+    # красный. Отличить «сторож нашёл беду» от «сторожа не так позвали»
+    # по коду возврата было нельзя — а именно по нему круг сборки
+    # и решает, собирать ли jar.
+    parser.add_argument("file", nargs="?", default=str(DEFAULT_FILE))
     parser.add_argument("--show", type=int, default=8, help="сколько примеров (0 — все)")
     args = parser.parse_args()
+    if not Path(args.file).exists():
+        print(f"нет файла {args.file} — проверять нечего, пропускаю")
+        return 0
 
     path = Path(args.file)
     if not path.is_absolute():
