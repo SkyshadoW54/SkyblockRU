@@ -178,7 +178,14 @@ def standalone(text: str, start: int, end: int) -> bool:
         word = NEIGHBOUR.fullmatch(right[0].strip(".,!?:;()"))
         if word and not ROMAN.match(word.group(0)):
             return False
-    left = CODES.sub("", text[:start]).strip().split()
+    # ⚠️ ПОДПИСЬ ОТДЕЛЯЕТ ИМЯ, и сосед за ней в счёт не идёт. У «Счётчик RNG:
+    # Crystal Nucleus» слева стоит аббревиатура «RNG», признак принимал её за
+    # часть названия и отказывал — 65 показов. Двоеточие тут говорит прямо:
+    # слева подпись, справа значение, и они разные вещи.
+    left_raw = CODES.sub("", text[:start]).rstrip()
+    if left_raw.endswith((":", "—", "|")):
+        return True
+    left = left_raw.strip().split()
     if left:
         word = NEIGHBOUR.fullmatch(left[-1].strip(".,!?:;()"))
         if word and not ROMAN.match(word.group(0)):

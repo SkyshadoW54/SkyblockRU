@@ -113,6 +113,10 @@ def main() -> int:
     parser.add_argument("--name", help="имя инстанса MultiMC")
     parser.add_argument("--dry", action="store_true", help="только показать")
     parser.add_argument("--no-mod", action="store_true", help="без нашего мода")
+    # ⚠️ ЯВНЫЙ JAR НУЖЕН ДЛЯ СРАВНЕНИЯ ДВУХ СБОРОК: одна с версией, которая
+    # у людей, другая с починкой. Без этого обе брали бы одно и то же из
+    # release/, и проверить «стало ли лучше» было бы нечем.
+    parser.add_argument("--mod", help="взять именно этот jar нашего мода")
     args = parser.parse_args()
 
     source = Path(args.pack)
@@ -138,7 +142,15 @@ def main() -> int:
     print("  Minecraft :", game)
     print("  Fabric    :", loader)
     print("  модов     :", len(files))
-    mod = None if args.no_mod else our_jar(game)
+    if args.no_mod:
+        mod = None
+    elif args.mod:
+        mod = Path(args.mod)
+        if not mod.exists():
+            print("нет файла мода:", mod)
+            return 1
+    else:
+        mod = our_jar(game)
     print("  наш мод   :", mod.name if mod else "НЕТ (собери release.py)")
     print("  инстанс   :", folder)
 

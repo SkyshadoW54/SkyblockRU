@@ -286,6 +286,80 @@ def targets_from(directory: Path) -> list[tuple[str, str, list[str]]]:
     return out
 
 
+SHADOW = re.compile(r"@Shadow\b[^;{}]*?\b(\w+)\s*;", re.S)
+
+
+def shadow_fields(directory: Path) -> list[tuple[str, str, list[str]]]:
+    """Теневые ПОЛЯ миксинов: (миксин, целевой класс, поля)."""
+    out = []
+    for src in sorted(directory.glob("*Mixin.java")):
+        body = src.read_text(encoding="utf-8")
+        imports = {i.rsplit(".", 1)[-1]: i for i in IMPORT.findall(body)}
+        match = TARGET_STR.search(body)
+        cls = match.group(1) if match else None
+        if not cls:
+            match = TARGET_CLASS.search(body)
+            cls = imports.get(match.group(1), match.group(1)) if match else None
+        if not cls:
+            continue
+        # ⚠️ Методы отсекаем: у них после имени идёт «(», а не «;».
+        fields = [n for n in SHADOW.findall(body)]
+        if fields:
+            out.append((src.stem, cls, sorted(set(fields))))
+    return out
+
+
+def check_shadow(javap: str, jars: list[tuple[str, Path]], active: str | None) -> int:
+    """
+    Объявлено ли @Shadow-поле В САМОМ целевом классе.
+
+    ⚠️ ЗАЧЕМ. Mixin ищет теневое поле ТОЛЬКО в целевом классе и в суперкласс
+    НЕ ЗАГЛЯДЫВАЕТ. Компиляция об этом молчит — поле разрешается при загрузке
+    класса, — и промах роняет игру у игрока на старте:
+
+        InvalidMixinException: @Shadow field title was not located in the
+        target class AbstractContainerScreen
+
+    Ровно так упала сборка 05.09: поле `title` объявлено в `Screen`, а миксин
+    целился в `AbstractContainerScreen`. Развязка — интерфейс `TitleSwap`:
+    доступ к полю остаётся там, где поле видно.
+
+    ⚠️ `javap -p` печатает ТОЛЬКО собственные члены класса, унаследованные
+    не показывает, — это ровно тот вопрос, который задаёт Mixin.
+    """
+    if not active:
+        return 0
+    jar = dict(jars).get(active)
+    if not jar or not deobfuscated(jar):
+        return 0
+    watched = shadow_fields(MIXIN_DIR)
+    print(f"\n=== ТЕНЕВЫЕ ПОЛЯ (@Shadow): {len(watched)} миксинов, версия {active} ===")
+    print("    поле обязано быть В САМОМ целевом классе — суперкласс Mixin не смотрит")
+    bad = 0
+    for mixin, cls, fields in watched:
+        # ⚠️ НУЖЕН `-p`: без него javap печатает только ПУБЛИЧНЫЕ члены,
+        # а теневые поля почти всегда private/protected. Первая версия
+        # признака объявила сломанным работающий PlayerTabOverlayMixin —
+        # ложная тревога, и поймало её то, что игра с ним запускается.
+        # Записанное правило: прежде чем чинить код по красному сторожу,
+        # проверь сторожа.
+        text = dump_private(javap, jar, cls)
+        if text is None:
+            print(f"   {mixin:22} класса {cls} нет в этой версии -> skip")
+            continue
+        for field in fields:
+            here = re.search(r"\b%s\s*;" % re.escape(field), text) is not None
+            if not here:
+                bad += 1
+                print(f"   СЛОМАНО {mixin}: поля `{field}` НЕТ в {cls}")
+                print("      Mixin упадёт при загрузке класса, игра не стартует.")
+                print("      Лечится интерфейсом: доступ к полю — в миксине на том")
+                print("      классе, где поле объявлено (см. core/TitleSwap).")
+    if not bad:
+        print("   все теневые поля на месте")
+    return bad
+
+
 def check_every_version(javap: str, jars: list[tuple[str, Path]], active: str | None) -> int:
     """
     Цели миксинов НА КАЖДОЙ собранной версии.
@@ -401,6 +475,14 @@ def active_version() -> str | None:
     return found.group(1) if found else None
 
 
+def dump_private(javap: str, jar: Path, cls: str) -> str | None:
+    """То же, что dump, но СО ВСЕМИ членами: теневые поля обычно private."""
+    done = subprocess.run([javap, "-p", "-classpath", str(jar), cls],
+                          capture_output=True, text=True,
+                          encoding="utf-8", errors="replace")
+    return done.stdout if done.returncode == 0 else None
+
+
 def dump(javap: str, jar: Path, cls: str) -> str | None:
     done = subprocess.run([javap, "-classpath", str(jar), cls],
                           capture_output=True, text=True,
@@ -463,6 +545,7 @@ def main() -> int:
 
     bad += check_all_targets(javap, jars)
     bad += check_every_version(javap, jars, active_version())
+    bad += check_shadow(javap, jars, active_version())
     bad += check_runtime_names(active_version())
 
     print()

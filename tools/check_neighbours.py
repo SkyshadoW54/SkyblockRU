@@ -61,6 +61,20 @@ FORBIDDEN = {
 WATCHED_FIELDS = {
     "header": "PlayerTabOverlay.header — SkyHanni читает его (field_2153)",
     "footer": "PlayerTabOverlay.footer — SkyHanni читает его (field_2154)",
+    # ⚠️ 05.09: Modern Warp Menu опознаёт меню быстрого перемещения по
+    # `ContainerScreen.getTitle()` — сверяет строку с «Fast Travel»
+    # (WarpMenuListener -> GameCheckUtils.determineOpenMenu, проверено
+    # по байткоду). Наш перевод в поле навсегда ломал ему карту островов:
+    # игрок видел ванильный сундук с головами.
+    "title": "Screen.title — его читает getTitle(), а по нему соседи опознают "
+             "меню (Modern Warp Menu сверяет с «Fast Travel»)",
+}
+
+# ⚠️ ЗАПИСЬ В `title` ЗАКОННА У НЕ-КОНТЕЙНЕРНЫХ ЭКРАНОВ: настройки и паузу
+# соседи не разбирают, а точки отрисовки вроде `extractLabels` у них нет.
+# Признак законности — отказ для контейнеров прямо в файле.
+FIELD_EXEMPT = {
+    "title": re.compile(r"instanceof\s+AbstractContainerScreen"),
 }
 
 TARGET = re.compile(r'target\s*=\s*"[^"]*?;([A-Za-z0-9_$]+)\(')
@@ -97,6 +111,11 @@ def check_fields() -> list[str]:
         text = path.read_text(encoding="utf-8")
         for field, why in WATCHED_FIELDS.items():
             if not re.search(r"this\.%s\s*=" % field, text):
+                continue
+            # ⚠️ Есть законные записи: экран, который соседи не читают.
+            # Признак — файл сам отказывается от опасного случая.
+            exempt = FIELD_EXEMPT.get(field)
+            if exempt and exempt.search(text):
                 continue
             # ищем восстановление: запись в @At("RETURN")
             tail = text.split('@At("RETURN")')

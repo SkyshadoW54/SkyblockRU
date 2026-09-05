@@ -104,5 +104,14 @@ stonecutter parameters {
             direction = eval(current.version, ">=26.1")
             replace("\"render\"", "\"extractRenderState\"")
         }
+        // ⚠️ Заголовок окна-контейнера: в 1.21.x его рисует `renderLabels`,
+        // в 26.1+ — `extractLabels`. Замена по строке в кавычках, как соседи
+        // выше: голое слово задело бы обычные вызовы.
+        // ⚠️ Замена `"render"` этого имени НЕ задевает: она требует закрывающую
+        // кавычку сразу за словом, а тут дальше идёт «Labels».
+        string {
+            direction = eval(current.version, ">=26.1")
+            replace("\"renderLabels\"", "\"extractLabels\"")
+        }
     }
 }
