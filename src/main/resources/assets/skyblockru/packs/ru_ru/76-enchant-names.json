@@ -17,6 +17,7 @@
   "Aqua Affinity": "@enchantment.minecraft.aqua_affinity",
   "Depth Strider": "@enchantment.minecraft.depth_strider",
   "Fire Aspect": "@enchantment.minecraft.fire_aspect",
+  "Respiration": "@enchantment.minecraft.respiration",
   "Efficiency": "@enchantment.minecraft.efficiency",
   "Protection": "@enchantment.minecraft.protection",
   "Silk Touch": "@enchantment.minecraft.silk_touch",
@@ -463,6 +464,10 @@
    "r": "коллекция:$1"
   },
   {
+   "p": "^Sea\\ Lumies:(\\s*)$",
+   "r": "Морские люми:$1"
+  },
+  {
    "p": "^Difficulty:(\\s*)$",
    "r": "Сложность:$1"
   },
@@ -519,6 +524,10 @@
    "r": "Стоимость маны:$1"
   },
   {
+   "p": "^Combat\\ XP:(\\s*)$",
+   "r": "Опыт боя:$1"
+  },
+  {
    "p": "^Spelunker ([IVXLC]{1,10})(,?\\s*)$",
    "r": "Спелеолог $1$2"
   },
@@ -531,10 +540,6 @@
    "r": "Завершено:$1"
   },
   {
-   "p": "^Combat\\ XP:(\\s*)$",
-   "r": "Опыт Combat:$1"
-  },
-  {
    "p": "^Gemstones:(\\s*)$",
    "r": "Самоцветы:$1"
   },
@@ -543,12 +548,12 @@
    "r": "Типы мобов:$1"
   },
   {
-   "p": "^Inventory:(\\s*)$",
-   "r": "Инвентарь:$1"
-  },
-  {
    "p": "^Fame\\ Rank:(\\s*)$",
    "r": "Ранг славы:$1"
+  },
+  {
+   "p": "^Inventory:(\\s*)$",
+   "r": "Инвентарь:$1"
   },
   {
    "p": "^Held\\ Item:(\\s*)$",
@@ -867,6 +872,10 @@
    "r": "остров:$1"
   },
   {
+   "p": "^Combat:(\\s*)$",
+   "r": "Бой:$1"
+  },
+  {
    "p": "^Seller:(\\s*)$",
    "r": "Продавец:$1"
   },
@@ -877,10 +886,6 @@
   {
    "p": "^Shards:(\\s*)$",
    "r": "Осколки:$1"
-  },
-  {
-   "p": "^Combat:(\\s*)$",
-   "r": "Бой:$1"
   },
   {
    "p": "^Reward:(\\s*)$",
@@ -905,6 +910,10 @@
   {
    "p": "^Necron:(\\s*)$",
    "r": "Некрон:$1"
+  },
+  {
+   "p": "^Mixins:(\\s*)$",
+   "r": "Добавки:$1"
   },
   {
    "p": "^Global:(\\s*)$",
@@ -1011,6 +1020,10 @@
    "r": "Всего:$1"
   },
   {
+   "p": "^Stats:(\\s*)$",
+   "r": "Характеристики:$1"
+  },
+  {
    "p": "^Silky:(\\s*)$",
    "r": "Шелковистый:$1"
   },
@@ -1063,12 +1076,12 @@
    "r": "Ступень:$1"
   },
   {
-   "p": "^Boss:(\\s*)$",
-   "r": "Босс:$1"
-  },
-  {
    "p": "^Fuel:(\\s*)$",
    "r": "Топливо:$1"
+  },
+  {
+   "p": "^Boss:(\\s*)$",
+   "r": "Босс:$1"
   },
   {
    "p": "^Mage:(\\s*)$",
@@ -1107,6 +1120,7 @@
   "Aqua Affinity": "@enchantment.minecraft.aqua_affinity",
   "Depth Strider": "@enchantment.minecraft.depth_strider",
   "Fire Aspect": "@enchantment.minecraft.fire_aspect",
+  "Respiration": "@enchantment.minecraft.respiration",
   "Efficiency": "@enchantment.minecraft.efficiency",
   "Protection": "@enchantment.minecraft.protection",
   "Silk Touch": "@enchantment.minecraft.silk_touch",

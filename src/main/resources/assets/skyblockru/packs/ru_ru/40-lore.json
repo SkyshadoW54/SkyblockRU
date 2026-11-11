@@ -131,7 +131,8 @@
   "Earned by: {s}": "Получено: {s}",
   "Use Roman Numerals for skill levels.": "Использовать римские цифры для уровней навыков.",
   "Taming Pet": "Питомец укротителя",
-  "Fractured Soul Pet": "Питомец расколотой души"
+  "Fractured Soul Pet": "Питомец расколотой души",
+  "Requires Garden Level {n}.": "Нужен уровень Garden {n}."
  },
  "regex": [
   {

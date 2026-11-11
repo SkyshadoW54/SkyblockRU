@@ -1815,5 +1815,13 @@
   "ADMIN DUNGEON TROPHY": "АДМИНСКИЙ ТРОФЕЙ ПОДЗЕМЕЛЬЯ",
   "ADMIN WATERING CAN": "АДМИНСКАЯ ЛЕЙКА",
   "ADMIN DUNGEON WATERING CAN": "АДМИНСКАЯ ЛЕЙКА ПОДЗЕМЕЛЬЯ"
- }
+ },
+ "regex": [
+  {
+   "_": "строка редкости в обрамлении обфусцированных глифов: «a MYTHIC HELMET a»",
+   "p": "^a ([A-Z][A-Z ]+[A-Z]) a$",
+   "r": "a $1 a",
+   "tg": true
+  }
+ ]
 }
