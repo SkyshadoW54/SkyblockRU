@@ -48,6 +48,43 @@ public final class Paragraphs {
 	private static final int MIN_LINES = 2;
 
 	/**
+	 * Строка-линия «--------------------------»: Hypixel рисует ею рамку
+	 * вокруг перка министра БЕЗ пустых строк вокруг, и она склеивается с
+	 * абзацем в один кусок (дамп 18.10, «Minister Finnegan»).
+	 */
+	private static final Pattern SEPARATOR = Pattern.compile("^-{5,}$");
+
+	/** Строка состоит из одной линии — рамка, а не текст. */
+	private static boolean separator(Component line) {
+		return SEPARATOR.matcher(LegacyText.strip(line.getString()).trim()).matches();
+	}
+
+	/**
+	 * Тот же кусок без линий по краям — или null, если резать нечего.
+	 *
+	 * <p>⚠️ Это ЗАПАСНОЙ ключ, а не замена: сперва спрашивается кусок целиком
+	 * (в корпусе есть переводы с линиями в ключе — «Double Trouble», «GOATed»),
+	 * и только без него — внутренность. Так перевод перка «Blooming Business»,
+	 * купленный для меню мэра, находится и в подсказке министра, а линии
+	 * остаются на месте. Копия признака — {@code make_paragraphs.trim_separators},
+	 * сверяет {@code check_contract.py}.
+	 */
+	private static Run withoutSeparators(List<Component> lines, Run run) {
+		int from = run.from();
+		int to = run.to();
+		while (from < to && separator(lines.get(from))) {
+			from++;
+		}
+		while (to > from && separator(lines.get(to - 1))) {
+			to--;
+		}
+		if ((from == run.from() && to == run.to()) || to - from < MIN_LINES) {
+			return null;
+		}
+		return new Run(from, to);
+	}
+
+	/**
 	 * Сколько разных цветов ещё считается «заголовок и описание».
 	 * Больше — это разметка: таблица характеристик, список полей.
 	 */
@@ -1656,6 +1693,20 @@ public final class Paragraphs {
 				continue;
 			}
 			Translator.Match match = Translator.lookupParagraph(source, origin, item);
+			if (match == null) {
+				// Кусок в рамке из линий: без них ключ может быть уже куплен.
+				Run inner = withoutSeparators(lines, run);
+				if (inner != null) {
+					String innerKey = key(lines, inner);
+					Translator.Match innerMatch = innerKey.isEmpty()
+							? null : Translator.lookupParagraph(innerKey, origin, item);
+					if (innerMatch != null) {
+						run = inner;
+						source = innerKey;
+						match = innerMatch;
+					}
+				}
+			}
 			// ⚠️ Цвета записываем ДО проверки перевода, а не после.
 			//
 			// Это ИСТОЧНИК ДАННЫХ для разметки, и собирать его надо для КАЖДОГО
@@ -1668,6 +1719,13 @@ public final class Paragraphs {
 			noteColors(source, new ArrayList<>(lines.subList(run.from(), run.to())),
 					lines.get(run.from()).getStyle(),
 					match == null ? "" : match.text(), item);
+			// ⚠️ Смесь языков в АБЗАЦЕ замечаем здесь: построчный путь зовёт
+			// noteMixed сам (TextTranslator), а абзацы шли мимо детектора —
+			// «…к твоему тарифу Abiphone…» в режиме full никто не записывал,
+			// и замер покрытия считал абзац закрытым (игрок, 11.10).
+			if (match != null) {
+				UnknownStrings.noteMixed(source, match.text());
+			}
 			if (match == null) {
 				// ⚠️ ЗАПАСНОЙ ПУТЬ: абзаца целиком нет, но он мог быть склеен
 				// из НЕСКОЛЬКИХ зачарований, и каждое переведено по отдельности

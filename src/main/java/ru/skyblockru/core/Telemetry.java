@@ -490,14 +490,9 @@ public final class Telemetry {
 				say(ChatFormatting.GRAY, Component.translatable("skyblockru.telemetry.what"));
 				say(ChatFormatting.GRAY, Component.translatable("skyblockru.telemetry.off"));
 				if (policy != null && !policy.isBlank()) {
-					// ⚠️ Ссылка задаётся ПО-РАЗНОМУ: в новых версиях это
-					// `ClickEvent.OpenUrl(URI)`, в 1.21.4 и ниже — конструктор
-					// с действием и СТРОКОЙ. Замена имени тут не поможет:
-					// расходится и тип аргумента, и форма вызова.
-					//? if >=1.21.5 {
+					// ⚠️ Ссылка — `ClickEvent.OpenUrl(URI)`, не конструктор
+					// с действием и строкой из примеров под 1.21.4 и старше.
 					ClickEvent open = new ClickEvent.OpenUrl(URI.create(policy));
-					//?} else
-					/*ClickEvent open = new ClickEvent(ClickEvent.Action.OPEN_URL, policy);*/
 					say(ChatFormatting.AQUA,
 							Component.translatable("skyblockru.telemetry.policy")
 									.copy().withStyle(Style.EMPTY

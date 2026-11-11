@@ -185,7 +185,9 @@ public final class TextHooks {
 				ru.skyblockru.core.UnknownStrings.snapshot(lines));
 		// Справка по терминам — ПОСЛЕ снимка: это наша добавка, а не то,
 		// что прислал Hypixel, и в сравнении подсказок ей делать нечего.
-		ru.skyblockru.core.Wiki.append(stack, lines);
+		// ⚠️ Термины она ищет в `raw` — оригинале ДО перевода: в режиме full
+		// зачарования и жаргон на экране русские, а статьи справки английские.
+		ru.skyblockru.core.Wiki.append(stack, lines, raw);
 	}
 
 	/**

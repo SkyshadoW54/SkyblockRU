@@ -11,7 +11,8 @@ import java.util.Date
 //   * зависимости берутся через `implementation`, а не `modImplementation`;
 //   * строки `mappings` нет вовсе;
 //   * задача сборки — `jar`, а не `remapJar`.
-// Для старых версий всё наоборот — см. build-obfuscated.gradle.kts.
+// Для старых версий всё было наоборот — копия прежнего скрипта под 1.21.11
+// лежит в notes/archive/build-obfuscated.gradle.kts (снята 11.10.2026).
 plugins {
     id("net.fabricmc.fabric-loom")
 }
@@ -21,6 +22,8 @@ val mcVersion: String = stonecutter.current.version
 // Версии Fabric API держим здесь, а не в gradle.properties: свойство одно
 // на весь проект, а версий сборки теперь несколько.
 val fabricApiVersion: String = when (mcVersion) {
+    // maven.fabricmc.net, maven-metadata.xml fabric-api, 11.10.2026
+    "26.3" -> "0.162.0+26.3"
     "26.2" -> "0.155.2+26.2"
     "26.1" -> "0.155.2+26.1.2"
     else -> error("не знаю версию Fabric API для $mcVersion — допиши сюда")
@@ -91,12 +94,19 @@ tasks.processResources {
     // отказывается его грузить: «requires any version between 26.1 and 26.3,
     // but only the wrong version is present: 1.21.11». Компиляция такого
     // не ловит по построению: метаданные она не читает.
+    // ⚠️ У КАЖДОЙ сборки свой диапазон: широкий значит, что мод грузится там,
+    // где не собирался. Новая версия игры — новая строка здесь.
+    val minecraftRange = when (mcVersion) {
+        // 26.1 и 26.2 проверены одним jar — классы побайтово совпадают
+        "26.2" -> ">=26.1 <26.3"
+        "26.3" -> ">=26.3 <26.4"
+        else -> error("не знаю диапазон версий игры для $mcVersion — допиши сюда")
+    }
     filesMatching("fabric.mod.json") {
         expand(
             "version" to modVersion,
             "build_time" to buildTime,
-            // 26.1 и 26.2 проверены одним jar — классы побайтово совпадают
-            "minecraft_range" to ">=26.1 <26.3",
+            "minecraft_range" to minecraftRange,
             "java_version" to "25",
         )
     }

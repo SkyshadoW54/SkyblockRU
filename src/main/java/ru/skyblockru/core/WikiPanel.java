@@ -7,12 +7,13 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
-import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipPositioner;
 import net.minecraft.client.gui.screens.inventory.tooltip.DefaultTooltipPositioner;
+import net.minecraft.client.gui.screens.inventory.tooltip.TooltipRenderUtil;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
-import org.joml.Vector2i;
+import org.joml.Matrix3x2f;
+import org.joml.Vector2f;
 import org.joml.Vector2ic;
 
 /**
@@ -23,14 +24,43 @@ import org.joml.Vector2ic;
  * столбец, а на высоких подсказках аукциона нижняя часть уходила за край
  * экрана. Игрок попросил второе окно — такое же на вид, но рядом.
  *
- * <p><b>Как.</b> Рисуем ВТОРУЮ подсказку тем же ванильным механизмом, что и
- * первую ({@code GuiGraphicsExtractor.tooltip}), поэтому рамка, фон и шрифт
+ * <p><b>Как.</b> Окно рисуем САМИ, но ванильными деталями: рамка —
+ * {@code TooltipRenderUtil}, строки — {@code ClientTooltipComponent}, ровно
+ * то, из чего игра собирает свою подсказку. Поэтому рамка, фон и шрифт
  * совпадают с игрой сами собой — ничего не срисовываем руками.
  *
- * <p>⚠️ Место выбирает {@link SidePositioner}: справа от основной подсказки,
- * а если там не влезает — слева. Позицию самой подсказки не угадываем,
- * а спрашиваем у ванильного {@link DefaultTooltipPositioner} — он же её
- * и ставит, значит панель приклеена к ней, а не к курсору.
+ * <p>⚠️⚠️ <b>НЕ через {@code GuiGraphicsExtractor.tooltip}</b>, хотя до 11.10
+ * было именно так. В этот метод встают соседи, и в сборке SkyBlock Enhanced
+ * справка уезжала ПОД подсказку предмета (снимок игрока). Замер по байткоду
+ * jar из сборки:
+ * <ul>
+ *   <li>SkyBlock Enhancements ({@code TooltipScrollGuiGraphicsMixin}) при
+ *       включённой прокрутке подсказок выкидывает расстановщик позиции у
+ *       ЛЮБОЙ подсказки и ставит свой (ванильный плюс прижим к верху). Наш
+ *       столбец вставал у курсора — прямо на подсказку предмета;
+ *   <li>он же сбрасывает прокрутку, когда у подсказки сменилась первая
+ *       строка, — наши столбцы через тот же метод сбивали её каждый кадр;
+ *   <li>Stfu ({@code Tooltips}) зажимает любую подсказку по краям экрана,
+ *       а прижатую к левому краю переносит НАД курсор.
+ * </ul>
+ * Им всем нужна подсказка ПРЕДМЕТА; наше окно — не их забота, и рисовать
+ * его мимо их перехватов честнее, чем угадывать, что они с ним сделают.
+ * Сторожит {@code tools/check_neighbours.py} (свои окна).
+ *
+ * <p>⚠️⚠️ <b>Рисуем ПОСЛЕ подсказки предмета.</b> Игра её откладывает
+ * ({@code setTooltipForNextFrame}) и выводит в {@code extractDeferredElements}
+ * последней, на НОВОМ слое ({@code nextStratum}): всё нарисованное раньше
+ * оказывается ПОД ней. Пока окна не пересекались, этого не было видно; стоило
+ * соседу сдвинуть подсказку — и справка пряталась. Поэтому заказ делает
+ * {@code TooltipSideMixin} ({@link #request}), а рисует
+ * {@code DeferredTooltipMixin} на выходе из отложенной отрисовки.
+ *
+ * <p>⚠️ <b>Место подсказки предмета не угадываем.</b> Соседи её двигают
+ * (прижим к верху, прокрутка, перенос над курсор) и дописывают строки (цены,
+ * недостающие зачарования), а прежний расчёт ванильным расстановщиком по
+ * нашим размерам этого не знал. Берём рамку, которую игра РЕАЛЬНО нарисовала
+ * ({@code TooltipBackgroundMixin}), вместе со сдвигом прокрутки. Расчёт
+ * остался запасным путём — если рамку поймать не удалось.
  */
 public final class WikiPanel {
 
@@ -75,19 +105,137 @@ public final class WikiPanel {
 	 */
 	private static final int MAX_WIDTH = 340;
 
+	/**
+	 * Заказ на панель в этом кадре.
+	 *
+	 * <p>⚠️ Кадр узнаём по ХОЛСТУ: игра создаёт его заново на каждый кадр
+	 * (проверено javap: 26.2 — {@code Gui.extractRenderState}, 26.1.2 —
+	 * {@code GameRenderer.extractGui}, 1.21.11 — {@code GameRenderer.render}).
+	 * Заказ прошлого кадра с чужим холстом не совпадёт уже никогда — и панель
+	 * от предмета, с которого курсор ушёл, не мелькнёт.
+	 */
+	private record Request(GuiGraphicsExtractor extractor, ItemStack stack,
+	                       int mouseX, int mouseY) {
+	}
+
+	/** Где стоит СОДЕРЖИМОЕ подсказки предмета: левый верх и размер. */
+	private record Box(int x, int y, int width, int height) {
+	}
+
+	private static Request request;
+
+	/** Идёт отложенная отрисовка того кадра, для которого есть заказ. */
+	private static boolean deferred;
+
+	/**
+	 * Поза холста на входе в отложенную отрисовку.
+	 *
+	 * <p>Рамку подсказки игра рисует уже внутри сдвига: SkyBlock Enhancements
+	 * так прокручивает длинную подсказку. Пересчитав рамку из позы на момент
+	 * рисования в эту, получаем место, где подсказку ВИДНО, — в тех же
+	 * единицах, в каких потом рисуем свою панель.
+	 */
+	private static Matrix3x2f base;
+
+	/** Рамка подсказки предмета, пойманная в этом кадре; нет — {@code null}. */
+	private static Box mainBox;
+
+	/** Рисуем своё окно — свои рамки за подсказку предмета не принимаем. */
+	private static boolean drawing;
+
 	private WikiPanel() {
 	}
 
 	/**
-	 * Рисует панель, если для предмета под курсором есть справка.
+	 * Заказывает панель для предмета под курсором — рисовать ещё рано.
+	 *
+	 * <p>Зовётся на выходе из построения подсказки предмета: она к этому
+	 * моменту только ЗАКАЗАНА, а нарисована будет позже, в отложенной
+	 * отрисовке. Там же, сразу за ней, встанет и панель.
 	 *
 	 * @param hovered предмет под курсором; справка готовится при построении
 	 *                подсказки, и {@link Wiki} отдаст её только для ТОГО ЖЕ
 	 *                предмета — иначе показали бы пояснение от соседнего слота
 	 */
-	public static void render(GuiGraphicsExtractor extractor, ItemStack hovered,
-	                          int mouseX, int mouseY) {
-		Wiki.Panel panel = Wiki.panelFor(hovered);
+	public static void request(GuiGraphicsExtractor extractor, ItemStack hovered,
+	                           int mouseX, int mouseY) {
+		if (extractor == null || Wiki.panelFor(hovered) == null) {
+			return;
+		}
+		request = new Request(extractor, hovered, mouseX, mouseY);
+	}
+
+	/** Вход в отложенную отрисовку: начинаем ждать рамку подсказки предмета. */
+	public static void beforeDeferred(GuiGraphicsExtractor extractor) {
+		Request ready = request;
+		mainBox = null;
+		base = null;
+		deferred = ready != null && ready.extractor() == extractor;
+		if (deferred) {
+			base = new Matrix3x2f(extractor.pose());
+		}
+	}
+
+	/**
+	 * Игра рисует рамку подсказки — если это подсказка предмета, запоминаем,
+	 * где она встала.
+	 *
+	 * <p>⚠️ Зовётся на КАЖДУЮ рамку подсказки в игре, поэтому первым делом —
+	 * дешёвая проверка флага. Берём первую рамку отложенной отрисовки: это
+	 * и есть отложенная подсказка предмета (картинки внутри неё рисуются уже
+	 * после её рамки).
+	 */
+	public static void observeBackground(GuiGraphicsExtractor extractor,
+	                                     int x, int y, int width, int height) {
+		if (!deferred || drawing || mainBox != null) {
+			return;
+		}
+		Request ready = request;
+		if (ready == null || ready.extractor() != extractor || base == null) {
+			return;
+		}
+		Guard.run("wiki panel: main tooltip box",
+				() -> mainBox = onBase(extractor, x, y, width, height));
+	}
+
+	/** Рамку из позы на момент рисования — в позу, в которой рисуем панель. */
+	private static Box onBase(GuiGraphicsExtractor extractor,
+	                          int x, int y, int width, int height) {
+		Matrix3x2f toBase = new Matrix3x2f(base).invert().mul(extractor.pose());
+		Vector2f from = toBase.transformPosition(x, y, new Vector2f());
+		Vector2f to = toBase.transformPosition(x + width, y + height, new Vector2f());
+		if (!Float.isFinite(from.x) || !Float.isFinite(from.y)
+				|| !Float.isFinite(to.x) || !Float.isFinite(to.y)) {
+			return null;
+		}
+		return new Box(Math.round(Math.min(from.x, to.x)), Math.round(Math.min(from.y, to.y)),
+				Math.round(Math.abs(to.x - from.x)), Math.round(Math.abs(to.y - from.y)));
+	}
+
+	/** Выход из отложенной отрисовки: подсказка предмета нарисована — наша очередь. */
+	public static void afterDeferred(GuiGraphicsExtractor extractor) {
+		deferred = false;
+		Request ready = request;
+		if (ready == null || ready.extractor() != extractor) {
+			return;
+		}
+		Box main = mainBox;
+		request = null;
+		mainBox = null;
+		base = null;
+		drawing = true;
+		try {
+			// Своей панелью экран ронять нельзя: она приятная добавка,
+			// а не то, ради чего игрок открыл меню.
+			Guard.run("wiki panel", () -> draw(extractor, ready, main));
+		} finally {
+			drawing = false;
+		}
+	}
+
+	/** Раскладывает справку по столбцам и рисует их рядом с подсказкой предмета. */
+	private static void draw(GuiGraphicsExtractor extractor, Request ready, Box caught) {
+		Wiki.Panel panel = Wiki.panelFor(ready.stack());
 		if (panel == null) {
 			return;
 		}
@@ -131,59 +279,91 @@ public final class WikiPanel {
 		List<List<FormattedCharSequence>> columns =
 				split(parts, breaks, screenHeight, font);
 
-		try {
-			// ⚠️ Позицию основной подсказки спрашиваем У ВАНИЛЬНОГО позиционера —
-			// того самого, который её и ставит. Раньше это делал каждый столбец
-			// сам внутри себя, и знать, где встал сосед, было неоткуда: второй
-			// столбец не влезал справа, зажим по краю экрана двигал его обратно
-			// ВЛЕВО — ровно на подсказку, — и он оказывался под ней.
-			Vector2ic main = DefaultTooltipPositioner.INSTANCE.positionTooltip(
-					screenWidth, screenHeight, mouseX, mouseY,
-					panel.mainWidth(), panel.mainHeight());
+		// ⚠️ Рамка подсказки предмета — та, что игра нарисовала в этом кадре.
+		// Запасной путь — расчёт ванильным расстановщиком по нашим размерам:
+		// так панель стояла до 11.10, и рядом с ванильной подсказкой он верен.
+		Box main = caught != null ? caught : predicted(ready, panel, screenWidth, screenHeight);
 
-			List<Integer> widths = new ArrayList<>();
-			for (List<FormattedCharSequence> column : columns) {
-				widths.add(widthOf(column, font));
-			}
-			List<Integer> places = PanelLayout.place(
-					screenWidth, main.x(), panel.mainWidth(), GAP, EDGE, widths);
+		List<Integer> widths = new ArrayList<>();
+		for (List<FormattedCharSequence> column : columns) {
+			widths.add(widthOf(column, font));
+		}
+		List<Integer> places = PanelLayout.place(
+				screenWidth, main.x(), main.width(), GAP, EDGE, widths);
 
-			// Не поместившийся столбец не рисуем вовсе: половина окна под чужой
-			// подсказкой хуже, чем его отсутствие. Зато говорим об этом вслух.
-			int shown = 0;
-			for (int i = 0; i < places.size(); i++) {
-				shown += columns.get(i).size();
-			}
-			int hidden = hiddenArticles(breaks, parts.size(), shown);
-			if (hidden > 0 && !places.isEmpty()) {
-				List<FormattedCharSequence> last = columns.get(places.size() - 1);
-				last.add(Component
-						.translatable("skyblockru.wiki.more", hidden)
-						.withStyle(net.minecraft.ChatFormatting.GRAY)
-						.getVisualOrderText());
-			}
+		// Не поместившийся столбец не рисуем вовсе: половина окна под чужой
+		// подсказкой хуже, чем его отсутствие. Зато говорим об этом вслух.
+		int shown = 0;
+		for (int i = 0; i < places.size(); i++) {
+			shown += columns.get(i).size();
+		}
+		int hidden = hiddenArticles(breaks, parts.size(), shown);
+		if (hidden > 0 && !places.isEmpty()) {
+			List<FormattedCharSequence> last = columns.get(places.size() - 1);
+			last.add(Component
+					.translatable("skyblockru.wiki.more", hidden)
+					.withStyle(net.minecraft.ChatFormatting.GRAY)
+					.getVisualOrderText());
+		}
 
-			// ⚠️ ЕДИНСТВЕННОЕ МЕСТО, где версии расходятся по-настоящему.
-			//
-			// В 1.21.6+ и 26.x отрисовка берёт List<ClientTooltipComponent>,
-			// а в 1.21.5 и ниже — List<FormattedCharSequence> и позиционер
-			// ПОСЛЕ списка. Ради этого весь класс и переведён на строки:
-			// компоненты — обёртка над теми же строками, и оборачивать их
-			// можно в последний момент, а не тащить сквозь всю раскладку.
-			for (int i = 0; i < places.size(); i++) {
-				var positioner = new FixedPositioner(places.get(i), main.y());
-				//? if >=1.21.6 {
-				List<ClientTooltipComponent> wrapped = new ArrayList<>();
-				for (FormattedCharSequence row : columns.get(i)) {
-					wrapped.add(ClientTooltipComponent.create(row));
-				}
-				extractor.tooltip(font, wrapped, mouseX, mouseY, positioner, null);
-				//?} else
-				/*extractor.renderTooltip(font, columns.get(i), positioner, mouseX, mouseY);*/
-			}
-		} catch (RuntimeException ignored) {
-			// Своей панелью экран ронять нельзя: она приятная добавка,
-			// а не то, ради чего игрок открыл меню.
+		for (int i = 0; i < places.size(); i++) {
+			drawColumn(extractor, font, columns.get(i), places.get(i), main.y(), screenHeight);
+		}
+	}
+
+	/**
+	 * Где встала бы ВАНИЛЬНАЯ подсказка предмета — запасной путь.
+	 *
+	 * <p>Спрашиваем тот самый расстановщик, которым её ставит игра, с размерами,
+	 * посчитанными при построении подсказки. Чужие сдвиги и дописанные
+	 * строки он не знает — поэтому только когда настоящую рамку не поймали.
+	 */
+	private static Box predicted(Request ready, Wiki.Panel panel,
+	                             int screenWidth, int screenHeight) {
+		Vector2ic at = DefaultTooltipPositioner.INSTANCE.positionTooltip(
+				screenWidth, screenHeight, ready.mouseX(), ready.mouseY(),
+				panel.mainWidth(), panel.mainHeight());
+		return new Box(at.x(), at.y(), panel.mainWidth(), panel.mainHeight());
+	}
+
+	/**
+	 * Рисует один столбец — так же, как игра рисует подсказку.
+	 *
+	 * <p>Повторяет ванильный {@code tooltip} по байткоду (26.2, 26.1.2,
+	 * 1.21.11 одинаковы): высота — сумма строк, у одной строки на 2 меньше;
+	 * рамка вокруг содержимого; под первой строкой лишние 2 пикселя.
+	 *
+	 * <p>⚠️ X приходит готовым из {@link PanelLayout} и здесь НЕ правится:
+	 * зажим по краю экрана — ровно то, из-за чего столбец уезжал под подсказку.
+	 * По высоте поджать можно и нужно: столбец бывает длиннее подсказки.
+	 *
+	 * @param top верх подсказки предмета: два окна на одной линии читаются
+	 *            как одно целое
+	 */
+	private static void drawColumn(GuiGraphicsExtractor extractor, Font font,
+	                               List<FormattedCharSequence> rows, int x, int top,
+	                               int screenHeight) {
+		List<ClientTooltipComponent> lines = new ArrayList<>(rows.size());
+		int width = 0;
+		int height = rows.size() == 1 ? -2 : 0;
+		for (FormattedCharSequence row : rows) {
+			ClientTooltipComponent line = ClientTooltipComponent.create(row);
+			lines.add(line);
+			width = Math.max(width, line.getWidth(font));
+			height += line.getHeight(font);
+		}
+		int y = top;
+		if (y + height > screenHeight - EDGE) {
+			y = screenHeight - height - EDGE;
+		}
+		y = Math.max(EDGE, y);
+
+		TooltipRenderUtil.extractTooltipBackground(extractor, x, y, width, height, null);
+		int lineY = y;
+		for (int i = 0; i < lines.size(); i++) {
+			ClientTooltipComponent line = lines.get(i);
+			line.extractText(extractor, font, x, lineY);
+			lineY += line.getHeight(font) + (i == 0 ? 2 : 0);
 		}
 	}
 
@@ -289,30 +469,5 @@ public final class WikiPanel {
 			width = Math.max(width, font.width(row));
 		}
 		return width;
-	}
-
-	/**
-	 * Ставит столбец в уже посчитанное место.
-	 *
-	 * <p>⚠️ X приходит готовым из {@link #layout} и здесь НЕ правится: зажим
-	 * по краю экрана — ровно то, из-за чего столбец уезжал под подсказку.
-	 * Раз место выбрано с учётом всех окон сразу, двигать его поздно и незачем.
-	 *
-	 * @param x   левый край содержимого столбца
-	 * @param top верх основной подсказки: два окна на одной линии читаются
-	 *            как одно целое
-	 */
-	private record FixedPositioner(int x, int top) implements ClientTooltipPositioner {
-
-		@Override
-		public Vector2ic positionTooltip(int guiWidth, int guiHeight,
-		                                 int mouseX, int mouseY, int width, int height) {
-			// По высоте поджать можно и нужно: столбец бывает длиннее подсказки.
-			int y = top;
-			if (y + height > guiHeight - EDGE) {
-				y = guiHeight - height - EDGE;
-			}
-			return new Vector2i(x, Math.max(EDGE, y));
-		}
 	}
 }

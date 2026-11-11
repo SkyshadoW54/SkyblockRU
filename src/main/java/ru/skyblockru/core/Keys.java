@@ -5,7 +5,6 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Клавиши мода — НАСТРАИВАЕМЫЕ, из обычного меню управления Minecraft.
@@ -28,6 +27,15 @@ import org.lwjgl.glfw.GLFW;
  * <p>⚠️ Сигнатуры проверены javap по клиентскому jar 26.2, а не взяты
  * из примеров: здесь конструктор принимает {@code KeyMapping.Category},
  * а не строку, как в 1.21. Примеры из интернета тут не собираются.
+ *
+ * <p>⚠️⚠️ В 26.3 ИГРА УШЛА С GLFW НА SDL (javap 11.10: {@code SDLEventHandler},
+ * {@code isKeyDown} читает {@code SDL_GetKeyboardState}). Класса
+ * {@code org.lwjgl.glfw.GLFW} в 26.3 нет вовсе, и коды клавиш другие:
+ * левый Shift — 340 (GLFW) в 26.2 и 225 (скан-код SDL) в 26.3. Поэтому
+ * коды берём ТОЛЬКО из {@code InputConstants.KEY_*}: имена в обеих версиях
+ * одни, а значения — константы, и каждая сборка вшивает свои. По той же
+ * причине jar 26.2 на 26.3 не годится, даже если бы загрузился: Shift
+ * в нём — это 340, а в 26.3 под 340 ничего нет.
  */
 public final class Keys {
 
@@ -39,22 +47,24 @@ public final class Keys {
 	 * и это уже второе такое место в одном классе — первым был конструктор
 	 * {@code KeyMapping}, берущий {@code Category} вместо строки.
 	 */
-	//? if >=1.21.9 {
 	private static final KeyMapping.Category CATEGORY =
 			KeyMapping.Category.register(
 					Identifier.fromNamespaceAndPath("skyblockru", "main"));
-	//?} else
-	/*private static final String CATEGORY = "key.category.skyblockru.main";*/
+
+	/*
+	 * ⚠️ Конструктор БЕЗ типа клавиши — нарочно. Тип в 26.3 переименован
+	 * (KEYSYM -> KEYBOARD, а SCANCODE исчез), и этот конструктор сам
+	 * подставляет клавиатурный тип своей версии (javap обеих: KEYSYM в 26.2,
+	 * KEYBOARD в 26.3). Так регистрации не нужны условные блоки.
+	 */
 
 	/** Справка по ТЕРМИНАМ: что такое Magic Find, Pristine, Heat. */
 	public static final KeyMapping WIKI = KeyMappingHelper.registerKeyMapping(
-			new KeyMapping("key.skyblockru.wiki", InputConstants.Type.KEYSYM,
-					GLFW.GLFW_KEY_LEFT_SHIFT, CATEGORY));
+			new KeyMapping("key.skyblockru.wiki", InputConstants.KEY_LSHIFT, CATEGORY));
 
 	/** Справка по ЗАЧАРОВАНИЯМ: что делает Lapidary, Prismatic, Flowstate. */
 	public static final KeyMapping ENCHANTS = KeyMappingHelper.registerKeyMapping(
-			new KeyMapping("key.skyblockru.enchants", InputConstants.Type.KEYSYM,
-					GLFW.GLFW_KEY_LEFT_ALT, CATEGORY));
+			new KeyMapping("key.skyblockru.enchants", InputConstants.KEY_LALT, CATEGORY));
 
 	/**
 	 * ПОКАЗАТЬ ОРИГИНАЛ: пока держишь — подсказка английская, как её прислал
@@ -74,8 +84,7 @@ public final class Keys {
 	 * бы пополнять корпус — а это ровно те подсказки, которые ему интересны.
 	 */
 	public static final KeyMapping ORIGINAL = KeyMappingHelper.registerKeyMapping(
-			new KeyMapping("key.skyblockru.original", InputConstants.Type.KEYSYM,
-					GLFW.GLFW_KEY_V, CATEGORY));
+			new KeyMapping("key.skyblockru.original", InputConstants.KEY_V, CATEGORY));
 
 	/** Держит ли игрок клавишу «показать оригинал» прямо сейчас. */
 	public static boolean showingOriginal() {
@@ -105,8 +114,9 @@ public final class Keys {
 	 * берём из настроек, а не из константы.
 	 *
 	 * <p>⚠️ Клавиша может быть НЕ НАЗНАЧЕНА вовсе (игрок снял привязку) —
-	 * тогда {@code getValue()} даёт GLFW_KEY_UNKNOWN, и спрашивать окно про
-	 * него нельзя: вернётся мусор. Считаем, что не зажата.
+	 * тогда спрашивать окно про неё нельзя: вернётся мусор. Считаем, что не
+	 * зажата. «Нет клавиши» — {@code InputConstants.UNKNOWN}, а не число:
+	 * в 26.2 это -1 (GLFW), в 26.3 — 0 (SDL), javap обеих версий.
 	 */
 	public static boolean down(KeyMapping mapping) {
 		Minecraft client = Minecraft.getInstance();
@@ -114,38 +124,49 @@ public final class Keys {
 			return false;
 		}
 		InputConstants.Key key = KeyMappingHelper.getBoundKeyOf(mapping);
-		if (key == null || key.getType() != InputConstants.Type.KEYSYM
-				|| key.getValue() == GLFW.GLFW_KEY_UNKNOWN) {
+		if (key == null || key.getType() != KEYBOARD
+				|| key.getValue() == InputConstants.UNKNOWN.getValue()) {
 			return false;
 		}
-		// ⚠️ ОКНО передаётся ПО-РАЗНОМУ. В 1.21.9+ и 26.x `isKeyDown` берёт
-		// сам объект окна, а в 1.21.8 и ниже — его дескриптор (long). Замена
-		// имени тут не спасает: расходится ТИП аргумента, поэтому условный блок.
-		//? if >=1.21.9 {
-		var handle = client.getWindow();
-		//?} else
-		/*var handle = client.getWindow().getWindow();*/
-		if (InputConstants.isKeyDown(handle, key.getValue())) {
+		if (isKeyDown(client, key.getValue())) {
 			return true;
 		}
 		// ⚠️ У Shift, Ctrl и Alt ДВЕ клавиши, левая и правая. Игрок жмёт ту,
 		// что под рукой, а в настройках записана одна. Раньше это учитывалось
 		// для Shift явно; теперь правило общее для всех парных клавиш.
 		int twin = twinOf(key.getValue());
-		return twin != GLFW.GLFW_KEY_UNKNOWN
-				&& InputConstants.isKeyDown(handle, twin);
+		return twin != InputConstants.UNKNOWN.getValue() && isKeyDown(client, twin);
+	}
+
+	// ⚠️ Тип «клавиша клавиатуры» в 26.3 переименован: KEYSYM -> KEYBOARD.
+	//? if <26.3 {
+	private static final InputConstants.Type KEYBOARD = InputConstants.Type.KEYSYM;
+	//?} else
+	/*private static final InputConstants.Type KEYBOARD = InputConstants.Type.KEYBOARD;*/
+
+	/**
+	 * ⚠️ Окно спрашивается ПО-РАЗНОМУ: до 26.3 `isKeyDown` берёт объект окна
+	 * (внутри — glfwGetKey), в 26.3 окна не берёт вовсе — читает общее
+	 * состояние клавиатуры SDL. Расходится число аргументов, замена имени
+	 * не спасает — поэтому условный блок.
+	 */
+	private static boolean isKeyDown(Minecraft client, int code) {
+		//? if <26.3 {
+		return InputConstants.isKeyDown(client.getWindow(), code);
+		//?} else
+		/*return InputConstants.isKeyDown(code);*/
 	}
 
 	/** Парная клавиша: левый Shift ↔ правый Shift и так далее. */
 	private static int twinOf(int code) {
 		return switch (code) {
-			case GLFW.GLFW_KEY_LEFT_SHIFT -> GLFW.GLFW_KEY_RIGHT_SHIFT;
-			case GLFW.GLFW_KEY_RIGHT_SHIFT -> GLFW.GLFW_KEY_LEFT_SHIFT;
-			case GLFW.GLFW_KEY_LEFT_CONTROL -> GLFW.GLFW_KEY_RIGHT_CONTROL;
-			case GLFW.GLFW_KEY_RIGHT_CONTROL -> GLFW.GLFW_KEY_LEFT_CONTROL;
-			case GLFW.GLFW_KEY_LEFT_ALT -> GLFW.GLFW_KEY_RIGHT_ALT;
-			case GLFW.GLFW_KEY_RIGHT_ALT -> GLFW.GLFW_KEY_LEFT_ALT;
-			default -> GLFW.GLFW_KEY_UNKNOWN;
+			case InputConstants.KEY_LSHIFT -> InputConstants.KEY_RSHIFT;
+			case InputConstants.KEY_RSHIFT -> InputConstants.KEY_LSHIFT;
+			case InputConstants.KEY_LCONTROL -> InputConstants.KEY_RCONTROL;
+			case InputConstants.KEY_RCONTROL -> InputConstants.KEY_LCONTROL;
+			case InputConstants.KEY_LALT -> InputConstants.KEY_RALT;
+			case InputConstants.KEY_RALT -> InputConstants.KEY_LALT;
+			default -> InputConstants.UNKNOWN.getValue();
 		};
 	}
 
@@ -175,9 +196,9 @@ public final class Keys {
 	/** Короткое имя парной клавиши — без указания стороны. */
 	private static String pairedName(int code) {
 		return switch (code) {
-			case GLFW.GLFW_KEY_LEFT_SHIFT, GLFW.GLFW_KEY_RIGHT_SHIFT -> "Shift";
-			case GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_KEY_RIGHT_CONTROL -> "Ctrl";
-			case GLFW.GLFW_KEY_LEFT_ALT, GLFW.GLFW_KEY_RIGHT_ALT -> "Alt";
+			case InputConstants.KEY_LSHIFT, InputConstants.KEY_RSHIFT -> "Shift";
+			case InputConstants.KEY_LCONTROL, InputConstants.KEY_RCONTROL -> "Ctrl";
+			case InputConstants.KEY_LALT, InputConstants.KEY_RALT -> "Alt";
 			default -> null;
 		};
 	}

@@ -548,14 +548,9 @@ public final class UpdateService {
 			chat(ChatFormatting.AQUA,
 					Component.translatable("skyblockru.update.newversion", version));
 			if (link != null && !link.isBlank()) {
-				// ⚠️ Ссылка задаётся ПО-РАЗНОМУ: в новых версиях это
-				// `ClickEvent.OpenUrl(URI)`, в 1.21.4 и ниже — конструктор
-				// с действием и СТРОКОЙ. Замена имени тут не поможет:
-				// расходится и тип аргумента, и форма вызова.
-				//? if >=1.21.5 {
+				// ⚠️ Ссылка — `ClickEvent.OpenUrl(URI)`, не конструктор
+				// с действием и строкой из примеров под 1.21.4 и старше.
 				ClickEvent open = new ClickEvent.OpenUrl(URI.create(link));
-				//?} else
-				/*ClickEvent open = new ClickEvent(ClickEvent.Action.OPEN_URL, link);*/
 				chat(ChatFormatting.AQUA,
 						Component.translatable("skyblockru.update.download", link)
 								.copy().withStyle(Style.EMPTY
@@ -734,15 +729,9 @@ public final class UpdateService {
 	private static void toast(Minecraft client, String version) {
 		client.execute(() -> {
 			try {
-				// ⚠️ Очередь тостов лежит в РАЗНЫХ местах, и заменой имени это
-				// не развести — расходится сам путь до неё:
-				//   26.x     client.gui.toastManager()
-				//   1.21.x   client.getToastManager()
-				// Проверено javap по обоим jar, а не по памяти.
-				//? if >=26.1 {
+				// ⚠️ Очередь тостов в 26.x — `client.gui.toastManager()`, а не
+				// `client.getToastManager()`, как в 1.21.x (javap по обоим jar).
 				ToastManager toasts = client.gui.toastManager();
-				//?} else
-				/*ToastManager toasts = client.getToastManager();*/
 				SystemToast.add(toasts, TOAST_ID,
 						Component.translatable("skyblockru.update.toast.title"),
 						Component.translatable("skyblockru.update.toast.text", version));

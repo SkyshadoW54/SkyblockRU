@@ -302,9 +302,10 @@ public final class Wiki {
 	/**
 	 * Готовая справка для предмета под курсором и размеры его подсказки.
 	 *
-	 * <p>Размеры нужны, чтобы поставить панель РЯДОМ: позицию основной
-	 * подсказки без них не вычислить, а спросить её у игры уже нельзя —
-	 * к моменту отрисовки она ещё не построена.
+	 * <p>Размеры — ЗАПАСНОЙ путь: панель встаёт рядом с рамкой, которую игра
+	 * реально нарисовала ({@code WikiPanel}, с 11.10). По этим размерам место
+	 * подсказки считается, только если рамку поймать не удалось: чужих сдвигов
+	 * и строк, дописанных соседями после нас, они не знают.
 	 */
 	public record Panel(ItemStack stack, List<Component> lines,
 	                    int mainWidth, int mainHeight) {
@@ -362,10 +363,23 @@ public final class Wiki {
 	 * С Shift пояснение уходит в ОТДЕЛЬНОЕ окно сбоку ({@link WikiPanel}):
 	 * дописанное вниз, оно сливалось с описанием вещи в один длинный столбец.
 	 *
+	 * <p>⚠️⚠️ ТЕРМИНЫ ИЩЕМ В ОРИГИНАЛЕ, а не в том, что на экране. Статьи
+	 * названы по-английски («Last Stand», «Mining Fortune»), а {@code lines}
+	 * к этому моменту уже переведены. В обычном режиме это сходило с рук:
+	 * жаргон и зачарования SkyBlock остаются английскими по решению проекта.
+	 * В режиме full их переводят {@code 77-sb-enchants} и {@code 03-full-jargon}
+	 * («Последний рубеж V»), и справка по Shift и Alt молча пропадала —
+	 * ни приглашения, ни панели (игрок, 11.10, скриншот шлема убийцы теней;
+	 * в журнале стояло как «известное ограничение» с 24.08). Исходный текст
+	 * всегда один и тот же, какие бы словари ни были включены, — по нему
+	 * и ищем; на экран при этом дописываем в переведённые строки.
+	 *
 	 * @param stack предмет, чью подсказку строим; по нему панель узнает свою
-	 * @param lines строки подсказки, куда дописываем
+	 * @param lines строки подсказки (уже переведённые), куда дописываем
+	 * @param original те же строки ДО перевода, как прислал Hypixel, без чужого
+	 *                 хвоста; {@code null} или пусто — ищем в {@code lines}
 	 */
-	public static void append(ItemStack stack, List<Component> lines) {
+	public static void append(ItemStack stack, List<Component> lines, List<String> original) {
 		if (!sweeping) {
 			pending = null; // подсказка строится заново — старая справка не в счёт
 		}
@@ -406,11 +420,21 @@ public final class Wiki {
 		// не появлялась. На предмете с коротким именем баг не воспроизводился,
 		// поэтому пережил две попытки починки. Правило теперь смотрит влево
 		// только в пределах СВОЕЙ строки (TermMatch.crossesLine).
+		//
+		// ⚠️ Склеиваем ОРИГИНАЛ (см. javadoc): границы строк берём от него же —
+		// абзацы при переводе перекладываются, и число строк не совпадает.
+		List<String> sourceLines = original;
+		if (sourceLines == null || sourceLines.isEmpty()) {
+			sourceLines = new ArrayList<>(lines.size());
+			for (Component line : lines) {
+				sourceLines.add(line.getString());
+			}
+		}
 		StringBuilder whole = new StringBuilder();
-		java.util.List<Integer> starts = new ArrayList<>(lines.size());
-		for (Component line : lines) {
+		java.util.List<Integer> starts = new ArrayList<>(sourceLines.size());
+		for (String line : sourceLines) {
 			starts.add(whole.length());
-			whole.append(LegacyText.strip(line.getString())).append(' ');
+			whole.append(LegacyText.strip(line)).append(' ');
 		}
 		String text = whole.toString();
 		lineStarts = starts;

@@ -1338,6 +1338,19 @@ public final class TextTranslator {
 			}
 
 			String russian = found.text().strip();
+			// ⚠️ Правило отдаёт ШАБЛОН с дырками: «+{n}☂ Скорости рыбалки», а в
+			// строке стоит «+25☂ Скорости рыбалки» — и кусок не находился ни разу.
+			// В обычном режиме это было незаметно: «Fishing Speed» остаётся
+			// английским и уцелевает дословно. В режиме full захват правила с tg
+			// переведён, и голубой у «+25☂ Скорости рыбалки» пропадал (игрок,
+			// 11.10, скриншот наживки). Числа берём из самого куска — тем же
+			// `fillNumbers`, что заполняет дырки у строк и абзацев.
+			if (russian.contains("{n}")) {
+				String filled = Translator.fillNumbers(russian, core);
+				if (filled != null) {
+					russian = filled;
+				}
+			}
 
 			if (russian.isEmpty() || russian.equals(core) || seen.contains(russian)) {
 

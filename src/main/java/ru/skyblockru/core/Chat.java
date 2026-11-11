@@ -27,9 +27,6 @@ public final class Chat {
 
 	/** Написать игроку в чат. Второй аргумент старого API — «не в полосу над хотбаром». */
 	public static void tell(LocalPlayer player, Component message) {
-		//? if >=26.1 {
 		player.sendSystemMessage(message);
-		//?} else
-		/*player.displayClientMessage(message, false);*/
 	}
 }

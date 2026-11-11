@@ -11,17 +11,21 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import ru.skyblockru.core.WikiPanel;
 
 /**
- * Рисует справку ОТДЕЛЬНЫМ окном сбоку от подсказки предмета.
+ * Заказывает справку ОТДЕЛЬНЫМ окном сбоку от подсказки предмета.
  *
  * <p>Точка выбрана так: {@code extractTooltip} — это и есть место, где игра
  * ставит подсказку предмета под курсором (проверено по байткоду: читает
  * {@code hoveredSlot} и зовёт {@code setTooltipForNextFrame}). Значит на
  * выходе из него подсказка уже заказана, а справка для того же предмета
- * уже приготовлена {@code ItemTooltipCallback} — панели остаётся встать рядом.
+ * уже приготовлена {@code ItemTooltipCallback}.
  *
- * <p>⚠️ Своё окно рисуем НЕ дописыванием строк в чужую подсказку, а вторым
- * вызовом того же ванильного механизма. Поэтому рамка, фон и шрифт совпадают
- * с игрой сами собой, и подсказка предмета остаётся ровно такой, какой была.
+ * <p>⚠️ Здесь панель только ЗАКАЗЫВАЕТСЯ, а не рисуется. Подсказку предмета
+ * игра выводит позже и последней, на новом слое — нарисованное здесь
+ * оказалось бы ПОД ней (11.10, сборка SkyBlock Enhanced: справка пряталась
+ * за подсказку). Рисует {@code DeferredTooltipMixin} — сразу после неё.
+ *
+ * <p>⚠️ Своё окно — не дописывание строк в чужую подсказку: подсказка
+ * предмета остаётся ровно такой, какой была.
  */
 @Mixin(AbstractContainerScreen.class)
 public abstract class TooltipSideMixin {
@@ -36,6 +40,6 @@ public abstract class TooltipSideMixin {
 		if (slot == null || !slot.hasItem()) {
 			return;
 		}
-		WikiPanel.render(extractor, slot.getItem(), mouseX, mouseY);
+		WikiPanel.request(extractor, slot.getItem(), mouseX, mouseY);
 	}
 }

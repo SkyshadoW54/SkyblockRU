@@ -69,7 +69,7 @@ public final class ItemName {
 			if (ready != null) {
 				return NOTHING.equals(ready) ? null
 						: Component.literal(ready)
-								.withStyle(original.getStyle());
+								.withStyle(textStyle(original));
 			}
 			String name = Reforge.compose(plain, reforged,
 					base -> {
@@ -90,8 +90,41 @@ public final class ItemName {
 			}
 			// Стиль берём у оригинала: цветом заголовка Hypixel показывает
 			// РЕДКОСТЬ, и потерять его значило бы соврать о предмете.
-			return Component.literal(name).withStyle(original.getStyle());
+			return Component.literal(name).withStyle(textStyle(original));
 		}, null);
+	}
+
+	/**
+	 * Стиль ТЕКСТА имени, а не его обёртки.
+	 *
+	 * <p>⚠️⚠️ Первая строка подсказки — не само имя Hypixel, а ванильная обёртка
+	 * над ним: {@code ItemStack.getStyledHoverName} заворачивает имя в
+	 * {@code Component.empty().append(name).withStyle(редкость)} и для любого
+	 * предмета с {@code custom_name} добавляет {@code ITALIC} — так клиент
+	 * рисует переименованные в наковальне вещи. Цвет и «не курсив» Hypixel
+	 * кладёт ВНУТРЬ, в стиль куска текста («§6» / {@code italic:false}), и они
+	 * перекрывают обёртку. {@code original.getStyle()} — это стиль ОБЁРТКИ:
+	 * белый (редкость по умолчанию) и курсив. Собранное перекованное имя
+	 * получало его целиком — и выходило белым курсивом, пока обычный перевод
+	 * имени ({@code TextTranslator}) красился от первого куска и был цел.
+	 * Замер по дампу 26.2 (11.10, вечер): из 124 переведённых имён курсивом
+	 * и белым стали ровно 9 — все перекованные («Wise Glossy Mineral Boots»,
+	 * «Fortunate Lapis Pickaxe»). Игрок прислал скриншотами.
+	 *
+	 * <p>Берём стиль первого непустого куска так, как его видит экран —
+	 * {@code visit} накладывает стиль куска на родительский. Куска нет
+	 * (пустое имя) — остаётся стиль обёртки, как раньше.
+	 */
+	static net.minecraft.network.chat.Style textStyle(Component original) {
+		net.minecraft.network.chat.Style[] found = {null};
+		original.visit((style, text) -> {
+			if (!text.isBlank()) {
+				found[0] = style;
+				return java.util.Optional.of(Boolean.TRUE);
+			}
+			return java.util.Optional.empty();
+		}, net.minecraft.network.chat.Style.EMPTY);
+		return found[0] != null ? found[0] : original.getStyle();
 	}
 
 	/**

@@ -236,31 +236,22 @@ public final class Items {
 	// и к версии игры они отношения не имеют. Расходятся ровно три вызова,
 	// и все три живут в этом классе — значит и условие должно быть здесь.
 	//
-	// ⚠️ Порог 1.21.5 ЗАМЕРЕН: на 1.21.4 сборка падает на `getCompoundOrEmpty`,
-	// `getStringOr` и `keySet`, на 1.21.5 — уже нет.
+	// ⚠️ `getCompoundOrEmpty`, `getStringOr` и `keySet` — с 1.21.5 (замерено
+	// сборкой: на 1.21.4 их нет). Примеры со старыми именами тут не собираются.
 
 	/** Строка из тега: в старых версиях {@code getString} возвращал пустую сам. */
 	private static String string(CompoundTag tag, String key) {
-		//? if >=1.21.5 {
 		return tag.getStringOr(key, "");
-		//?} else
-		/*return tag.getString(key);*/
 	}
 
 	/** Вложенный тег. */
 	private static CompoundTag nested(CompoundTag tag, String key) {
-		//? if >=1.21.5 {
 		return tag.getCompoundOrEmpty(key);
-		//?} else
-		/*return tag.getCompound(key);*/
 	}
 
 	/** Имена ключей тега. */
 	private static Set<String> keys(CompoundTag tag) {
-		//? if >=1.21.5 {
 		return tag.keySet();
-		//?} else
-		/*return tag.getAllKeys();*/
 	}
 
 	/** Ключи вложенного тега — то, что нужно почти всем вызовам разом. */

@@ -93,13 +93,13 @@ public final class Translator {
 
 	 */
 
-	private static final Map<String, String[]> REFORGES = new HashMap<>();
+	private static volatile Map<String, String[]> REFORGES = new HashMap<>();
 
 
 
 	/** Исключения рода для сборки названий: слово → m|f|n|p. */
 
-	private static final Map<String, String> GENDERS = new HashMap<>();
+	private static volatile Map<String, String> GENDERS = new HashMap<>();
 
 
 
@@ -461,13 +461,18 @@ public final class Translator {
 
 
 
-	private static final List<TranslationPack> PACKS = new ArrayList<>();
+	// ⚠️ Все наборы ниже — volatile-ссылки, а не final-карты, которые чистят
+	// на месте. `reload` собирает свежий набор в стороне (`Build`) и подменяет
+	// ссылки одним махом; старые карты после этого никто не меняет, поэтому
+	// читатель из другого потока (телеметрия) дочитывает свою ссылку без
+	// ConcurrentModificationException. См. `publish` в reload.
+	private static volatile List<TranslationPack> PACKS = new ArrayList<>();
 
-	private static final Map<String, Entry> EXACT = new HashMap<>();
+	private static volatile Map<String, Entry> EXACT = new HashMap<>();
 
-	private static final Map<String, Entry> TEMPLATES = new HashMap<>();
+	private static volatile Map<String, Entry> TEMPLATES = new HashMap<>();
 
-	private static final Map<String, Entry> GLOSSARY = new HashMap<>();
+	private static volatile Map<String, Entry> GLOSSARY = new HashMap<>();
 
 
 
@@ -485,9 +490,9 @@ public final class Translator {
 
 	 */
 
-	private static final Map<String, Entry> PARAGRAPHS = new HashMap<>();
+	private static volatile Map<String, Entry> PARAGRAPHS = new HashMap<>();
 
-	private static final List<ScopedRule> REGEX = new ArrayList<>();
+	private static volatile List<ScopedRule> REGEX = new ArrayList<>();
 
 
 
@@ -503,7 +508,7 @@ public final class Translator {
 
 	 */
 
-	private static final Map<String, String> RULE_CACHE = new ConcurrentHashMap<>();
+	private static volatile Map<String, String> RULE_CACHE = new ConcurrentHashMap<>();
 
 
 
@@ -522,13 +527,31 @@ public final class Translator {
 
 	 */
 
-	private static final Map<String, Map<String, String>> BY_ITEM = new HashMap<>();
+	private static volatile Map<String, Map<String, String>> BY_ITEM = new HashMap<>();
 
 
 
 	/** Глоссарий, отсортированный от длинных терминов к коротким. */
 
-	private static List<Map.Entry<String, Entry>> glossarySorted = List.of();
+	private static volatile List<Map.Entry<String, Entry>> glossarySorted = List.of();
+
+	/**
+	 * Свежий набор словарей, который собирает {@link #reload}, пока старый
+	 * ещё читают. Публикуется целиком, когда собран.
+	 */
+	private static final class Build {
+		final List<TranslationPack> packs = new ArrayList<>();
+		final Map<String, Entry> exact = new HashMap<>();
+		final Map<String, Entry> templates = new HashMap<>();
+		final Map<String, Entry> glossary = new HashMap<>();
+		final Map<String, Entry> paragraphs = new HashMap<>();
+		final List<ScopedRule> regex = new ArrayList<>();
+		final Map<String, Map<String, String>> byItem = new HashMap<>();
+		final Map<String, String[]> reforges = new HashMap<>();
+		final Map<String, String> genders = new HashMap<>();
+		final Map<String, String> optional = new java.util.LinkedHashMap<>();
+		final Map<String, java.util.Set<String>> groups = new java.util.LinkedHashMap<>();
+	}
 
 
 
@@ -614,7 +637,7 @@ public final class Translator {
 
 	 */
 
-	private static final Map<String, String> OPTIONAL = new java.util.LinkedHashMap<>();
+	private static volatile Map<String, String> OPTIONAL = new java.util.LinkedHashMap<>();
 
 
 
@@ -630,7 +653,7 @@ public final class Translator {
 
 	 */
 
-	private static final Map<String, java.util.Set<String>> GROUPS =
+	private static volatile Map<String, java.util.Set<String>> GROUPS =
 
 			new java.util.LinkedHashMap<>();
 
@@ -860,13 +883,13 @@ public final class Translator {
 
 	 */
 
-	private static void noteOptional(TranslationPack pack) {
+	private static void noteOptional(Build into, TranslationPack pack) {
 
-		OPTIONAL.put(pack.id, pack.about);
+		into.optional.put(pack.id, pack.about);
 
 		if (!pack.group.isBlank()) {
 
-			GROUPS.computeIfAbsent(pack.group, key -> new java.util.LinkedHashSet<>())
+			into.groups.computeIfAbsent(pack.group, key -> new java.util.LinkedHashSet<>())
 
 					.add(pack.id);
 
@@ -954,33 +977,15 @@ public final class Translator {
 
 	public static synchronized void reload(Path userPacksDir) {
 
-		PACKS.clear();
-
-		EXACT.clear();
-
-		TEMPLATES.clear();
-
-		GLOSSARY.clear();
-
-		PARAGRAPHS.clear();
-
-		REGEX.clear();
-
-		RULE_CACHE.clear();
-
-		BY_ITEM.clear();
+		// ⚠️ Общие карты НЕ чистим на месте: собираем свежий набор в стороне,
+		// а подменяем ссылки одним махом в конце (см. ниже «публикуем»).
+		Build fresh = new Build();
 
 
 
 		List<String> problems = new ArrayList<>();
 
-		OPTIONAL.clear();
-
-		GROUPS.clear();
-
-		REFORGES.clear();
-
-		GENDERS.clear();
+		// (OPTIONAL, GROUPS, REFORGES, GENDERS тоже собираются в `fresh`)
 
 
 
@@ -1054,7 +1059,7 @@ public final class Translator {
 
 				if (!pack.defaultEnabled || RuConfig.get().packs.containsKey(pack.id)) {
 
-					noteOptional(pack);
+					noteOptional(fresh, pack);
 
 				}
 
@@ -1064,7 +1069,7 @@ public final class Translator {
 
 				}
 
-				PACKS.add(pack);
+				fresh.packs.add(pack);
 
 			} catch (IOException | RuntimeException exception) {
 
@@ -1084,9 +1089,9 @@ public final class Translator {
 
 		if (userPacksDir != null) {
 
-			loadUserPacks(userPacksDir, problems);
+			loadUserPacks(userPacksDir, problems, fresh);
 
-			loadUserPacks(userPacksDir.resolve(language), problems);
+			loadUserPacks(userPacksDir.resolve(language), problems, fresh);
 
 		}
 
@@ -1094,7 +1099,7 @@ public final class Translator {
 
 		// Меньший priority — важнее: такие пакеты применяем последними, чтобы они перекрыли остальные.
 
-		PACKS.sort(Comparator.comparingInt((TranslationPack p) -> p.priority).reversed());
+		fresh.packs.sort(Comparator.comparingInt((TranslationPack p) -> p.priority).reversed());
 
 
 
@@ -1102,9 +1107,23 @@ public final class Translator {
 
 		Map<String, Seen> origin = new HashMap<>();
 
+		// ⚠️ Записи с {s} — ТОЧНЫЕ записи по смыслу, и побеждать среди них должен
+		// меньший priority, как у EXACT (put: последний пакет затирает). А они
+		// уходили в REGEX в порядке пакетов, где побеждает ПЕРВОЕ совпадение,
+		// то есть больший priority: 27 ручных строк режима full («[NPC] Киша:
+		// Привет, {s}!» из 02-full-names) молча проигрывали 90-from-game и
+		// 60-chat-rules (ревизия 11.10, стенд на Java). Повторный ключ ЗАМЕНЯЕТ
+		// прежнее правило НА МЕСТЕ: порядок относительно правил пакетов не
+		// меняется. ⚠️ Ставить {s}-правила впереди всех нельзя — проверено A/B
+		// по дампу: в обычном режиме 66 строк чата ухудшились (цветное
+		// «погиб от» из 60-chat-rules проигрывало сырому «был убит:» из
+		// 90-from-game). В обычных словарях совпадающих {s}-ключей нет (544
+		// ключа, 0 совпадений) — для людей вывод побайтово прежний.
+		Map<String, Integer> nickAt = new HashMap<>();
 
 
-		for (TranslationPack pack : PACKS) {
+
+		for (TranslationPack pack : fresh.packs) {
 
 			for (Map.Entry<String, String> entry : pack.exact.entrySet()) {
 
@@ -1136,7 +1155,19 @@ public final class Translator {
 
 					} else {
 
-						REGEX.add(rule);
+						Integer at = nickAt.get(key);
+
+						if (at == null) {
+
+							nickAt.put(key, fresh.regex.size());
+
+							fresh.regex.add(rule);
+
+						} else {
+
+							fresh.regex.set(at, rule);
+
+						}
 
 					}
 
@@ -1148,13 +1179,13 @@ public final class Translator {
 
 					// шаблон написан руками: "+{n} Strength" -> "+{n} Сила"
 
-					TEMPLATES.put(key, new Entry(value, pack.only));
+					fresh.templates.put(key, new Entry(value, pack.only));
 
 					continue;
 
 				}
 
-				EXACT.put(key, new Entry(value, pack.only));
+				fresh.exact.put(key, new Entry(value, pack.only));
 
 				String template = toTemplate(key);
 
@@ -1162,7 +1193,7 @@ public final class Translator {
 
 					// строку с конкретным числом обобщаем сами: "+5 Сила" закроет и "+7", и "+120"
 
-					TEMPLATES.putIfAbsent(template, new Entry(toTemplateValue(value), pack.only));
+					fresh.templates.putIfAbsent(template, new Entry(toTemplateValue(value), pack.only));
 
 				}
 
@@ -1170,7 +1201,7 @@ public final class Translator {
 
 			for (TranslationPack.RegexRule rule : pack.regex) {
 
-				REGEX.add(new ScopedRule(rule.pattern(), rule.replacement(), pack.only,
+				fresh.regex.add(new ScopedRule(rule.pattern(), rule.replacement(), pack.only,
 
 						rule.translateGroups(), anchorOf(rule.pattern().pattern()),
 
@@ -1180,29 +1211,63 @@ public final class Translator {
 
 			pack.paragraphs.forEach((source, translation) ->
 
-					PARAGRAPHS.put(source, new Entry(translation, pack.only)));
+					fresh.paragraphs.put(source, new Entry(translation, pack.only)));
 
 			pack.glossary.forEach((term, translation) ->
 
-					GLOSSARY.put(term, new Entry(translation, pack.only)));
+					fresh.glossary.put(term, new Entry(translation, pack.only)));
 
 			pack.byItem.forEach((item, lines) ->
 
-					BY_ITEM.computeIfAbsent(item, key -> new HashMap<>()).putAll(lines));
+					fresh.byItem.computeIfAbsent(item, key -> new HashMap<>()).putAll(lines));
 
-			pack.reforges.forEach(REFORGES::put);
+			pack.reforges.forEach(fresh.reforges::put);
 
-			pack.genders.forEach(GENDERS::put);
+			pack.genders.forEach(fresh.genders::put);
 
 		}
 
-
-
-		glossarySorted = GLOSSARY.entrySet().stream()
+		List<Map.Entry<String, Entry>> sorted = fresh.glossary.entrySet().stream()
 
 				.sorted(Comparator.comparingInt((Map.Entry<String, Entry> e) -> e.getKey().length()).reversed())
 
 				.toList();
+
+		// ⚠️ ПУБЛИКУЕМ ОДНИМ МАХОМ; до этой строки читатели видят ПРЕЖНИЙ набор
+		// целиком. Раньше reload чистил и заполнял общие карты на месте, а
+		// lookup из потока телеметрии (Telemetry → UnknownStrings.forTelemetryBlocks)
+		// в это время итерировал REGEX: стенд ревизии 11.10 — 21
+		// ConcurrentModificationException на один reload; в игре отправка
+		// пропускалась на 30 минут, а переведённые блоки уезжали как
+		// «непереведённые». Старые карты после подмены никто не меняет, значит
+		// читатель, взявший ссылку до неё, дочитает спокойно. Кэш правил —
+		// новый экземпляр, а не clear(): иначе ответ по старым правилам мог бы
+		// лечь в него уже после чистки.
+		PACKS = fresh.packs;
+
+		EXACT = fresh.exact;
+
+		TEMPLATES = fresh.templates;
+
+		GLOSSARY = fresh.glossary;
+
+		PARAGRAPHS = fresh.paragraphs;
+
+		REGEX = fresh.regex;
+
+		BY_ITEM = fresh.byItem;
+
+		REFORGES = fresh.reforges;
+
+		GENDERS = fresh.genders;
+
+		OPTIONAL = fresh.optional;
+
+		GROUPS = fresh.groups;
+
+		glossarySorted = sorted;
+
+		RULE_CACHE = new ConcurrentHashMap<>();
 
 
 
@@ -1464,7 +1529,7 @@ public final class Translator {
 
 	/** Читает словари игрока из одной папки. Нет папки — молча ничего, это норма. */
 
-	private static void loadUserPacks(Path dir, List<String> problems) {
+	private static void loadUserPacks(Path dir, List<String> problems, Build into) {
 
 		if (dir == null || !Files.isDirectory(dir)) {
 
@@ -1508,7 +1573,7 @@ public final class Translator {
 
 								|| RuConfig.get().packs.containsKey(userPack.id)) {
 
-							noteOptional(userPack);
+							noteOptional(into, userPack);
 
 						}
 
@@ -1518,7 +1583,7 @@ public final class Translator {
 
 						}
 
-						PACKS.add(userPack);
+						into.packs.add(userPack);
 
 				} catch (IOException | RuntimeException exception) {
 
@@ -2737,47 +2802,87 @@ public final class Translator {
 
 			String term = entry.getKey();
 
-			int index = result.indexOf(term);
+			// ⚠️ КАЖДОЕ вхождение проверяем отдельно. До 11.10 граница слова и
+			// «внутри имени» спрашивались у ПЕРВОГО вхождения, а `replace` менял
+			// все: «Champion V, Depth Champion (0/8)» давало «Чемпион V, Depth
+			// Чемпион» — ровно ту смесь, от которой insideProperName и написан, —
+			// а «Bank Interest and Bank Interests» — «…банкаs». Результат зависел
+			// от порядка слов в строке. Нашёл агент ревизии стендом на Java.
+			String replacement = null;
 
-			if (index < 0) {
+			StringBuilder built = null;
 
-				continue;
+			int copied = 0;
 
-			}
+			int from = 0;
 
-			// только целые слова: иначе «Bow» испортит «Bowl»
+			while (true) {
 
-			if (!isWordBoundary(result, index, term.length())) {
+				int index = result.indexOf(term, from);
 
-				continue;
+				if (index < 0) {
 
-			}
-
-			// ...и не ВНУТРИ составного имени: «Depth Champion» — имя бонуса
-
-			if (insideProperName(result, index, term)) {
-
-				continue;
-
-			}
-
-			String replacement = value.value();
-
-			if (VanillaNames.hasKeys(replacement)) {
-
-				replacement = VanillaNames.expand(replacement);
-
-				if (replacement == null) {
-
-					continue; // игра такого ключа не знает — оставляем как было
+					break;
 
 				}
 
+				from = index + term.length();
+
+				// только целые слова: иначе «Bow» испортит «Bowl»
+
+				if (!isWordBoundary(result, index, term.length())) {
+
+					continue;
+
+				}
+
+				// ...и не ВНУТРИ составного имени: «Depth Champion» — имя бонуса
+
+				if (insideProperName(result, index, term)) {
+
+					continue;
+
+				}
+
+				if (replacement == null) {
+
+					replacement = value.value();
+
+					if (VanillaNames.hasKeys(replacement)) {
+
+						replacement = VanillaNames.expand(replacement);
+
+						if (replacement == null) {
+
+							break; // игра такого ключа не знает — оставляем как было
+
+						}
+
+					}
+
+				}
+
+				if (built == null) {
+
+					built = new StringBuilder(result.length() + 16);
+
+				}
+
+				built.append(result, copied, index).append(replacement);
+
+				copied = from;
+
 			}
 
-			result = result.replace(term, replacement);
+			if (built != null) {
 
-			changed = true;
+				built.append(result, copied, result.length());
+
+				result = built.toString();
+
+				changed = true;
+
+			}
 
 		}
 
@@ -3311,7 +3416,7 @@ public final class Translator {
 
 	 */
 
-	private static String fillNumbers(String translated, String source) {
+	static String fillNumbers(String translated, String source) {
 
 		List<String> numbers = new ArrayList<>();
 

@@ -89,6 +89,15 @@ public final class RuCommand {
 							ru.skyblockru.core.UpdateService.showTestToast();
 							return 1;
 						}))
+						// ПОЛНЫЙ ПЕРЕВОД — одна команда на группу словарей. Только для
+						// разработки (решение игрока 03.10): режим тестируется на этой
+						// машине, в раздачу не идёт ни команда, ни его словари.
+						.then(literal("full")
+								.executes(context -> full(context.getSource(), null))
+								.then(literal("on").executes(context ->
+										full(context.getSource(), true)))
+								.then(literal("off").executes(context ->
+										full(context.getSource(), false))))
 						// ⚠️ Переключатели РАСШИРЕННОГО перевода (ванильные названия,
 						// зачарования SkyBlock, характеристики-жаргон). Игроку их больше
 						// не показываем — работа отложена целиком (решение 03.08),
@@ -140,16 +149,13 @@ public final class RuCommand {
 										telemetry(context.getSource(), true)))
 								.then(literal("off").executes(context ->
 										telemetry(context.getSource(), false))))
-						// ПОЛНЫЙ ПЕРЕВОД — одна команда на группу словарей.
-						// Выключен по умолчанию: имена предметов, NPC и локаций
-						// нужны английскими тем, кто ищет вещи на аукционе
-						// и читает гайды. Кому важнее русский экран — включает.
-						.then(literal("full")
-								.executes(context -> full(context.getSource(), null))
-								.then(literal("on").executes(context ->
-										full(context.getSource(), true)))
-								.then(literal("off").executes(context ->
-										full(context.getSource(), false))))
+						// ⚠️ Команды full здесь БОЛЬШЕ НЕТ (решение игрока 03.10) — она
+						// переехала в ветку разработчика. Режим полного перевода
+						// тестируется ТОЛЬКО на машине разработки, а стояла команда
+						// в ветке игрока с 0.2.30: любой скачавший видел её в
+						// подсказке и включал сырой режим. Словари режима заодно
+						// вырезаются из jar раздачи (tools/release.py), а
+						// tools/check_release.py не пустит обратно ни их, ни команду.
 						.then(literal("on").executes(context -> toggle(context.getSource(), true)))
 						.then(literal("off").executes(context -> toggle(context.getSource(), false)));
 	}

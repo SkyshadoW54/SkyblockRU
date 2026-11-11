@@ -43,24 +43,13 @@ import org.spongepowered.asm.service.MixinService;
  * <p>⚠️ Смотрим через сервис Mixin, а не {@code Class.forName}: на этом этапе
  * классы игры ещё не загружены, и обычный поиск дал бы ложное «нет».
  *
- * <p><b>⚠️ А на ОБФУСЦИРОВАННЫХ версиях спрашивать бессмысленно, и это
- * замерено.</b> Имена в вопросе — официальные Mojang, а в рантайме у игрока
- * их нет: Loom при сборке переводит цели миксина в промежуточные имена,
- * а обычная строка внутри этого класса остаётся как была. Видно по jar:
- *
- * <pre>
- *   1.21.11  GuiMixin   -> net/minecraft/class_329, method_1758   ОТРЕМАПЛЕН
- *            MixinGate  -> "net.minecraft.client.gui.Gui"          строка, как есть
- * </pre>
- *
- * Поэтому оба перехвата получали «нет» и выключались, а в лог уходило
- * {@code NO OVERLAY HOOK} — крупные заголовки на 1.21.11 оставались
- * английскими. Полоса над хотбаром при этом работала и сбивала с толку:
- * её переводит второй путь, событие {@code MODIFY_GAME} в {@code TextHooks}.
- *
- * <p>Развязка: у обфусцированных версий jar собирается ПОД ОДНУ версию, и там
- * выбор известен ещё при сборке — класс надписей всегда {@code Gui}. Спрашивать
- * рантайм нужно только в 26.x, где 26.1 и 26.2 идут ОДНИМ jar.
+ * <p><b>⚠️ На ОБФУСЦИРОВАННЫХ версиях (1.21.x) так спрашивать нельзя</b>:
+ * Loom переводит цели миксина в промежуточные имена ({@code class_329}),
+ * а строка {@code "net.minecraft.client.gui.Gui"} здесь остаётся как есть —
+ * оба перехвата получали «нет», заголовки на 1.21.11 оставались английскими.
+ * Там выбор делала сборка (условный блок Stonecutter в {@link #applies}). Его
+ * убрали вместе с 1.21.11 (11.10.2026); вернётся обфусцированная версия —
+ * вернуть и его (сторож — {@code check_mixin_gate.py}, «имена в рантайме»).
  *
  * <p>⚠️ Решение ПЕЧАТАЕТСЯ в лог, и молчаливого «оба выключены» быть не может.
  * Проверка, тихо вернувшая false, выключает перехват целиком — а надписи над
@@ -75,7 +64,8 @@ public class MixinGate implements IMixinConfigPlugin {
 	/**
 	 * Миксин -> целевой класс и МЕТОД, без которого он бессмыслен.
 	 *
-	 * <p>Метод один на все три перехвата: {@code setTitle} и {@code setSubtitle}
+	 * <p>Метод один на все перехваты: {@code setTitle}, {@code setSubtitle}
+	 * и боковая панель ({@code displayScoreboardSidebar})
 	 * живут там же, где {@code setOverlayMessage} (проверено javap по обоим jar).
 	 */
 	private static final Map<String, String[]> NEEDS = Map.of(
@@ -83,9 +73,6 @@ public class MixinGate implements IMixinConfigPlugin {
 			new String[] {"net.minecraft.client.gui.Hud", "setOverlayMessage"},
 			"ru.skyblockru.mixin.GuiMixin",
 			new String[] {"net.minecraft.client.gui.Gui", "setOverlayMessage"});
-
-	/** Перехват для версий, где класс надписей зовётся {@code Gui}. */
-	private static final String GUI_MIXIN = "ru.skyblockru.mixin.GuiMixin";
 
 	/** Сработал ли хоть один из перехватов надписей — чтобы пожаловаться, если нет. */
 	private static boolean overlayHooked;
@@ -105,7 +92,7 @@ public class MixinGate implements IMixinConfigPlugin {
 		if (needed == null) {
 			return true;
 		}
-		boolean ok = applies(mixinClassName, needed);
+		boolean ok = applies(needed);
 		// ⚠️ Прежняя запись читалась как «метод есть -> skip» и сбивала с толку:
 		// слово «has» было частью шаблона, а не результатом. Печатаем ЦЕЛЬ
 		// и решение, не притворяясь, что нашли метод.
@@ -118,22 +105,16 @@ public class MixinGate implements IMixinConfigPlugin {
 	/**
 	 * Применять ли этот перехват надписей.
 	 *
-	 * <p>Вопрос один, а способов ответить два, и выбор между ними — не вкус:
+	 * <p>26.1 и 26.2 идут ОДНИМ jar, значит решить можно только в рантайме.
+	 * Спрашиваем МЕТОД, от которого зависит перехват: в 26.2 класс {@code Gui}
+	 * существует, но {@code setOverlayMessage} в нём нет.
 	 *
-	 * <ul>
-	 *   <li><b>26.1+</b> — обе версии идут ОДНИМ jar, значит решить можно только
-	 *       в рантайме. Спрашиваем МЕТОД, от которого зависит перехват: в 26.2
-	 *       класс {@code Gui} существует, но {@code setOverlayMessage} в нём нет.
-	 *   <li><b>обфусцированные</b> — jar собирается под одну версию, и класс там
-	 *       всегда {@code Gui}. Спрашивать рантайм нечем: имена в вопросе
-	 *       официальные Mojang, а классы игры переименованы (см. javadoc класса).
-	 * </ul>
+	 * <p>⚠️ Метод отдельный НАРОЧНО: его тело читает сторож
+	 * {@code check_mixin_gate.py} («имена в рантайме») — убрать метод значит
+	 * молча выключить проверку.
 	 */
-	private static boolean applies(String mixinClassName, String[] needed) {
-		//? if >=26.1 {
+	private static boolean applies(String[] needed) {
 		return hasMethod(needed[0], needed[1]);
-		//?} else
-		/*return GUI_MIXIN.equals(mixinClassName);*/
 	}
 
 	@Override

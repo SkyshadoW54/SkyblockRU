@@ -5,17 +5,16 @@
 	"compatibilityLevel": "JAVA_21",
 	"plugin": "ru.skyblockru.mixin.MixinGate",
 	"client": [
-		"BossEventMixin",
+		"BossHealthOverlayMixin",
 		"ContainerSweepMixin",
 		"ContainerTitleMixin",
-		"EntityMixin",
+		"DeferredTooltipMixin",
+		"EntityRendererMixin",
 		"GuiMixin",
 		"HudMixin",
-		"ObjectiveMixin",
-		"PlayerScoreEntryMixin",
 		"PlayerTabOverlayMixin",
-		"PlayerTeamMixin",
 		"ScreenMixin",
+		"TooltipBackgroundMixin",
 		"TooltipSideMixin"
 	],
 	"injectors": {
