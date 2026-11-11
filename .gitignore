@@ -41,6 +41,13 @@ CLAUDE.md
 # пришлось переписывать историю git.
 HISTORY.md
 
+# ⚠️ ЖУРНАЛ ПРОЕКТА, РАЗНЕСЁННЫЙ ИЗ CLAUDE.md ПО ТЕМАМ (03.10.2026): внутри
+# всё то же, из-за чего закрыт сам CLAUDE.md, — ники, адреса, суммы, разбор
+# ошибок. Правила по путям для Claude Code — выжимка из этого журнала.
+# Проверено ДО создания файлов: без этих строк они уехали бы в публичный git.
+/notes/
+/.claude/rules/
+
 # ⚠️ Кэш Python: пересоздаётся сам при каждом запуске инструмента.
 # В первом коммите его уехало 84 файла из 305 — больше четверти репозитория,
 # и каждый прогон менял бы их, засоряя историю.
@@ -69,3 +76,42 @@ run/
 
 # рабочие логи разовых прогонов — воспроизводятся, в репозиторий не идут
 scratch_*.log
+
+# ⚠️ МЕДИА В КОРНЕ: видео, логотипы, скриншоты для постов и Telegram.
+# 07.08 их прихватил случайный `git add -A`: видео на 45 МБ (90% репозитория)
+# и два скриншота аукциона с ЧУЖИМИ никами продавцов. Сторож ников картинки
+# не читает, так что защита одна — не пускать их в git вовсе.
+# Шаблоны привязаны к корню: картинки внутри src/ и docs/ они не трогают.
+/*.mp4
+/*.mov
+/*.webm
+/*.png
+/*.jpg
+/*.jpeg
+/*.gif
+/*.webp
+/*.svg
+
+# ⚠️ СЛОВАРИ РЕЖИМА FULL (решение игрока 05.09: режим только на машине
+# автора; 11.11: убрать из git). Признак тот же, что у release.py и
+# publish.py, — `check_release.is_mode_pack` ("group": "full"). Файлы на
+# диске остаются и собираются в jar инстансов; людям их вырезает release.py.
+# Свежая копия репозитория собирается и без них: index.json их объявляет,
+# загрузчик лишь пожалуется на отсутствующий файл. Новый режимный словарь —
+# вписать сюда руками, иначе он уедет в git (сторожа на это пока нет).
+/src/main/resources/assets/skyblockru/packs/common/80-vanilla-names.json
+/src/main/resources/assets/skyblockru/packs/common/83-vanilla-titles.json
+/src/main/resources/assets/skyblockru/packs/ru_ru/01-full-icons.json
+/src/main/resources/assets/skyblockru/packs/ru_ru/02-full-names.json
+/src/main/resources/assets/skyblockru/packs/ru_ru/03-full-jargon.json
+/src/main/resources/assets/skyblockru/packs/ru_ru/04-full-strings.json
+/src/main/resources/assets/skyblockru/packs/ru_ru/05-full-rules.json
+/src/main/resources/assets/skyblockru/packs/ru_ru/06-full-bonuses.json
+/src/main/resources/assets/skyblockru/packs/ru_ru/32-full-nav.json
+/src/main/resources/assets/skyblockru/packs/ru_ru/77-sb-enchants.json
+/src/main/resources/assets/skyblockru/packs/ru_ru/78-sb-stats.json
+/src/main/resources/assets/skyblockru/packs/ru_ru/81-item-names.json
+/src/main/resources/assets/skyblockru/packs/ru_ru/82-npc-places.json
+/src/main/resources/assets/skyblockru/packs/ru_ru/84-reforges.json
+/src/main/resources/assets/skyblockru/packs/ru_ru/85-mob-names.json
+/src/main/resources/assets/skyblockru/packs/ru_ru/86-full-paragraphs.json
