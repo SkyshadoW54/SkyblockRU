@@ -140,7 +140,20 @@ def has_method(javap: str, jar: Path, cls: str, method: str) -> bool | None:
 
 TARGET_CLASS = re.compile(r"@Mixin\s*\(\s*(?:value\s*=\s*)?([A-Za-z_][\w.]*)\.class")
 TARGET_STR = re.compile(r'@Mixin\s*\(\s*targets\s*=\s*"([^"]+)"')
-METHOD = re.compile(r'method\s*=\s*"([^"]+)"')
+# ⚠️ ОБЕ формы: `method = "x"` и `method = {"x", "y"}`. До 11.10 читалась только
+# строка, и `EntityRendererMixin` — единственный с массивом целей (две версии
+# игры в одном jar) — два сторожа из трёх пропускали МОЛЧА; держал его один
+# `check_jar_coverage`. Нашёл агент ревизии, подтверждено чтением.
+METHOD = re.compile(r'method\s*=\s*(?:"([^"]+)"|\{([^}]*)\})')
+
+
+def method_names(body: str) -> list[str]:
+    """Имена методов из всех `method = …` файла, без дескрипторов."""
+    out: list[str] = []
+    for single, many in METHOD.findall(body):
+        for name in ([single] if single else re.findall(r'"([^"]+)"', many)):
+            out.append(name.split("(")[0])
+    return out
 IMPORT = re.compile(r"^import\s+([\w.]+);", re.M)
 MIXIN_DIR = ROOT / "src" / "main" / "java" / "ru" / "skyblockru" / "mixin"
 
@@ -171,7 +184,7 @@ def check_all_targets(javap: str, jars: list[tuple[str, Path]]) -> int:
             match = TARGET_CLASS.search(body)
             cls = imports.get(match.group(1), match.group(1)) if match else None
         if cls:
-            methods = sorted({m.split("(")[0] for m in METHOD.findall(body)})
+            methods = sorted(set(method_names(body)))
             targets.append((src.stem, cls, methods))
 
     # ⚠️ Цели берём ИЗ ИСХОДНИКОВ АКТИВНОЙ версии, а для остальных — из того,
@@ -281,7 +294,7 @@ def targets_from(directory: Path) -> list[tuple[str, str, list[str]]]:
             match = TARGET_CLASS.search(body)
             cls = imports.get(match.group(1), match.group(1)) if match else None
         if cls:
-            methods = sorted({m.split("(")[0] for m in METHOD.findall(body)})
+            methods = sorted(set(method_names(body)))
             out.append((src.stem, cls, methods))
     return out
 
@@ -465,6 +478,247 @@ def check_runtime_names(active: str | None) -> int:
     return bad
 
 
+INJECTORS = ("Inject", "ModifyExpressionValue", "ModifyVariable", "ModifyReturnValue",
+             "Redirect", "WrapOperation", "WrapWithCondition", "ModifyArg", "ModifyArgs",
+             "ModifyConstant")
+STRING_LIT = re.compile(r'"((?:[^"\\]|\\.)*)"')
+
+
+def balanced(text: str, start: int) -> str:
+    """Текст между `(` в позиции start и парной `)`; скобки в строках не в счёт."""
+    depth, i = 0, start
+    while i < len(text):
+        ch = text[i]
+        if ch == '"':
+            i += 1
+            while i < len(text) and text[i] != '"':
+                i += 2 if text[i] == "\\" else 1
+        elif ch == "(":
+            depth += 1
+        elif ch == ")":
+            depth -= 1
+            if depth == 0:
+                return text[start + 1:i]
+        i += 1
+    return text[start + 1:]
+
+
+def strings_from(rest: str) -> list[str]:
+    """Значение аннотации с начала `rest`: `"a"`, `"a" + "b"` или `{"a", "b"}`.
+
+    Склеенная плюсом строка — ОДНА (так пишут длинный `target`), перечисление
+    в фигурных скобках — несколько.
+    """
+    if rest.startswith("{"):
+        return STRING_LIT.findall(rest[1:rest.index("}")])
+    pieces, pos = [], 0
+    while True:
+        lit = re.match(r'\s*"((?:[^"\\]|\\.)*)"', rest[pos:])
+        if not lit:
+            break
+        pieces.append(lit.group(1))
+        pos += lit.end()
+        plus = re.match(r"\s*\+", rest[pos:])
+        if not plus:
+            break
+        pos += plus.end()
+    return ["".join(pieces)] if pieces else []
+
+
+def value_of(block: str, key: str) -> list[str]:
+    """Строки ключа аннотации `key = …`; ключ `value` можно и не писать: `@At("TAIL")`."""
+    found = re.search(rf"\b{key}\s*=\s*", block)
+    if found:
+        return strings_from(block[found.end():])
+    if key == "value" and block.lstrip().startswith('"'):
+        return strings_from(block.lstrip())
+    return []
+
+
+def injectors(body: str) -> list[dict]:
+    """Каждая аннотация-перехват миксина: селекторы методов и точка `@At`."""
+    out = []
+    for m in re.finditer(r"@(%s)\s*\(" % "|".join(INJECTORS), body):
+        block = balanced(body, m.end() - 1)
+        at = re.search(r"@At\s*\(", block)
+        at_block = balanced(block, at.end() - 1) if at else ""
+        out.append({
+            "kind": m.group(1),
+            "methods": value_of(block, "method"),
+            "at": (value_of(at_block, "value") or [""])[0],
+            "target": (value_of(at_block, "target") or [""])[0],
+        })
+    return out
+
+
+def class_members(javap: str, jar: Path, cls: str) -> list[tuple[str, str, str]] | None:
+    """Методы класса по байткоду: (имя, дескриптор, код). None — класса нет."""
+    done = subprocess.run([javap, "-c", "-p", "-s", "-classpath", str(jar), cls],
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if done.returncode != 0:
+        return None
+    members, name, desc, code = [], None, "", []
+    for line in done.stdout.splitlines():
+        if line.startswith("  ") and not line.startswith("   ") and line.strip():
+            if name is not None:
+                members.append((name, desc, "\n".join(code)))
+            head = line.strip()
+            match = re.search(r"([\w$<>]+)\s*\(", head)
+            name, desc, code = (match.group(1) if match else None), "", []
+            continue
+        stripped = line.strip()
+        if stripped.startswith("descriptor:") and name is not None and not desc:
+            desc = stripped.split(":", 1)[1].strip()
+        elif name is not None:
+            code.append(stripped)
+    if name is not None:
+        members.append((name, desc, "\n".join(code)))
+    return members
+
+
+def selected(members: list[tuple[str, str, str]], selector: str) -> list[tuple[str, str, str]]:
+    """Методы, которые выберет селектор Mixin: `имя` или `имя(дескриптор)`."""
+    name, _, desc = selector.partition("(")
+    desc = "(" + desc if desc else ""
+    return [m for m in members if m[0] == name and (not desc or m[1] == desc)]
+
+
+def injector_problems(members, inj: dict) -> str | None:
+    """Почему этот перехват уронит игру на этой версии; None — всё в порядке.
+
+    ⚠️ Mixin пропускает селектор, не нашедший метода (минимум совпадений по
+    умолчанию 0), и падает, только если не нашлось НИ ОДНОГО. Перехват на
+    ВЫЗОВ падает ещё и тогда, когда метод есть, а вызова внутри нет: на каждой
+    точке `require = 1` из конфига.
+    """
+    methods = [s for s in inj["methods"] if s != "<init>"]
+    if not methods:
+        return None
+    chosen = [m for s in methods for m in selected(members, s)]
+    if not chosen:
+        return f"нет ни одного метода из {', '.join(methods)}"
+    if inj["at"] == "INVOKE" and inj["target"]:
+        call = inj["target"].split(";", 1)[1] if ";" in inj["target"] else inj["target"]
+        name, _, desc = call.partition("(")
+        needle = f"{name}:({desc}"
+        if not any(needle in code for _n, _d, code in chosen):
+            where = ", ".join(sorted({n for n, _d, _c in chosen}))
+            return f"в {where} нет вызова {name}({desc}"
+    if inj["at"] == "FIELD" and inj["target"]:
+        field = inj["target"].split(";", 1)[1] if ";" in inj["target"] else inj["target"]
+        name = field.split(":", 1)[0]
+        if not any(f"Field {name}:" in code or f".{name}:" in code
+                   for _n, _d, code in chosen):
+            return f"нет обращения к полю {name}"
+    return None
+
+
+def built_range(version: str) -> str | None:
+    """Диапазон `minecraft` из СОБРАННОГО jar версии: на что он реально едет."""
+    libs = ROOT / "versions" / version / "build" / "libs"
+    jars = [p for p in libs.glob("skyblockru-*.jar")
+            if not p.name.endswith(("-sources.jar", "-dev.jar"))] if libs.exists() else []
+    if not jars:
+        return None
+    newest = max(jars, key=lambda p: p.stat().st_mtime)
+    try:
+        import json
+        with zipfile.ZipFile(newest) as z:
+            meta = json.loads(z.read("fabric.mod.json"))
+        return str((meta.get("depends") or {}).get("minecraft", "")) or None
+    except (OSError, KeyError, ValueError, zipfile.BadZipFile):
+        return None
+
+
+def sources_dir(version: str, active: str | None) -> Path:
+    if version == active:
+        return MIXIN_DIR
+    return ROOT.joinpath("versions", version, "build", "generated",
+                        "stonecutter", "main", "java", "ru", "skyblockru", "mixin")
+
+
+def coverage_problems(javap: str, game_jar: Path, directory: Path,
+                      gate: list[tuple[str, str, str]]) -> list[str]:
+    """Что из миксинов папки уронит игру на этом jar игры (пусто — ничего)."""
+    problems = []
+    for src in sorted(directory.glob("*Mixin.java")):
+        # Закомментированное в jar не попадает: снимаем и javadoc, и строчные
+        # комментарии — в них бывают упоминания `@Inject`, и ветки Stonecutter.
+        body = BLOCK_COMMENT.sub("", src.read_text(encoding="utf-8"))
+        body = re.sub(r"(?m)^\s*//.*$", "", body)
+        imports = {i.rsplit(".", 1)[-1]: i for i in IMPORT.findall(body)}
+        match = TARGET_STR.search(body)
+        cls = match.group(1) if match else None
+        if not cls:
+            match = TARGET_CLASS.search(body)
+            cls = imports.get(match.group(1), match.group(1)) if match else None
+        if not cls:
+            continue
+        # ⚠️ Миксин за привратником применяется, только если в этой версии есть
+        # его метод — так решает MixinGate в рантайме. Там, где он выключен,
+        # его цели искать незачем.
+        rule = next(((c, m) for g, c, m in gate if g.split(".")[-1] == src.stem), None)
+        if rule and not has_method(javap, game_jar, rule[0], rule[1]):
+            continue
+        members = class_members(javap, game_jar, cls)
+        if members is None:
+            problems.append(f"{src.stem}: нет класса {cls}")
+            continue
+        for inj in injectors(body):
+            why = injector_problems(members, inj)
+            if why:
+                problems.append(f"{src.stem} @{inj['kind']}: {why}")
+    return problems
+
+
+def check_jar_coverage(javap: str, jars: list[tuple[str, Path]], active: str | None) -> int:
+    """
+    Каждый собранный jar — против КАЖДОЙ версии игры, на которую он рассчитан.
+
+    ⚠️ ЗАЧЕМ (11.10). Jar под 26.x один на 26.1–26.2, а прежние проверки
+    сверяли его только с игрой 26.2. 0.2.40 перехватывал надписи над сущностями
+    в `extractNameTags(…FDD)V`, которого в 26.1.x нет вовсе, — и на 26.1.2
+    (сборка SkyBlock Enhanced) игра падала на старте:
+        could not find any targets matching 'extractNameTags(...)'
+    Сторож при этом печатал «все цели на месте»: он смотрел не ту версию
+    и только ИМЕНА методов.
+
+    Здесь проверяется то, на чём Mixin реально падает: нашёлся ли хоть один
+    метод из селекторов перехвата и есть ли внутри нужный вызов. Версии берутся
+    из диапазона `minecraft` СОБРАННОГО jar, а не из списка сборок.
+    """
+    import pack  # ленивый импорт: разбор диапазона один на проект (pack.in_range)
+
+    versions = [v for v, _ in declared_versions()]
+    print("\n=== ПЕРЕХВАТЫ НА ВСЕХ ВЕРСИЯХ, КУДА ЕДЕТ JAR ===")
+    print("    метод найден И вызов внутри есть — иначе Mixin роняет игру на старте")
+    gate = gate_map()
+    bad = 0
+    for version in versions:
+        directory = sources_dir(version, active)
+        if not directory.exists():
+            print(f"   {version:9} под неё не собирали — пропускаю")
+            continue
+        spec = built_range(version)
+        games = [(g, j) for g, j in jars
+                 if deobfuscated(j) and (pack.in_range(g, spec) if spec else g == version)]
+        if not games:
+            print(f"   {version:9} нет разобранного jar игры ни для одной версии"
+                  f" из «{spec or version}»")
+            continue
+        for game, game_jar in games:
+            problems = coverage_problems(javap, game_jar, directory, gate)
+            label = f"сборка {version} на игре {game}"
+            if problems:
+                bad += 1
+                print(f"   СЛОМАНО {label}: {len(problems)}")
+                for row in problems[:6]:
+                    print(f"      {row}")
+            else:
+                print(f"   {label:34} все перехваты найдут свою точку")
+    return bad
+
+
 def active_version() -> str | None:
     """Активная версия Stonecutter — из строки `stonecutter active "26.2"`."""
     control = ROOT / "stonecutter.gradle.kts"
@@ -545,6 +799,7 @@ def main() -> int:
 
     bad += check_all_targets(javap, jars)
     bad += check_every_version(javap, jars, active_version())
+    bad += check_jar_coverage(javap, jars, active_version())
     bad += check_shadow(javap, jars, active_version())
     bad += check_runtime_names(active_version())
 

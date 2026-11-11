@@ -134,7 +134,11 @@ def keep_enchants_consistent(text: str, translated: str,
             # зачарование. Та же беда, что «Depth Чемпион» в глоссарии, только
             # сделанная уже мной. Два заглавных слова подряд — это имя целиком.
             before = match.string[:match.start()].rstrip()
-            previous = re.search(r"([A-Za-z]+)$", before)
+            # ⚠️ АПОСТРОФ — ЧАСТЬ СЛОВА (12.10). Шаблон без него видел в
+            # «Fisher's Fortune I» предыдущим словом только «s»: оно не с
+            # заглавной, и имя атрибута получало ванильный @ключ — на экране
+            # «Fisher's Удача I» (4 абзаца, в обоих режимах).
+            previous = re.search(r"([A-Za-z']+)$", before)
             if previous and previous.group(1)[0].isupper():
                 return match.group(0)
             return f"{target} {match.group(1)}"

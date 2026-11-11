@@ -538,11 +538,19 @@ def _taken(title: str) -> bool:
     Тождественную запись заменять можно и нужно: она означает «перевода
     нет, оставлено как есть», и русское имя её законно улучшает.
     Замер 02.09: берётся 142 формы, отвергается 5 — ровно те, что портили.
+
+    ⚠️⚠️ СВОЙ ВЫХОД ИЗ ОПРОСА ИСКЛЮЧАЕМ, иначе генератор ест сам себя.
+    Без этого он видел в `81-item-names` СВОИ ЖЕ формы со значком, считал
+    их «чужим переводом» и уступал — на следующем прогоне 237 записей
+    («◆ Руна крови II», «◆ Руна укуса I x{n}») исчезали молча, а ещё через
+    прогон возвращались. Пятый случай этой семьи в проекте (gen_headers
+    1385 -> 0, split_sb_stats 242 -> 0, gen_checklist 71 -> 0,
+    gen_full_jargon 76 -> 0), и признак давно есть — `without=`.
     """
     import status  # ленивый: тянет словари
     global _FULL
     if _FULL is None:
-        _FULL = status.Dictionaries(groups={"full"})
+        _FULL = status.Dictionaries(groups={"full"}, without={PACK.name})
     found = status.lookup(title, _FULL, origin="item_lore")
     return bool(found and found[0] and found[0] != title)
 
@@ -616,6 +624,27 @@ def do_write() -> int:
     entries = dict(names)
     entries.update(expanded)
 
+    # ⚠️ В ТАБЕ МИНЬОН ПОДПИСАН БЕЗ СЛОВА «MINION»: «1x Carrot VI [FULL]».
+    # Такого ключа в каталоге нет и быть не может — это сокращение Hypixel
+    # для узкой колонки. Строит его правило режима (05-full-rules) с `tg`,
+    # а `tg` спрашивает словарь про ЗАХВАТ «Carrot VI» — вот эти записи.
+    # Разворачиваем только по УЖЕ ПЕРЕВЕДЁННЫМ базам: выдумывать нечего.
+    # ⚠️⚠️ КЛЮЧ БЫВАЕТ ЗАНЯТ БЕСТИАРИЕМ, и тогда запись здесь МЕРТВА.
+    # «Chicken II» в `31-buttons` значит уровень существа («Курица II»),
+    # а у `exact` побеждает МЕНЬШИЙ priority (31 против нашего 61). Замер
+    # 05.09: так мертвы 19 коротких форм из 61 — все мобные миньоны.
+    # Панель для них закрыта строкой ЦЕЛИКОМ (`gen_full_strings`), а копить
+    # заведомо мёртвые записи незачем — записанное правило проекта.
+    short: dict[str, str] = {}
+    for english, russian in list(entries.items()):
+        found = re.match(r"^(.+) Minion ([IVXL]+)$", english)
+        if not found:
+            continue
+        key = f"{found.group(1)} {found.group(2)}"
+        if key not in entries and not _taken(key):
+            short[key] = russian
+    entries.update(short)
+
     # Обёртки с экрана (счётчик стопки, значок слева) — по живым строкам.
     wrapped = expand_seen_forms(entries)
     entries.update(wrapped)
@@ -636,6 +665,12 @@ def do_write() -> int:
     catalog_set = set(catalog)
 
     def same_thing(names: list[str]) -> bool:
+        # ⚠️ «Acacia Minion VIII» и «Acacia VIII» — ОДИН миньон: второе
+        # это сокращение Hypixel для таба. Перевод у них обязан совпадать,
+        # и разводить их значило бы выдумать второго миньона. Признак
+        # механический: строки сходятся после снятия слова «Minion».
+        if len({re.sub(r" Minion ", " ", n) for n in names}) == 1:
+            return True
         if sum(1 for n in names if n in catalog_set) == len(names):
             return False
         first = names[0].lower()
@@ -693,8 +728,13 @@ def do_write() -> int:
         # это тот же случай, под который область и задумана. Проверено
         # на конфликт: пересечение ключей с `82-npc-places` — 38, и у всех
         # 38 перевод СОВПАДАЕТ; с `85-mob-names` пересечения нет вовсе.
+        # ⚠️ tab ДОБАВЛЕН 05.09 по скриншоту игрока: в табе колонкой идут
+        # миньоны («1x Carrot VI [ЗАПОЛНЕН]») и предметы распродажи, и это
+        # ровно тот случай, под который область задумана — имя стоит
+        # строкой целиком. Замер конфликта ДО правки: из 1163 строк таба
+        # с ключами словаря совпали 29, спорных с текущим переводом — 0.
         "only": ["item_name", "item_lore", "menu_title", "screen",
-                 "name_tag"],
+                 "name_tag", "tab"],
         "exact": dict(sorted(entries.items())),
     }
     save(PACK, pack)

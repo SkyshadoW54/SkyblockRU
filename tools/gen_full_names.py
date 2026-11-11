@@ -173,6 +173,8 @@ def main() -> int:
     place_forms = [(n, f, n.split(" ")[0])
                    for n, f in sorted(places.PLACES.items(),
                                       key=lambda kv: -len(kv[0]))]
+    # первые слова имён из PLACES — дешёвый признак «падежный заход может взять»
+    place_first = {n.split(" ")[0] for n in places.PLACES}
     # ⚠️ ИНДЕКС ПО ПЕРВОМУ СЛОВУ ОКАЗАЛСЯ ДЫРЯВЫМ: пропускал 46% строк.
     # Первые слова имён частые («Minion», «The», «Zombie», «Ancient»), и
     # признак «в строке есть слово, с которого начинается какое-то имя»
@@ -183,6 +185,14 @@ def main() -> int:
     # проверяется ПОЛНОЕ вхождение — то есть отсев точный, а не приблизительный.
     by_word: dict[str, list[str]] = {}
     for n in names:
+        for w in WORDS.findall(n):
+            by_word.setdefault(w, []).append(n)
+    # ⚠️⚠️ ИМЕНА ИЗ `PLACES` ТОЖЕ ИДУТ В ИНДЕКС, иначе отсев выбрасывает
+    # строку ДО подстановки места. Второй заход (падежи) работает по
+    # `place_forms`, но до него доходят только строки, прошедшие этот
+    # отсев, — а он знал лишь имена NPC. Замер 05.09: «Gain the Cookie
+    # Buff!» и «Found in Hub!» отбрасывались, хотя формы для них есть.
+    for n in places.PLACES:
         for w in WORDS.findall(n):
             by_word.setdefault(w, []).append(n)
     # ⚠️ СЕБЯ ИЗ ОПРОСА ИСКЛЮЧАЕМ: на втором прогоне генератор нашёл бы свои же
@@ -223,6 +233,22 @@ def main() -> int:
     halfway = 0
     covered = 0
     # ручные переводы режима: они полнее нашей подстановки
+    # ⚠️⚠️ ТРЕТИЙ ИСТОЧНИК — ОЧЕРЕДЬ (`from_game.json`), и без него терялись
+    # строки, УШЕДШИЕ ИЗ ДАМПА. Дамп чистится и редеет, а перевод остаётся:
+    # «Gain the Cookie Buff!» лежит в очереди с переводом, но на экране мы её
+    # давно не видели — и режимной версии у неё не было вовсе. Замер 05.09:
+    # 396 строк очереди получают режимную версию, которой иначе не будет.
+    # ⚠️ Берём только КЛЮЧИ: перевод генератор всё равно спрашивает у движка,
+    # а своя копия разошлась бы с ним при первой правке словаря.
+    queue = ROOT / "data" / "work" / "from_game.json"
+    if queue.exists():
+        rows = json.loads(queue.read_text(encoding="utf-8")).get("exact") or {}
+        merged = dict(sources.get("item_lore") or {})
+        for line, russian in rows.items():
+            if russian:
+                merged.setdefault(line, 1)
+        sources["item_lore"] = merged
+
     hand_pack = PACKS / "ru_ru" / "04-full-strings.json"
     by_hand = set()
     if hand_pack.exists():
@@ -270,7 +296,14 @@ def main() -> int:
             hit = next((n for n in order
                         if re.search(r"(?<![A-Za-z])" + re.escape(n) + r"(?![A-Za-z])",
                                      masked)), None)
-            if not hit:
+            # ⚠️⚠️ ПРОВЕРКА ЗДЕСЬ ОТБРАСЫВАЛА СТРОКУ ДО ПАДЕЖНОГО ЗАХОДА.
+            # `order` — это имена NPC и мест, а второй заход работает по
+            # `PLACES`, где ещё бренды, события и предметы. Строка «Получи
+            # Cookie Buff!» не содержит ни одного имени из `order`, и генератор
+            # выходил, не дойдя до подстановки, которая её берёт. Замер
+            # 05.09: так пропадали «Cookie Buff», «Booster Cookie», «Hub» — то есть
+            # ровно то, что игрок видел на скриншоте таба.
+            if not hit and not any(w in masked for w in place_first):
                 continue
             # ⚠️⚠️ ПОДСТАВЛЯЕМ ВСЕ ИМЕНА, А НЕ ПЕРВОЕ. Раньше менялось одно,
             # и составная строка выходила ПОЛУПЕРЕВОДОМ:

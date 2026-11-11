@@ -30,6 +30,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import s3  # noqa: E402
+from check_release import is_mode_pack  # noqa: E402  — один признак режима на облако и jar
 
 PACKS = ROOT / "src" / "main" / "resources" / "assets" / "skyblockru" / "packs"
 WIKI = ROOT / "src" / "main" / "resources" / "assets" / "skyblockru" / "wiki"
@@ -201,7 +202,7 @@ def collect() -> tuple[list[dict], list[str]]:
                 meta = json.loads(path.read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 meta = {}
-            if meta.get("group") or meta.get("default") is False:
+            if is_mode_pack(meta):
                 refused.append(f"{path.name}: РЕЖИМНЫЙ — остаётся локально "
                                f"(решение игрока 27.08)")
                 return

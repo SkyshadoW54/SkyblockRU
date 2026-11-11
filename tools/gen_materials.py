@@ -38,7 +38,7 @@ MATERIALS = {
     "cactus": "кактусы",
     "flowers": "цветы",
     "lily pads": "кувшинки",
-    "nether warts": "адские наросты",
+    "nether warts": "незерские наросты",
     "sugar cane": "сахарный тростник",
     "cocoa beans": "какао-бобы",
     "mushrooms": "грибы",

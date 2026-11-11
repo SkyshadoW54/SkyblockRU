@@ -12,7 +12,7 @@
 лежит в раздаваемом файле. Это записанная мораль проекта: сторож отвечает
 на СВОЙ вопрос, и «исходники чистые» ≠ «чистое уедет людям».
 
-Проверяем ровно три вещи, и каждая ловит эту беду со своей стороны:
+Проверяем пять вещей, и каждая ловит свою беду:
 
   1. СВЕЖЕСТЬ   нет ли в src/ файлов новее сборки. Корень беды: правка есть,
                 а в jar её нет.
@@ -20,6 +20,10 @@
                 у check_nicknames (своя копия разошлась бы).
   3. ЛИШНЕЕ     словари, объявленные в jar, но отсутствующие в исходниках —
                 так ловится тестовый словарь, удалённый уже после сборки.
+  4. БИБЛИОТЕКА чужой jar, вложенный в наш (08.08 ронял чужую сборку).
+  5. РЕЖИМ FULL словари режима полного перевода и команда `full` в ветке
+                игрока (решение 03.10: режим тестируется только локально,
+                а с 0.2.30 и то и другое уезжало в раздачу незамеченным).
 
 Запуск:
   python tools/check_release.py                проверить всё в release/
@@ -64,6 +68,57 @@ def declared_in_jar(zf: zipfile.ZipFile) -> set[str]:
     for _lang, items in (index.get("languages") or {}).items():
         names.update(items)
     return names
+
+
+def is_mode_pack(meta: dict) -> bool:
+    """Словарь режима полного перевода — в раздачу НЕ идёт.
+
+    ⚠️ Признак — поля самого словаря, а не список имён: поля ставит
+    генератор, за ними следит `check_full_mode` (`"group": "full"`,
+    `"default": false`). Список пополняли бы руками и однажды забыли.
+    Тот же признак держит `publish.py` для облака — он зовёт эту функцию,
+    чтобы облако и jar раздачи не разошлись в том, что считать режимом.
+    """
+    return bool(meta.get("group")) or meta.get("default") is False
+
+
+PLAYER_BRANCH = "addPlayerCommands"
+COMMAND_CLASS = "ru/skyblockru/command/RuCommand.class"
+
+
+def player_branch_strings(zf: zipfile.ZipFile) -> set[str] | None:
+    """Строковые константы в ветке команд ИГРОКА — по байткоду собранного jar.
+
+    ⚠️ Спрашиваем jar, а не исходник: проверять надо то, что уедет людям.
+    `literal("full")` компилируется в `ldc "full"` прямо в теле
+    `addPlayerCommands`, лямбды `.executes(...)` живут отдельно и сюда не
+    попадают. None — проверить нечем (нет javap или класса).
+    """
+    import subprocess
+    import tempfile
+    from check_mixin_gate import find_java  # одна копия поиска JDK, не своя
+
+    javap = find_java("javap")
+    if javap is None or COMMAND_CLASS not in zf.namelist():
+        return None
+    with tempfile.TemporaryDirectory() as tmp:
+        target = Path(tmp) / "RuCommand.class"
+        target.write_bytes(zf.read(COMMAND_CLASS))
+        done = subprocess.run([javap, "-c", "-p", str(target)], capture_output=True,
+                              text=True, encoding="utf-8", errors="replace")
+    if done.returncode != 0:
+        return None
+    found: set[str] = set()
+    inside = False
+    for line in done.stdout.splitlines():
+        if line.startswith("  ") and not line.startswith("   ") and line.strip():
+            # заголовок члена класса: ровно два пробела отступа (метод, поле,
+            # `static {}`) — любой из них закрывает предыдущий метод
+            inside = f" {PLAYER_BRANCH}(" in line
+            continue
+        if inside and "// String " in line:
+            found.add(line.split("// String ", 1)[1].strip())
+    return found
 
 
 def source_pack_names() -> set[str]:
@@ -136,6 +191,36 @@ def check_jar(jar: Path, source_names: set[str], newest: float,
                 f"ЧУЖАЯ БИБЛИОТЕКА В JAR: {name} — Fabric раздаст нашу версию "
                 f"всем модам, и собранный под другую версию сосед упадёт "
                 f"с NoSuchMethodError, уронив игру на старте")
+
+        # 5. ⚠️ РЕЖИМ ПОЛНОГО ПЕРЕВОДА В РАЗДАЧЕ (решение игрока 03.10).
+        #
+        # Режим тестируется ТОЛЬКО на машине разработки. А с 0.2.30 его
+        # словари ехали в jar раздачи, и команда `/skyblockru full` стояла
+        # в ветке игрока: любой скачавший видел её в подсказке команд и
+        # включал сырой режим. Облако всё это время придерживало словари
+        # правильно — утечка шла через jar, и его про режим никто не спрашивал.
+        # Вырезает словари `release.py`; здесь — проверка, что вырезал.
+        for name in names:
+            short = name.rsplit("/", 1)[-1]
+            if short == "index.json":
+                continue
+            try:
+                meta = json.loads(zf.read(name))
+            except json.JSONDecodeError:
+                continue
+            if is_mode_pack(meta):
+                problems.append(
+                    f"РЕЖИМ FULL В РАЗДАЧЕ: словарь {short} — режим тестируется "
+                    f"только локально; jar для раздачи собирает release.py")
+        strings = player_branch_strings(zf)
+        if strings is None:
+            problems.append(
+                "КОМАНДЫ НЕ ПРОВЕРЕНЫ: нет javap или класса команд — "
+                "не знаю, видна ли игроку команда full")
+        elif "full" in strings:
+            problems.append(
+                "РЕЖИМ FULL В РАЗДАЧЕ: команда /skyblockru full стоит в ветке "
+                "игрока — её место за devCommands")
     return problems
 
 
@@ -173,7 +258,8 @@ def run(jars: list[Path]) -> int:
         print("    Пересобрать: python tools/build_all.py && python tools/release.py")
         return 1
     print("СЛОМАНО: 0 — в файлах нет ни ников, ни посторонних словарей,")
-    print("          и собраны они не раньше последней правки исходников")
+    print("          ни режима полного перевода, и собраны они не раньше")
+    print("          последней правки исходников")
     return 0
 
 

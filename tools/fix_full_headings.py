@@ -85,7 +85,7 @@ CASE_LEFT = re.compile(
 # не меняет. Без этого ходовая форма события («{n}th Season of Jerry», 208
 # установок у игроков) оставалась английской.
 NOMINATIVE_LEFT = re.compile(r"(?:тво[йяёе]|тво[иё]|наш\w*|эт[оаи]?т?|"
-                             r"(?:\{n\}|\d+)-[йяое])\s*$",
+                             r"(?:\{n\}|\d+)-[йяое]|выпада\w+|появля\w+|растёт|растут|встреча\w+|водится|водятся|находится|находятся)\s*$",
                              re.IGNORECASE)
 
 
@@ -175,9 +175,15 @@ def standalone(text: str, start: int, end: int) -> bool:
     """
     right = CODES.sub("", text[end:]).strip().split()
     if right:
-        word = NEIGHBOUR.fullmatch(right[0].strip(".,!?:;()"))
-        if word and not ROMAN.match(word.group(0)):
-            return False
+        # ⚠️ ОТКРЫВАЮЩАЯ СКОБКА ОТДЕЛЯЕТ ИМЯ. «Enchanted Book (Bank I)» —
+        # в скобках стоит зачарование, а не продолжение названия, и защита
+        # от составного имени отказывала на пустом месте: 48 показов в перечне
+        # содержимого. Снимать её из хвоста нельзя — тогда «(Bank» станет
+        # «Bank» и снова сойдёт за соседа.
+        if not right[0].startswith(("(", "[", "«", "–", "—")):
+            word = NEIGHBOUR.fullmatch(right[0].strip(".,!?:;()"))
+            if word and not ROMAN.match(word.group(0)):
+                return False
     # ⚠️ ПОДПИСЬ ОТДЕЛЯЕТ ИМЯ, и сосед за ней в счёт не идёт. У «Счётчик RNG:
     # Crystal Nucleus» слева стоит аббревиатура «RNG», признак принимал её за
     # часть названия и отказывал — 65 показов. Двоеточие тут говорит прямо:

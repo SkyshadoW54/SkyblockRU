@@ -538,7 +538,19 @@ def build_pack() -> int:
     jargon = terms.of("stat_jargon")
     rules = [rule for rule in rules
              if not any(rule["p"].startswith("^" + re.escape(name)) for name in jargon)]
-    glossary = {name: value for name, value in glossary.items() if name not in jargon}
+    # ⚠️⚠️ ВАНИЛЬНОЕ ЗАЧАРОВАНИЕ — ИСКЛЮЧЕНИЕ ИЗ ЭТОГО ЗАПРЕТА.
+    # `Respiration` числится и жаргоном характеристик («Подводное дыхание:
+    # +45»), и ванильным зачарованием («Rejuvenate V, Respiration III,
+    # Thorns III»). Запрет выбрасывал его из глоссария целиком, и в СПИСКЕ
+    # через запятую оно оставалось английским при переведённых соседях —
+    # скриншот игрока 07.09 (Древний шлем Некрона).
+    #
+    # Пускать его безопасно: перевод — @ключ, то есть слово даёт КЛИЕНТ,
+    # а не мы. Выключать такое нечем и незачем — записанное решение проекта
+    # («ванильные зачарования выключать нельзя»). Замер: пересечение жаргона
+    # с ванильными — РОВНО ОДНО имя, так что цена правки известна точно.
+    glossary = {name: value for name, value in glossary.items()
+                if name not in jargon or value.startswith("@")}
 
     core_rules = [r for r in rules
                   if is_vanilla(r["r"]) or r["p"].endswith(":(\\s*)$") or is_skill_bonus(r)]

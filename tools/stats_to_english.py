@@ -85,7 +85,7 @@ EXTRA_PAIRS = {
     "Wheat Fortune": "Удача на пшеницу",
     "Cactus Fortune": "Удача на кактусы",
     "Melon Fortune": "Удача на арбузы",
-    "Nether Stalk Fortune": "Удача на адский нарост",
+    "Nether Stalk Fortune": "Удача на незерский нарост",
     "Sugar Cane Fortune": "Удача на сахарный тростник",
     "Trophy Fish Chance": "Шанс трофейной рыбы",
     "Fear": "Страх",
@@ -122,7 +122,7 @@ EXTRA_FORMS = [
     # Живы обе формы, ловить надо обе.
     ("Cocoa Beans Fortune", "Удача какао-бобов"),
     ("Mushroom Fortune", "Удача грибов"),
-    ("Nether Stalk Fortune", "Удача адского нароста"),
+    ("Nether Stalk Fortune", "Удача незерского нароста"),
     ("Carrot Fortune", "Удача моркови"),
     ("Potato Fortune", "Удача картофеля"),
     ("Pumpkin Fortune", "Удача тыквы"),

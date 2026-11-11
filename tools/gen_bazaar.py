@@ -113,6 +113,63 @@ def rules() -> list[dict]:
     })
 
     out.append({
+        "_": "19.10, слой 1 (данные в очереди абзацев): ВТОРАЯ СТРОКА истории"
+             " базара без цены — только «by Ник». 143 куска истории лежали в"
+             " очереди английскими, первая строка переводилась, вторая нет.",
+        "p": r"^by (.+)$",
+        "r": "— $1",
+    })
+    out.append({
+        "_": "«now …» — та же история, когда операция прошла только что:"
+             " «now Instant Sell of 10x Seeds».",
+    })
+    for action, action_ru in ACTIONS:
+        out.append({
+            "p": rf"^now {action} of {COUNT}x (.+)$",
+            "r": f"только что {action_ru} $1x $2",
+        })
+    out.append({
+        "_": "Вторая строка заказа аукциона/базара с ценой за штуку:"
+             " «at 5 coins each (total 2k) by Nick». Сумму с суффиксом k/M/B"
+             " не трогаем, ник — как в «for … coins by».",
+        "p": r"^at ([\d,.]+) coins each \(total ([\d,.]+[kMB]?)\) by (.+)$",
+        "r": "по $1 монет за штуку (всего $2) — $3",
+    })
+    out.append({
+        "_": "История улучшений кооператива: «3d ago Nick started Minion Slots II»,"
+             " «… claimed Minion Slots I». Имя улучшения — как есть.",
+    })
+    for unit, unit_ru in UNITS:
+        out.append({
+            "p": rf"^{COUNT}{unit} ago (\S+) started (.+)$",
+            "r": f"$1 {unit_ru} назад $2 начал: $3",
+        })
+        out.append({
+            "p": rf"^{COUNT}{unit} ago (\S+) claimed (.+)$",
+            "r": f"$1 {unit_ru} назад $2 забрал: $3",
+        })
+        out.append({
+            "p": rf"^{COUNT}{unit} ago (\S+) fast-tracked (.+)$",
+            "r": f"$1 {unit_ru} назад $2 ускорил: $3",
+        })
+    out.append({
+        "_": "Созданное предложение/заказ — с предлогом «for», а не «of»:"
+             " «now Created Sell Offer for 64x Enchanted Mithril».",
+    })
+    CREATED = [("Created Sell Offer", "создано предложение о продаже"),
+               ("Created Buy Order", "создан заказ на покупку")]
+    for action, action_ru in CREATED:
+        out.append({
+            "p": rf"^now {action} for {COUNT}x (.+)$",
+            "r": f"только что {action_ru} $1x $2",
+        })
+        for unit, unit_ru in UNITS:
+            out.append({
+                "p": rf"^{COUNT}{unit} ago {action} for {COUNT}x (.+)$",
+                "r": f"$1 {unit_ru} назад {action_ru} $2x $3",
+            })
+
+    out.append({
         "_": "Multi-sell — продажа нескольких товаров разом. Перевода термина"
              " в словарях не нашлось, взят по смыслу: «массовая продажа».",
     })

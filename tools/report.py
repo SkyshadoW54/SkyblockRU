@@ -167,6 +167,36 @@ def main() -> int:
         print()
         problems += len(mixed)
 
+    # --- 1a. утечки режима full — мод записал сам ---
+    #
+    # ⚠️ Отдельный ключ `full` в mixed.json и отдельный отбор: в режиме мод
+    # пишет ЛЮБОЕ английское слово в русском выводе (включая имена с Заглавной
+    # и абзацы), а что оставлено по решению — знает сканер словарей.
+    # Список пуст, пока режим не включали или игра не писала дамп.
+    full_leaks = []
+    try:
+        import full_leaks as leaks_tool
+        skip = leaks_tool.allowed()
+        for source, result in (load("mixed.json").get("full") or {}).items():
+            rest = [p for p in leaks_tool.phrases(result) if p.lower() not in skip]
+            if rest:
+                full_leaks.append((source, result, rest))
+    except (ImportError, OSError):
+        pass
+    if full_leaks:
+        print(f"=== УТЕЧКИ РЕЖИМА FULL (мод записал в игре): {len(full_leaks)} ===")
+        print("  Включён режим full, а на экране осталось английское слово.")
+        print("  По словарям то же самое ищет: python tools/full_leaks.py")
+        for source, result, rest in full_leaks[:args.show]:
+            print(f"\n  EN {show(source)[:88]}")
+            print(f"  RU {show(result)[:88]}")
+            print(f"     осталось английским: {', '.join(rest[:6])}")
+        if len(full_leaks) > args.show:
+            print(f"\n  ... ещё {len(full_leaks) - args.show}")
+        print()
+        # ⚠️ В общий счёт «требует внимания» не входит: режим локальный,
+        # а список чинится семьями через генераторы, не поштучно.
+
     # --- 1b. плохая склейка соседних строк ---
     glued = bad_joins()
     print(f"=== ПЛОХАЯ СКЛЕЙКА СОСЕДНИХ СТРОК: {len(glued)} ===")

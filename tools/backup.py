@@ -65,6 +65,10 @@ TRANSLATIONS = [
     # прямым текстом «ИСТОЧНИК ПРАВДЫ — этот файл».
     "reforges_ru.json",          # 144 перековки в 4 формах рода (gen_reforges)
     "_jargon_ru.json",           # русские формы жаргона характеристик
+    # ⚠️ Нашёлся 11.11 при уборке `data/work`: источник `94-menus`
+    # (`merge_menu_paragraphs`), 2 694 знака кириллицы, правится
+    # `fix_split_name_colors`. В копии его не было.
+    "menu_paragraphs.json",      # абзацы меню (merge_menu_paragraphs)
 ]
 
 
@@ -95,6 +99,20 @@ def collect() -> list[tuple[Path, str]]:
     notes = ROOT / "CLAUDE.md"
     if notes.is_file():
         out.append((notes, "CLAUDE.md"))
+
+    # ⚠️ С 03.10 ЖУРНАЛ ЛЕЖИТ НЕ В ОДНОМ ФАЙЛЕ. CLAUDE.md похудел до памятки,
+    # а полный текст (решения, грабли, замеры) переехал в notes/, выжимка
+    # правил — в .claude/rules/. Всё это закрыто от git так же, как сам
+    # CLAUDE.md, значит единственная копия — эта. HISTORY.md не брался
+    # с самого его появления 02.09, хотя закрыт от git по той же причине.
+    history = ROOT / "HISTORY.md"
+    if history.is_file():
+        out.append((history, "HISTORY.md"))
+    for folder, inner in ((ROOT / "notes", "notes"),
+                          (ROOT / ".claude" / "rules", ".claude/rules")):
+        if folder.is_dir():
+            for path in sorted(folder.rglob("*.md")):
+                out.append((path, inner + "/" + path.relative_to(folder).as_posix()))
     return out
 
 
@@ -130,6 +148,10 @@ def main() -> int:
             "\r\n"
             "словари/   — готовый перевод, который видит игрок.\r\n"
             "             Класть в src/main/resources/assets/skyblockru/.\r\n"
+            "\r\n"
+            "CLAUDE.md, HISTORY.md, notes/, .claude/rules/ — журнал проекта:\r\n"
+            "             решения, грабли, замеры. В git его нет. Класть\r\n"
+            "             в корень проекта, на те же места.\r\n"
             "\r\n"
             "Всё остальное в проекте восстанавливается само: код лежит\r\n"
             "в репозитории, лор и вики качаются скриптами, сборки\r\n"

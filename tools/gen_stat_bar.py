@@ -96,7 +96,7 @@ def main() -> int:
                     "боковым зрением. Разделяет их поле only. "
                     "СГЕНЕРИРОВАНО tools/gen_stat_bar.py из 78-sb-stats.json.",
         # ⚠️ Область называется «scoreboard», а не «sidebar»: боковую панель мод
-        # помечает именно так (ObjectiveMixin, PlayerTeamMixin). Имени «sidebar»
+        # помечает именно так (OverlayHooks.sidebarLine, SRC_SCOREBOARD). Имени «sidebar»
         # движок не выдаёт НИКОГДА, и правило с ним мертво по построению —
         # проверка `only.contains(origin)` не совпадёт ни разу. Опечатка тихая:
         # словарь грузится, ошибок нет, а панель остаётся английской.

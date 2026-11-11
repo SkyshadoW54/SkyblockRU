@@ -11,6 +11,10 @@
 отдельной работой, а работа руками рано или поздно делается неверно —
 кто-то заберёт вчерашний файл из папки, которую забыли пересобрать.
 
+⚠️ В раздачу jar идёт БЕЗ режима полного перевода (решение игрока 03.10):
+словари режима вырезаются при копировании (`copy_for_players`), а
+`check_release` проверяет, что вырезаны и что команды `full` нет у игрока.
+
 ⚠️ Проверяем КАЖДЫЙ jar перед копированием: версия внутри должна совпасть
 с папкой, а диапазон Minecraft — с версией сборки. Иначе повторится грабля
 проекта: «версия в имени файла» уже однажды разошлась с содержимым,
@@ -46,6 +50,52 @@ def newest_jar(version: str) -> Path | None:
     jars = [p for p in libs.glob("skyblockru-*.jar")
             if not p.name.endswith(("-sources.jar", "-dev.jar"))]
     return max(jars, key=lambda p: p.stat().st_mtime) if jars else None
+
+
+def copy_for_players(src: Path, dst: Path) -> list[str]:
+    """Копия jar для раздачи БЕЗ словарей режима полного перевода.
+
+    ⚠️ Решение игрока 03.10: режим full тестируется ТОЛЬКО на машине
+    разработки. С 0.2.30 его словари ехали в jar раздачи вместе с командой,
+    и любой скачавший включал сырой режим. Вырезаем ЗДЕСЬ, а не в сборке:
+    jar в `versions/` и в инстансах остаётся полным — на нём режим и тестируют.
+
+    ⚠️ Признак — `check_release.is_mode_pack` (тот же у `publish.py`).
+    Из `index.json` вырезанные словари тоже убираем: объявленный, но
+    отсутствующий файл — это жалоба загрузчика на пустом месте.
+    ⚠️ Время файла копируем с исходного jar: `check_release` сверяет его
+    с исходниками, и свежая по времени копия проходила бы проверку всегда.
+    Возвращает имена вырезанных словарей.
+    """
+    import check_release  # ленивый импорт, как ниже в main
+
+    index_name = check_release.PACKS_IN_JAR + "index.json"
+    with zipfile.ZipFile(src) as zin:
+        mode: set[str] = set()
+        for name in zin.namelist():
+            if (name.startswith(check_release.PACKS_IN_JAR) and name.endswith(".json")
+                    and name != index_name):
+                try:
+                    meta = json.loads(zin.read(name))
+                except ValueError:
+                    continue
+                if check_release.is_mode_pack(meta):
+                    mode.add(name)
+        short = {name.rsplit("/", 1)[-1] for name in mode}
+        index = json.loads(zin.read(index_name))
+        index["common"] = [x for x in index.get("common") or [] if x not in short]
+        for lang, items in (index.get("languages") or {}).items():
+            index["languages"][lang] = [x for x in items if x not in short]
+        with zipfile.ZipFile(dst, "w") as zout:
+            for info in zin.infolist():
+                if info.filename in mode:
+                    continue
+                data = zin.read(info.filename)
+                if info.filename == index_name:
+                    data = json.dumps(index, ensure_ascii=False, indent=2).encode("utf-8")
+                zout.writestr(info, data)  # ZipInfo хранит сжатие и время записи
+    shutil.copystat(src, dst)
+    return sorted(short)
 
 
 def describe(jar: Path) -> tuple[str, str]:
@@ -91,8 +141,11 @@ def main() -> int:
             print(f"   ⚠️ {version}: внутри jar версия {mod_version} — пропускаю")
             missing.append(version)
             continue
-        shutil.copy2(jar, OUT / jar.name)
-        rows.append((version, jar.name, needs, jar.stat().st_size))
+        cut = copy_for_players(jar, OUT / jar.name)
+        rows.append((version, jar.name, needs, (OUT / jar.name).stat().st_size))
+        if cut:
+            print(f"   {version}: режим full вырезан из раздачи — {len(cut)} словарей "
+                  f"(локальный jar в versions/ и инстансах остался полным)")
 
     print(f"=== release/  ({len(rows)} файлов) ===")
     print("%-9s %-30s %-16s %s" % ("версия", "файл", "требует игру", "размер"))

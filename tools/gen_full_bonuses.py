@@ -51,6 +51,12 @@ FRAMES = [
     re.compile(r"^(?P<head>Full Set Bonus: )(?P<name>.+?)(?P<tail> \([^)]*\))?$"),
     re.compile(r"^(?P<head>Tiered Bonus: )(?P<name>.+?)(?P<tail> \([^)]*\))?$"),
     re.compile(r"^(?P<head>\{n\}-Piece Set Bonus: )(?P<name>.+?)(?P<tail>)$"),
+    # ⚠️ 13.10, снимок игрока (Fierce Tarantula Helmet в режиме full): «Extra
+    # Bonus: Radioactive» закрыт точной записью `41-headers` с английским
+    # именем, и мод не находил, где резать заголовок, — «Даёт» прилипало
+    # к строке заголовка. Та же рамка у «Piece Bonus: Spider Bulwark».
+    re.compile(r"^(?P<head>Extra Bonus: )(?P<name>.+?)(?P<tail>)$"),
+    re.compile(r"^(?P<head>Piece Bonus: )(?P<name>[^+\d].*?)(?P<tail>)$"),
     re.compile(r"^(?P<head>[∙•⦾]? ?Ability: )(?P<name>.+?)"
                r"(?P<tail>\s{2,}[A-Z /]+)?$"),
 ]

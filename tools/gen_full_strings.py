@@ -35,6 +35,91 @@ LATIN = re.compile(r"(?<![A-Za-z])[A-Za-z]{3,}")
 ROMAN = re.compile(r"(?<![A-Za-z])[IVXLC]{1,6}(?![A-Za-z])")
 
 
+# ⚠️⚠️ ПАДЕЖ ИМЕНИ МИНЬОНА ЗДЕСЬ ВЫВОДИТСЯ, и это не спорит с записанным
+# правилом проекта. «Падеж машинно не выводится» верно для ЗАМЕНЫ ТЕРМИНА
+# В ПРОЗЕ, где неясно, чем он управляется. А тут управляющее слово известно
+# заранее — «Рецепты» требует родительного, «К» дательного, — и само имя
+# построено по двум нашим же схемам:
+#     «Берёзовый миньон» -> «берёзового миньона» / «берёзовому миньону»
+#     «Миньон коров»     -> «миньона коров»      / «миньону коров»
+# Замер 05.09: выводится у 61 базы из 61, руками не осталось ни одной.
+#
+# ⚠️ ПЕРЕЧИСЛЕНИЕ, А НЕ ПРАВИЛО — потому что правило с `tg` подставит захват
+# в ИМЕНИТЕЛЬНОМ («К Булыжниковый миньон I»), а падеж ему взять неоткуда.
+# Тот же довод, по которому в проекте перечислены рецепты навыков и питомцы.
+#
+# ⚠️ РАЗВОРАЧИВАЕМ СТРОГО ПО КАТАЛОГУ СЕРВЕРА: у Spider Minion максимум XI,
+# и выдумывать XII нельзя — записанное правило `expand_families`.
+GEN = {"ый": "ого", "ий": "его", "ой": "ого"}
+DAT = {"ый": "ому", "ий": "ему", "ой": "ому"}
+ADJ_MINION = re.compile(r"^(.+?)(ый|ий|ой) миньон$")
+
+
+def _case(russian: str, table: dict[str, str], head: str) -> str | None:
+    """Родительный или дательный по схеме имени."""
+    if russian.startswith("Миньон "):
+        return f"{head} " + russian[len("Миньон "):]
+    found = ADJ_MINION.match(russian)
+    if not found:
+        return None
+    return f"{found.group(1)}{table[found.group(2)]} {head}".lower()
+
+
+def base_nominative(russian: str) -> str:
+    """Имя миньона как оно есть — панель показывает его в именительном."""
+    return russian
+
+
+def minion_cases(exact: dict[str, str]) -> dict[str, str]:
+    """«X Minion Recipes» и «To X Minion N» — падежные формы имени миньона."""
+    names = ROOT / "data" / "work" / "item_names_ru.json"
+    catalog = ROOT / "data" / "work" / "item_names.json"
+    if not names.exists() or not catalog.exists():
+        return {}
+    bases = json.loads(names.read_text(encoding="utf-8")).get("names") or {}
+    cat = json.loads(catalog.read_text(encoding="utf-8"))
+    cat = cat.get("names", cat)
+    known = set(cat if isinstance(cat, list) else cat.values())
+
+    out: dict[str, str] = {}
+    for english, russian in bases.items():
+        if not russian or not english.endswith(" Minion"):
+            continue
+        russian_name = russian
+        genitive = _case(russian, GEN, "миньона")
+        dative = _case(russian, DAT, "миньону")
+        if genitive and f"{english} Recipes" not in exact:
+            out[f"{english} Recipes"] = f"Рецепты {genitive}"
+        if not dative:
+            continue
+        for level in ("I", "II", "III", "IV", "V", "VI", "VII", "VIII",
+                      "IX", "X", "XI", "XII"):
+            full = f"{english} {level}"
+            if full not in known:
+                continue
+            if f"To {full}" not in exact:
+                out[f"To {full}"] = f"К {dative} {level}"
+            # ⚠️⚠️ СТРОКА ПАНЕЛИ ЦЕЛИКОМ, а не через захват правила. Правило
+            # с `tg` спрашивает словарь про КОРОТКУЮ форму («Chicken II»),
+            # а этот ключ ЗАНЯТ бестиарием: в `31-buttons` он значит уровень
+            # существа («Курица II»), и у `exact` побеждает МЕНЬШИЙ priority.
+            # Победитель забирает ключ ВМЕСТЕ СО СВОЕЙ ОБЛАСТЬЮ, поэтому
+            # в табе перевода не оставалось вовсе, а на экране выходило
+            # «1x Курица II» вместо «1x Миньон кур II» — замер 05.09: так
+            # ломались 19 мобных миньонов из 61.
+            # Полная строка спорить не с кем: такого ключа нет ни у кого.
+            short = f"{english[:-len(' Minion')]} {level}"
+            for word, colour, russian in (("FULL", "c", "ЗАПОЛНЕН"),
+                                          ("ACTIVE", "a", "АКТИВЕН"),
+                                          ("SLOW", "e", "МЕДЛЕННО"),
+                                          ("BLOCKED", "c", "ЗАБЛОКИРОВАН")):
+                key = "{n}x " + short + f" [{word}]"
+                if key not in exact:
+                    out[key] = ("§f{n}x " + f"{base_nominative(russian_name)} {level} "
+                                f"§7[§{colour}{russian}§7]")
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -45,6 +130,7 @@ def main() -> int:
         return 1
     rows = json.loads(SRC.read_text(encoding="utf-8")).get("strings") or {}
     exact = {k: v for k, v in rows.items() if v and v != "-"}
+    exact.update(minion_cases(exact))
 
     # ⚠️ ПРОВЕРЯЕМ ОБА КРАЯ. Наш перевод обязан отличаться от того, что видит
     # игрок БЕЗ режима: если обычный словарь уже даёт русский, запись здесь

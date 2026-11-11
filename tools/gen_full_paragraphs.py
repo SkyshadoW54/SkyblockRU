@@ -102,6 +102,17 @@ def english_terms() -> list[str]:
             head = re.match(HEAD_OF_RULE, rule.get("p") or "")
             if head:
                 client.add(head.group(1).replace(chr(92), "").strip())
+    # ⚠️ ПЕРЕКОВКИ (`84-reforges`) — тоже термин режима, но `status.lookup`
+    # их не видит: словарь хранит их секцией `reforges` с `only: item_name`,
+    # и в абзаце (item_lore) движок их не переводит вовсе. Русское имя
+    # перековки попадает в абзац ТОЛЬКО через режимную версию — а без этого
+    # списка такие абзацы в заготовку не отбирались. Замер 12.10
+    # (`full_leaks.py`): «Fabled» — вес 11 486, самая показываемая утечка
+    # режима; абзацев 96 с именем перековки и без режимной копии — 195.
+    # Простые формы («Бонус Fabled …», «…перековку Fabled…») подставляет
+    # `reforge_paras` (кавычки «», падеж не нужен), остальное — руками.
+    pack = load(PACKS / "ru_ru" / "84-reforges.json", {})
+    out.update(pack.get("reforges") or {})
     return sorted(out - client, key=len, reverse=True)
 
 
@@ -202,25 +213,124 @@ def heading_candidates(key: str) -> list[str]:
     словарь: верный кандидат тот, чей перевод он знает. Тот же приём, что
     `markedHeadEnds` в моде — список кандидатов, выбор по совпадению.
     """
+    # ⚠️⚠️ САМЫЙ ДЛИННЫЙ ИЗВЕСТНЫЙ ПРЕФИКС ИДЁТ ПЕРВЫМ, а не только когда
+    # `heading_of` промолчал. Он режет по словам с Заглавной, и у «Ability:
+    # Whassup?  RIGHT CLICK» останавливается на «Ability: Whassup» — знак
+    # «?» словом не является. Кандидат выходил обрезанным, перевод у обеих
+    # сторон совпадал, и заголовок Бэтфона не чинился вовсе (скриншот
+    # игрока 07.09). А в `41-headers` строка лежит ЦЕЛИКОМ — её и берём.
+    heads = known_heads()
+    known = None
+    for cut in range(len(key), 3, -1):
+        if key[cut - 1] == " ":
+            continue
+        piece = key[:cut]
+        if piece in heads:
+            known = piece
+            break
     head = heading_of(key)
     if not head:
-        # заголовок без подписи: самый длинный префикс, известный как заголовок
-        heads = known_heads()
-        best = None
-        for cut in range(len(key), 3, -1):
-            if key[cut - 1] == " ":
-                continue
-            piece = key[:cut]
-            if piece in heads:
-                best = piece
-                break
-        return [best] if best else []
-    out = [head]
+        return [known] if known else []
+    out = [known, head] if known and known != head else [head]
     while " " in head:
         head = head.rsplit(" ", 1)[0]
         if head.endswith(":"):
             break
         out.append(head)
+    return out
+
+
+# ⚠️ Кандидат в имя: английское слово (или два) с Заглавной внутри перевода.
+# Римские цифры и §-коды снимаются — записанная грабля проекта.
+# ⚠️ §-коды снимаем ПЕРЕД поиском имени: Hypixel красит слова по отдельности,
+# и «§dMaddox§7» без снятия не совпадает с границей слова — записанная грабля.
+CODES_IN_RU = re.compile("§.")
+# ⚠️ СЛУЖЕБНОЕ СЛОВО ВНУТРИ ИМЕНИ («Maddox the Slayer», «Aspect of the End»)
+# берём тоже: без него находился только «Maddox», подставлялся первым — и
+# выходило «с Мэддоксом the Slayer», то есть смесь языков внутри имени.
+NAME_IN_RU = re.compile(r"(?<![A-Za-z])[A-Z][A-Za-z']+"
+                        r"(?:\s+(?:of|the|and|de|von)\s+[A-Z][A-Za-z']+"
+                        r"|\s+[A-Z][A-Za-z']+){0,2}"
+                        r"(?![A-Za-z])")
+ROMAN_ONLY = re.compile(r"^[IVXLCDM]+$")
+# Два латинских подряд: одна буква — это «n» из дырки {n}, не английский.
+LATIN_LEFT = re.compile(r"[A-Za-z]{2,}")
+_MODE_ONLY: dict[str, bool] = {}
+
+
+def mode_only_name(name: str) -> bool:
+    """Имя, которое переводит РЕЖИМ и не переводит обычный словарь.
+
+    ⚠️⚠️ ТРЕТИЙ ПОВОД ЗАВЕСТИ РЕЖИМНУЮ ВЕРСИЮ, и самый крупный: замер 07.09
+    нашёл **2077 абзацев**, где в русском тексте осталось имя NPC, предмета
+    или места, а режим его переводит. Жалоба игрока со скриншотом Бэтфона
+    («Позволяет позвонить Maddox») — ровно этот случай.
+
+    ⚠️ Спрашиваем ДВИЖОК, а не список: своя копия разошлась бы с режимными
+    словарями при первом же пополнении. Ответ кэшируется — имён тысячи,
+    а `lookup` при промахе перебирает все правила.
+
+    ⚠️ Признак только ОТБИРАЕТ абзац в заготовку (`done=False`), в словарь
+    он попасть не даёт: подстановку делают `gen_full_places` и
+    `fix_full_headings` со своими защитами, а приёмник отбрасывает запись,
+    совпавшую с обычным переводом. Значит цена ложной находки — лишняя
+    строка в очереди работы, а не порча текста.
+
+    ⚠️⚠️ С 11.10 условие «а обычный словарь НЕ переводит» СНЯТО. Оно отсекало
+    «Pests», «Bestiary», «Garden», «Fishing»: обычный словарь знает их
+    ОТДЕЛЬНОЙ строкой (кнопка, заголовок), но абзац переводится целиком и
+    несёт имя английским — в обычном режиме по решению, в режиме full это
+    утечка, которую никто не отбирал. Замер `full_leaks.py` 11.10: «Pests»
+    126 записей, «Garden» 170, «Fishing» 105. Имя берём и во множественном:
+    «Abiphones» — тот же абифон.
+    """
+    if name in _MODE_ONLY:
+        return _MODE_ONLY[name]
+    import status
+    ok = False
+    for candidate in (name, name[:-1] if name.endswith("s") else None):
+        if not candidate:
+            continue
+        # ⚠️ Спрашиваем ОБЕ области. Имя ванильного блока/предмета лежит в
+        # `83-vanilla-titles` с `only: item_name` и отвечает `@ключом`
+        # («Cobblestone» → `@block.minecraft.cobblestone`, клиент покажет
+        # «Булыжник»). В абзаце (item_lore) движок его не переводит — значит
+        # русское имя в прозу попадает ТОЛЬКО через режимную версию, и абзац
+        # обязан быть в заготовке. До 12.10 признак смотрел одну область и
+        # требовал кириллицу: 70 абзацев «…коллекции Cobblestone!» (вес 1 870,
+        # верх `full_leaks`) в заготовку не попадали — `--load` отвечал
+        # «НЕ НАЙДЕНО». Замер 12.10: +252 абзаца корпуса.
+        mode = (status.lookup(candidate, _MODE(), origin="item_lore")
+                or status.lookup(candidate, _MODE(), origin="item_name"))
+        if mode and (re.search("[а-яА-Я]", mode[0]) or mode[0].startswith("@")):
+            ok = True
+            break
+    _MODE_ONLY[name] = ok
+    return ok
+
+
+def leaking(russian: str, needles: list[str]) -> list[str]:
+    """Что в режимной версии ещё английское, хотя режим это переводит.
+
+    ⚠️ Это и есть определение «работа не сделана». Раньше `done` значило
+    «мой термин подставлен» (так его ставят `gen_full_places`,
+    `fix_full_headings`), и в словарь ушло 2009 записей с английским именем
+    внутри — «…к твоему тарифу Abiphone…» при переведённом «Абифон»
+    (игрок, 11.10). Спрашиваем ОБА признака отбора: жаргон и имена.
+    """
+    return found_in(russian, needles) or names_left(russian)
+
+
+def names_left(russian: str) -> list[str]:
+    """Английские имена в готовом переводе, которые режим показал бы по-русски."""
+    plain = CODES_IN_RU.sub("", russian)
+    out = []
+    for match in NAME_IN_RU.finditer(plain):
+        word = match.group(0)
+        if ROMAN_ONLY.match(word) or word in out:
+            continue
+        if mode_only_name(word):
+            out.append(word)
     return out
 
 
@@ -278,13 +388,24 @@ def do_skeleton() -> int:
         hits = found_in(russian, needles)
         # ⚠️ Второй повод завести режимную версию — расходящийся ЗАГОЛОВОК
         # (см. `clashing_heading`): без неё абзац слипается на экране.
+        # ⚠️ Третий — ИМЯ, которое переводит только режим (`mode_only_name`).
+        if not hits:
+            hits = names_left(russian)
         if not hits and not clashing_heading(row["text"]):
             continue
         key = row["text"]
         was = ready.get(key, {})
+        # ⚠️ Предзаполняем ОБЫЧНЫМ переводом: править надо только термин.
+        # ⚠️ НЕТРОНУТАЯ строка (ru == прежний base) берёт СВЕЖИЙ перевод корпуса:
+        # до 11.10 пересборка хранила старое ru навсегда, и починка перевода
+        # в корпусе до режима не доезжала — «…за каждую ступень §3Best» лежало
+        # оборванным в заготовке при целой фразе в корпусе (ручная пачка 1).
+        # Это та же грабля, что «поле base устаревает» (02.09), только для ru.
+        kept_ru = was.get("ru")
+        if not kept_ru or kept_ru == was.get("base"):
+            kept_ru = russian
         fresh[key] = {
-            # ⚠️ Предзаполняем ОБЫЧНЫМ переводом: править надо только термин.
-            "ru": was.get("ru") or russian,
+            "ru": kept_ru,
             "base": russian,
             "terms": hits[:4],
             "live": row.get("live") or 0,
@@ -324,12 +445,25 @@ def do_skeleton() -> int:
 
 def do_export(path: Path, limit: int) -> int:
     data = load(SKELETON, {}) or {}
+    needles = english_terms()
     task = []
     for key, row in data.get("rows", {}).items():
-        if row["done"]:
+        # ⚠️ В работу идёт и «done» с утечкой: машинная подстановка закрыла
+        # свой термин, а другое имя в том же абзаце осталось английским.
+        left = leaking(row.get("ru") or "", needles) if row["done"] else []
+        if row["done"] and not left:
             continue
-        task.append({"key": key, "terms": row["terms"], "live": row["live"],
-                     "base": row["base"], "ru": row["base"]})
+        # ⚠️ Терминов режима нет и в обычном переводе ни слова английского —
+        # руками тут нечего делать, а --load такую строку всё равно отвергнет
+        # («совпал с обычным»). Без этого она занимала место в каждой пачке.
+        if not row["done"] and not row["terms"] \
+                and not LATIN_LEFT.search(CODES_IN_RU.sub("", row["base"] or "")):
+            continue
+        task.append({"key": key, "terms": left or row["terms"], "live": row["live"],
+                     "base": row["base"],
+                     # ⚠️ Стартуем с лучшего, что есть: у «done» это режимная
+                     # версия, у остальных — обычный перевод.
+                     "ru": row["ru"] if row["done"] else row["base"]})
         if len(task) >= limit:
             break
     save(path, task)
@@ -355,12 +489,13 @@ def do_load(path: Path) -> int:
             if key not in rows:
                 refused.append(f"{key[:50]!r}: НЕ НАЙДЕНО в заготовке")
             continue
-        left = found_in(value, needles)
+        left = leaking(value, needles)
         if left:
             # ⚠️ Смысл записи — убрать английский термин. Остался — работа
             # не сделана, и молча принимать её нельзя: словарь распухнет
-            # копиями, которые ничего не меняют.
-            refused.append(f"{key[:44]!r}: термин остался английским: {left[:2]}")
+            # копиями, которые ничего не меняют. С 11.10 это и про ИМЕНА:
+            # «термин» проверялся, имя — нет, и так прошли 2009 утечек.
+            refused.append(f"{key[:44]!r}: осталось английским: {left[:2]}")
             continue
         if value == rows[key]["base"]:
             refused.append(f"{key[:44]!r}: перевод совпал с обычным — править нечего")
@@ -448,6 +583,20 @@ def do_write() -> int:
     }
     save(PACK, pack)
     print(f"записано {PACK.name}: {len(rows)} абзацев")
+    # ⚠️ Пишем и те, где латиница осталась: режимная версия всё равно лучше
+    # обычной. Но МОЛЧАТЬ об этом нельзя — так 2009 утечек жили в словаре
+    # с 07.09 до 11.10. Их берёт в работу `--export`, меряет `full_leaks.py`.
+    needles = english_terms()
+    left = {k: leaking(v["ru"], needles) for k, v in rows.items()}
+    left = {k: v for k, v in left.items() if v}
+    if left:
+        words: dict[str, int] = {}
+        for found in left.values():
+            for w in found:
+                words[w] = words.get(w, 0) + 1
+        top = ", ".join(f"{w} ({n})" for w, n in sorted(words.items(), key=lambda kv: -kv[1])[:8])
+        print(f"⚠️ из них с английским, которое режим знает: {len(left)} — "
+              f"в работу через --export; чаще всего: {top}")
     print("⚠️ впиши файл в packs/index.json, иначе он молча не загрузится")
     return 0
 

@@ -35,6 +35,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 CORPUS = ROOT / "data" / "work" / "paragraphs.json"
+# заготовка режима full — те же абзацы с русскими терминами (`--skeleton`)
+SKELETON = ROOT / "data" / "work" / "full_paragraphs_ru.json"
 REPO = ROOT / "data" / "neu" / "repo.zip"
 # Второй источник цветов — ЖИВЫЕ подсказки из игры. В репозитории NEU лежат
 # только предметы, поэтому меню, экраны и чужие профили красить больше неоткуда:
@@ -176,9 +178,14 @@ def live_lore() -> dict[str, list[str]]:
 
 def coloured_lore() -> dict[str, list[str]]:
     """Ключ абзаца -> строки оригинала С §-кодами: репозиторий NEU и живая игра."""
-    out: dict[str, list[str]] = {}
+    # ⚠️ ЖИВАЯ ИГРА — ПЕРВОЙ (12.10). Раньше первым шёл NEU, а живой дамп лишь
+    # дополнял: у одного ключа побеждал цвет из репозитория, который отстаёт от
+    # сервера (заголовки «Tiered Bonus» у NEU золотые, на экране игрока серые).
+    # Сторож `check_color_markup.py` сверяет разметку с тем же порядком —
+    # иначе он ругался бы на то, что разметчик сделал по его же данным.
+    out: dict[str, list[str]] = dict(live_lore())
     if not REPO.exists():
-        return dict(live_lore())
+        return out
     with zipfile.ZipFile(REPO) as repo:
         for name in repo.namelist():
             if not (name.endswith(".json") and "/items/" in name):
@@ -215,10 +222,6 @@ def coloured_lore() -> dict[str, list[str]]:
     # самоцветами и звёздами. В NEU только базовые, поэтому таких вариантов
     # лора у нас нет вовсе.
     for key, lines in auction_lore().items():
-        out.setdefault(key, lines)
-    # Живые подсказки ДОПОЛНЯЮТ, а не заменяют: у предмета все источники дают
-    # одно и то же, а меню и экраны есть только в живом дампе.
-    for key, lines in live_lore().items():
         out.setdefault(key, lines)
     return out
 
@@ -559,10 +562,30 @@ def main() -> int:
     # не можем перевести просто через тебя, без API за деньги».
     parser.add_argument("--export", help="выгрузить задание в файл (без API)")
     parser.add_argument("--load", help="влить размеченное из файла")
+    # ⚠️ Режим full хранит СВОИ версии абзацев (data/work/full_paragraphs_ru.json,
+    # словарь 86): тот же текст с русскими терминами. Плоских там столько же,
+    # и красить их тем же способом — через те же проверки. `--skeleton`
+    # переключает источник: строки заготовки подаются как абзацы корпуса
+    # (ключ -> text, ru), а записывается обратно в заготовку.
+    parser.add_argument("--skeleton", action="store_true",
+                        help="размечать заготовку режима full, а не корпус")
     args = parser.parse_args()
 
-    data = json.loads(CORPUS.read_text(encoding="utf-8"))
-    paragraphs = data.get("paragraphs") or []
+    target = SKELETON if args.skeleton else CORPUS
+    data = json.loads(target.read_text(encoding="utf-8"))
+    if args.skeleton:
+        rows = data.get("rows") or {}
+        paragraphs = [{"text": key, "ru": row.get("ru") or "", "_row": row}
+                      for key, row in rows.items() if row.get("done")]
+    else:
+        paragraphs = data.get("paragraphs") or []
+
+    def save() -> None:
+        if args.skeleton:
+            for para in paragraphs:
+                para["_row"]["ru"] = para["ru"]
+        target.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+
     lore = coloured_lore()
     print(f"абзацев с цветами в репозитории NEU: {len(lore)}")
 
@@ -595,7 +618,7 @@ def main() -> int:
         item["ask"] = left
         ask.append(item)
     if free:
-        CORPUS.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+        save()
     todo = ask
 
     print(f"размечено БЕЗ модели (куски уцелели дословно): {free}")
@@ -665,7 +688,7 @@ def main() -> int:
                 continue
             item["para"]["ru"] = marked
             done += 1
-        CORPUS.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+        save()
         print(f"\nразмечено: {done}, отбраковано: {bad}")
         return 0
 
@@ -719,12 +742,13 @@ def main() -> int:
                 continue
             item["para"]["ru"] = unmask_icons(marked, item.get("_icons") or {})
             done += 1
-        CORPUS.write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding="utf-8")
+        save()
 
     print(f"\nразмечено: {done}, отбраковано: {rejected}")
-    print(f"записано: {CORPUS.relative_to(ROOT)}")
+    print(f"записано: {target.relative_to(ROOT)}")
     report_usage()
-    print("\nДальше: python tools/merge_paragraphs.py && install.cmd")
+    print("\nДальше: python tools/merge_paragraphs.py (корпус) или "
+          "python tools/gen_full_paragraphs.py --write (заготовка), затем build_all.py")
     return 0
 
 

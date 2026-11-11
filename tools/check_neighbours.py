@@ -13,6 +13,12 @@
 не ловил: у нас всё работало, потому что SkyHanni у нас не стоял. Этот и
 написан, чтобы вопрос задавался сам.
 
+Семья повторялась ПЯТЬ раз: таб (строки, потом поля), имя предмета
+(`getHoverName`, 03.09), заголовок окна (`Screen.title`, 05.09), боковая
+панель (`ownerName`/`getPlayerPrefix`, 16.09), надпись над сущностью
+(`Entity.getCustomName`, 17.09). Развязка всегда одна — подменять ВЫЗОВ
+внутри отрисовки, а не метод чтения.
+
 Проверяет ДВЕ вещи, и обе без запуска игры:
 
   1. ЗАПРЕЩЁННЫЕ ЦЕЛИ — наши миксины не смеют перехватывать методы, которые
@@ -22,6 +28,14 @@
      метода оно обязано вернуться к оригиналу. Иначе сосед, прочитавший
      поле позже, получит наш перевод. Так и было с шапкой и подвалом таба:
      у SkyHanni в `TabListData` стоят `field_2153`/`field_2154` — ровно они.
+  3. СВОИ ОКНА — МИМО ЧУЖИХ ПЕРЕХВАТОВ (11.10). Справку сбоку (`WikiPanel`)
+     нельзя рисовать ванильным `tooltip(...)`: в него встают соседи.
+     SkyBlock Enhancements подменяет расстановщик позиции у ЛЮБОЙ подсказки
+     (наш столбец вставал у курсора, на подсказку предмета) и сбрасывает
+     прокрутку, когда меняется первая строка; Stfu зажимает подсказку по
+     краям и переносит над курсор. И рисовать её можно только ПОСЛЕ
+     отложенной подсказки предмета (`extractDeferredElements`, TAIL): та
+     ложится новым слоем поверх всего, что нарисовано раньше.
 
 Запуск:
   python tools/check_neighbours.py            проверить
@@ -38,6 +52,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MIXINS = ROOT / "src" / "main" / "java" / "ru" / "skyblockru" / "mixin"
+CORE = ROOT / "src" / "main" / "java" / "ru" / "skyblockru" / "core"
+
+# ⚠️ Наши СОБСТВЕННЫЕ окна. Через ванильный конвейер подсказок их не рисуем:
+# туда встают соседи и решают за нас, где окну стоять (замер 11.10 по jar
+# сборки SkyBlock Enhanced — см. javadoc `WikiPanel`).
+OWN_WINDOWS = [CORE / "WikiPanel.java"]
+TOOLTIP_PIPELINE = re.compile(
+    r"\.(?:tooltip|renderTooltip|setTooltipForNextFrame|setComponentTooltipForNextFrame)\(")
 INSTANCES = Path("C:/MultiMC/instances")
 
 # ⚠️ Методы, которые соседи зовут САМИ. Перехватывать их нельзя: подмена
@@ -54,6 +76,58 @@ FORBIDDEN = {
         "по их jar). У SkyHanni из-за подмены гасла подсветка нажатых карточек "
         "в Superpairs: SuperPairsItemVisibility ищет в имени английские «?» и "
         "«Click any button!». Переводить имя надо в ПОДСКАЗКЕ (core/ItemName)",
+    # ⚠️ 16.09: боковая панель. Замер по сборке SkyBlock Enhanced 5.2.11 —
+    # панель читают 22 jar, и все ЭТИМИ методами (scan по байткоду):
+    # skyblock-api (McClient.getScoreboard: ownerName + getPlayerPrefix/Suffix;
+    # вложена в Custom Scoreboard, SkyOcean, SkyBlockPv, Catharsis, Stella),
+    # Skyblocker Utils, SkyHanni ScoreboardCompatKt, btrbz, modernwarpmenu,
+    # MarketGuard ProfileResolver (ownerName), Feesh/SBO (formatNameForTeam ->
+    # getFormattedName). У skyblock-api CurrencyAPI ищет `^(Purse|Piggy): `,
+    # получал «Кошелёк: …» — и счётчик монет Custom Scoreboard замирал.
+    # Переводить панель надо в ОТРИСОВКЕ: лямбда displayScoreboardSidebar
+    # (HudMixin/GuiMixin -> OverlayHooks.sidebarLine).
+    "ownerName":
+        "строку панели читают skyblock-api (McClient.getScoreboard) и MarketGuard "
+        "(ProfileResolver); переводить надо в лямбде displayScoreboardSidebar",
+    "getFormattedName":
+        "её зовёт formatNameForTeam, а ту — Feesh, SBO и skyblock-api при разборе "
+        "панели; переводить надо в лямбде displayScoreboardSidebar",
+    "getPlayerPrefix":
+        "префикс строки панели читают skyblock-api, Skyblocker Utils, SkyHanni "
+        "ScoreboardCompatKt, btrbz, modernwarpmenu",
+    "getPlayerSuffix":
+        "суффикс строки панели читают те же, что и getPlayerPrefix, плюс SkyOcean "
+        "ProfileInChat",
+    "getDisplayName":
+        "заголовок панели (Objective.getDisplayName) читают SkyHanni HypixelData/"
+        "ScoreboardData, Skyblocker, skyblock-api — по нему они узнают режим; "
+        "у сущности её же читают SkyHanni (7 классов) и Skyblocker GuardianHealth",
+    # ⚠️ 17.09: надпись над сущностью. Замер по сборке SkyBlock Enhanced 5.2.11
+    # (константный пул каждого jar, вложенные тоже): имя сущности читают
+    # Skyblocker (HealthBars, DungeonManager, FishingHelper, CompactDamage —
+    # 10 классов через getCustomName, 23 через getName, 10 через hasCustomName),
+    # SkyHanni (MinionFeatures, DataWatcherApi; 33 класса через getName),
+    # Feesh (8: таймеры по именам стендов), SBO (DianaMobDetect), Odin (12),
+    # skyblock-api (EntityMixin, SkyBlockEntityKt — вложена в Custom Scoreboard,
+    # SkyOcean, SkyBlockPv, Catharsis, Stella). HealthBars ищет в имени стойки
+    # английские «Blaze», «The Professor», «Guardian» — а получал «Ифрит».
+    # Переводить надпись надо на ВЫЗОВЕ getNameTag внутри extractNameTags
+    # (EntityRendererMixin) — между вызовом и записью в EntityRenderState.nameTag.
+    "getCustomName":
+        "имя сущности читают Skyblocker (HealthBars, DungeonManager, FishingHelper), "
+        "SkyHanni (MinionFeatures), Feesh, SBO, skyblock-api; переводить надо "
+        "на вызове getNameTag внутри extractNameTags (EntityRendererMixin)",
+    "getName":
+        "имя сущности читают SkyHanni (33 класса), Skyblocker (23), Odin (12), "
+        "Feesh, SBO; имя полосы босса (LerpingBossEvent.getName) — SkyHanni "
+        "BossbarData, Skyblocker BossHealthOverlayMixin, Odin BloodCamp. "
+        "Переводить надо на вызове: getNameTag внутри extractNameTags "
+        "(EntityRendererMixin), getName внутри BossHealthOverlay.extractRenderState "
+        "(BossHealthOverlayMixin)",
+    "getNameTag":
+        "её результат меняет Skyblocker (EntityRendererMixin, @ModifyReturnValue) "
+        "и зовёт owo-lib (EntityRendererAccessor); встав на САМ метод, мы бы "
+        "переводили до чужих правок — перехватывать надо вызов внутри extractNameTags",
 }
 
 # Поля чужих классов, которые соседи читают напрямую. Записав туда перевод,
@@ -78,7 +152,14 @@ FIELD_EXEMPT = {
 }
 
 TARGET = re.compile(r'target\s*=\s*"[^"]*?;([A-Za-z0-9_$]+)\(')
-METHOD = re.compile(r'method\s*=\s*"([A-Za-z0-9_$<>]+)"')
+# ⚠️ Имя метода бывает С ДЕСКРИПТОРОМ: `method = "extractNameTags(L...;FDD)V"`.
+# Берём всё до скобки или кавычки — иначе такая цель не читалась бы вовсе.
+METHOD = re.compile(r'method\s*=\s*"([A-Za-z0-9_$<>]+)[("]')
+# Строка, разбитая конкатенацией на несколько строк файла:
+#   target = "Lnet/.../EntityRenderer;"
+#           + "getNameTag(...)"
+# Склеиваем ДО разбора, иначе имя в хвосте цели не видно ни одной регулярке.
+SPLIT_STRING = re.compile(r'"\s*\+\s*"')
 WRITE = re.compile(r"this\.(\w+)\s*=")
 
 
@@ -86,7 +167,7 @@ def check_targets() -> list[str]:
     """Перехватываем ли мы то, что соседи зовут сами."""
     bad = []
     for path in sorted(MIXINS.glob("*.java")):
-        text = path.read_text(encoding="utf-8")
+        text = SPLIT_STRING.sub("", path.read_text(encoding="utf-8"))
         # ⚠️ Смотрим ТОЛЬКО аннотации: те же имена стоят в комментариях,
         # где мы как раз объясняем, почему их трогать нельзя.
         for line in text.splitlines():
@@ -124,6 +205,41 @@ def check_fields() -> list[str]:
             if not restored:
                 bad.append("%s: пишем в %s и НЕ возвращаем к оригиналу — %s"
                            % (path.name, field, why))
+    return bad
+
+
+def code_only(text: str) -> str:
+    """Текст Java без комментариев: в них мы как раз объясняем, чего НЕ делать."""
+    text = re.sub(r"/\*.*?\*/", " ", text, flags=re.S)
+    return "\n".join(line.split("//")[0] for line in text.splitlines())
+
+
+def check_own_windows(windows: list[Path] | None = None,
+                      mixins: Path | None = None) -> list[str]:
+    """Свои окна рисуем сами и после подсказки предмета, а не ванильной подсказкой."""
+    bad = []
+    for path in windows or OWN_WINDOWS:
+        if not path.exists():
+            bad.append("%s: файла нет — сторож своих окон смотрит не туда" % path.name)
+            continue
+        for number, line in enumerate(code_only(path.read_text(encoding="utf-8")).splitlines(), 1):
+            if TOOLTIP_PIPELINE.search(line):
+                bad.append("%s:%d: своё окно рисуется ванильной подсказкой — соседи "
+                           "(SkyBlock Enhancements, Stfu) переставят его на подсказку "
+                           "предмета: %s" % (path.name, number, line.strip()))
+    # Рисовать — только на выходе из отложенной отрисовки: раньше подсказка
+    # предмета ляжет сверху новым слоем и закроет справку.
+    drawers = []
+    for path in sorted((mixins or MIXINS).glob("*.java")):
+        code = code_only(path.read_text(encoding="utf-8"))
+        if "WikiPanel.afterDeferred(" not in code:
+            continue
+        drawers.append(path.name)
+        if not re.search(r'method\s*=\s*"extractDeferredElements"\s*,\s*at\s*=\s*@At\("TAIL"\)', code):
+            bad.append("%s: справка рисуется не на выходе из extractDeferredElements — "
+                       "подсказка предмета ляжет поверх неё" % path.name)
+    if not drawers:
+        bad.append("никто не зовёт WikiPanel.afterDeferred — справка не рисуется вовсе")
     return bad
 
 
@@ -166,7 +282,7 @@ def main() -> int:
                         help="показать, что соседи читают из таба")
     args = parser.parse_args()
 
-    bad = check_targets() + check_fields()
+    bad = check_targets() + check_fields() + check_own_windows()
     if args.jars:
         print("=== ЧТО СОСЕДИ ЧИТАЮТ ИЗ ТАБА ===")
         scan_jars()
@@ -181,7 +297,8 @@ def main() -> int:
         return 1
 
     print("чисто: соседям отдаём оригинал")
-    print("   проверено целей: %d, полей: %d" % (len(FORBIDDEN), len(WATCHED_FIELDS)))
+    print("   проверено целей: %d, полей: %d, своих окон: %d"
+          % (len(FORBIDDEN), len(WATCHED_FIELDS), len(OWN_WINDOWS)))
     return 0
 
 

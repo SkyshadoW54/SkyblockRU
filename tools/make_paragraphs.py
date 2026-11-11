@@ -103,7 +103,8 @@ def has_foreign_hole(text: str) -> bool:
 # шаблон зовёт характеристиками: продолжаются 91 (0.3%), и все до одной —
 # настоящая середина предложения.
 CONTINUES = re.compile(
-    r"(?:,|\b(?:and|which|that|for|per|to|of|in|on|when|while|the|a|an|by|with|from))\s*$",
+    r"(?:,|\b(?:and|which|that|for|per|to|of|in|on|when|while|the|a|an|by|with|from"
+    r"|every|each|your|you|or))\s*$",
     re.IGNORECASE)
 
 
@@ -122,8 +123,22 @@ CONTINUES = re.compile(
 # 30 разных кусков, все 30 — проза («Each stack grants +5⚡ Swing Range,
 # +3❁ Ferocity and +5% Damage.», «Deposit it in any Chum Bucket to earn
 # +100 Coins and +25 Fishing XP!»), настоящих таблиц среди них ноль.
-PROSE_TAIL = re.compile(r"^[+\-]\s*\{n\}.*\S\s+(?:on|against|for|per|to|in|with|from|when"
-                        r"|while|by|and|of)\s+\S.*[.!]$")
+# ⚠️ ...И БЕЗ ТОЧКИ В КОНЦЕ ТОЖЕ (13.10). «These boots gain +{n}❈ Defense and /
+# +{n}✦ Speed for every Farming Skill / level you have. …» — вторая строка
+# начинается с «+{n}», кончается словом «Skill» (не служебным) и точки не
+# имеет: фраза продолжается на третьей строке. Прежний признак требовал
+# «.» или «!» в конце, строка шла за характеристику, весь кусок выпадал из
+# корпуса, и мод переводил ботинки построчно: «+1☘ фермерской Fortune»,
+# «навыка Farming уровня». Скриншот игрока 13.10 (Mantid Rancher's Boots).
+# Теперь довольно предлога, за которым слово и ещё хоть что-то: у настоящей
+# строки характеристики («+{n}% Damage to Zombies») после предлога слово
+# одно. Строки таблиц — «- {n} coins each | {n}x in {n} order» (Bazaar),
+# «+ {n}, {n} mins ago by Bank Interest» (банк) — отсекаются по запятой или
+# черте сразу за числом и по «{n}» вместо слова за предлогом: это не проза.
+# Старый признак (точка или «!» в конце) остаётся: «+{n}✦ Speed for {n}
+# seconds.», «+{n}❀ Overbloom on ൠ Pests.» — после предлога стоит не слово.
+PROSE_TAIL = re.compile(r"^[+\-]\s*\{n\}[^,|]*\S\s+(?:on|against|for|per|to|in|with|from|when"
+                        r"|while|by|and|of)\s+(?:\S+.*[.!]|[A-Za-z]\S*\s+\S+.*)$")
 
 
 def is_structural(line: str) -> bool:
@@ -192,6 +207,33 @@ def is_enchant_list(text: str) -> bool:
     return len(ENCHANT.findall(text)) >= 2 and len(rest) <= len(text) * 0.15
 
 
+# Строка-линия «--------------------------»: рамка перка министра. Hypixel
+# ставит её БЕЗ пустых строк вокруг, и она склеивается с абзацем (дамп 18.10,
+# «Minister Finnegan»: «Blooming Business» был куплен для меню мэра, а в
+# подсказке министра ключ выходил с линиями по краям и не находился).
+# Копия Paragraphs.SEPARATOR — сверяет check_contract.py.
+SEPARATOR = re.compile(r"^-{5,}$")
+
+
+def trim_separators(run: list[str]) -> list[str]:
+    """
+    Кусок без линий по краям — ровно как запасной ключ мода (Paragraphs.withoutSeparators).
+
+    Мод сперва спрашивает кусок целиком (старые переводы с линиями в ключе —
+    «Double Trouble», «GOATed» — остаются живыми), потом без линий. В корпус
+    новый кусок кладём уже без них: так один купленный перевод служит и меню
+    мэра, и подсказке министра. Внутренность короче MIN_LINES — режем нечего.
+    """
+    a, b = 0, len(run)
+    while a < b and SEPARATOR.match(run[a].strip()):
+        a += 1
+    while b > a and SEPARATOR.match(run[b - 1].strip()):
+        b -= 1
+    if (a, b) == (0, len(run)) or b - a < MIN_LINES:
+        return run
+    return run[a:b]
+
+
 def runs_of(lines: list[str]) -> list[list[str]]:
     """
     Куски подсказки ровно так, как их строит мод: режем ТОЛЬКО по пустым строкам.
@@ -255,6 +297,7 @@ def paragraphs_of(block: dict) -> tuple[list[dict], int]:
     """Абзацы одного блока и число кусков, отброшенных из-за характеристик."""
     out, skipped = [], 0
     for run in runs_of(without_name(strip_foreign_tail(block["lines"]), block.get("item", ""))):
+        run = trim_separators(run)
         if any(is_structural(line) for line in run):
             # Мод склеит характеристику с прозой, и переложить такой кусок
             # значило бы размазать таблицу в текст. Честно не берём.
@@ -373,6 +416,31 @@ def main() -> int:
                 if is_live:
                     entry["live"] += 1
 
+    # ⚠️ Старый перевод С ЛИНИЯМИ в ключе переносим на ключ БЕЗ линий, если тот
+    # ещё не переведён: текст тот же, линии из перевода снимаем. Иначе после
+    # смены резки «GOATed» остался бы переведён только в старой записи, а
+    # меню мэра с тем же текстом — нет (18.10).
+    migrated = 0
+    if out.exists():
+        try:
+            legacy = json.loads(out.read_text(encoding="utf-8")).get("paragraphs") or []
+        except (json.JSONDecodeError, OSError, KeyError):
+            legacy = []
+        strip_lines = re.compile(r"\s*(?:§.)*-{5,}(?:§.)*\s*")
+        for para in legacy:
+            if not para.get("ru") or not para.get("lines"):
+                continue
+            inner = trim_separators([str(x) for x in para["lines"]])
+            if inner == para["lines"]:
+                continue
+            target = seen.get(" ".join(x.strip() for x in inner).strip())
+            if target is None or target.get("ru"):
+                continue
+            target["ru"] = strip_lines.sub(" ", para["ru"]).strip()
+            migrated += 1
+    if migrated:
+        print(f"переводов снято с ключей с линиями по краям на ключ без линий: {migrated}")
+
     carried_deliberate = 0
     for para in deliberate:
         if para["text"] not in seen:
@@ -391,7 +459,9 @@ def main() -> int:
     total_lines = sum(len(p["lines"]) for p in ordered)
     carried = sum(1 for p in ordered if p.get("ru"))
     lost = len(done) - carried
-    live_count = sum(1 for p in ordered if p["live"])
+    # .get: у перенесённых абзацев с полем `source` поля `live` нет — на нём
+    # refresh.py падал сразу после записи корпуса и дальше шаг 1 не шёл.
+    live_count = sum(1 for p in ordered if p.get("live"))
     print(f"\nподсказок разобрано: {blocks_total}")
     print(f"РАЗНЫХ абзацев:   {len(ordered)}  (строк в них: {total_lines})")
     if args.live:

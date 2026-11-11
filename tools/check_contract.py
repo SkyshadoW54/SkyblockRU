@@ -23,6 +23,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -103,7 +104,24 @@ JAVA_MARKERS = [
     "text.append(' ');",                                            # склейка одним пробелом
     "private static final int MIN_LINES = 2;",
     "private static Run nameAside(",                                # имя предмета — граница
+    "private static Run withoutSeparators(",                        # запасной ключ без линий
+    'Pattern.compile("^-{5,}$")',                                   # признак линии
 ]
+
+SEPARATOR = re.compile(r"^-{5,}$")
+
+
+def java_trim(lines: list[str], run: tuple[int, int]) -> tuple[int, int] | None:
+    """Копия Paragraphs.withoutSeparators: тот же кусок без линий по краям, или None."""
+    start, end = run
+    a, b = start, end
+    while a < b and SEPARATOR.match(lines[a].strip()):
+        a += 1
+    while b > a and SEPARATOR.match(lines[b - 1].strip()):
+        b -= 1
+    if (a, b) == (start, end) or b - a < MIN_LINES:
+        return None
+    return (a, b)
 
 
 def java_runs(lines: list[str]) -> list[tuple[int, int]]:
@@ -227,6 +245,10 @@ def main() -> int:
             lines = without_name(strip_foreign_tail(block["lines"]), block.get("item", ""))
             for run in java_runs(lines):
                 mod_keys.add(java_key(lines, run))
+                # мод спрашивает и кусок без линий по краям (запасной ключ)
+                inner = java_trim(lines, run)
+                if inner:
+                    mod_keys.add(java_key(lines, inner))
     mod_keys |= from_auction(used)
     mod_keys |= shown_in_game(used)
     if not used:
